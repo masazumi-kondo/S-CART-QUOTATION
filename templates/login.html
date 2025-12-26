@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>ログイン</h2>
+  <form method="POST" action="/login">
+    <div class="mb-3">
+      <label for="login_id" class="form-label">ログインID</label>
+      <input type="text" class="form-control" id="login_id" name="login_id" required>
+    </div>
+    <div class="mb-3">
+      <label for="password" class="form-label">パスワード</label>
+      <input type="password" class="form-control" id="password" name="password" required>
+    </div>
+    <button type="submit" class="btn btn-primary">ログイン</button>
+  </form>
+</div>
+{% endblock %}

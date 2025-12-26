@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run GitHub Actions CI test (permissions)",
+			"type": "shell",
+			"command": "gh workflow run SCART Tests --ref main --field name=permissions",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "test"
+		}
+	]
+}

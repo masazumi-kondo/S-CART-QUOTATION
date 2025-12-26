@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container" style="max-width: 480px; margin-top: 56px;">
+  <div class="alert alert-danger text-center mb-4">
+    <h4 class="mb-3">権限がありません</h4>
+    この操作を行う権限がありません。
+  </div>
+  <div class="text-center">
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary">メニューへ戻る</a>
+  </div>
+</div>
+{% endblock %}

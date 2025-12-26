@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                メインメニュー
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="{{ url_for('quotation.quotation_list') }}" class="list-group-item list-group-item-action">見積一覧</a>
+                    <a href="{{ url_for('quotation.quotation_new') }}" class="list-group-item list-group-item-action">見積作成</a>
+                    {% if 'customer.customer_list' in view_functions and current_user and current_user.role == 'admin' %}
+                    <a href="{{ url_for('customer.customer_list') }}" class="list-group-item list-group-item-action">顧客マスタ一覧</a>
+                    {% endif %}
+                    {% if 'product.product_list' in view_functions %}
+                    <a href="{{ url_for('product.product_list') }}" class="list-group-item list-group-item-action">製品マスタ一覧</a>
+                    {% endif %}
+
+                    {# 管理者専用メニュー #}
+
+
+                    {# 計算ロジック管理メニュー #}
+                    {% if 'logic_config.logic_config_list' in view_functions %}
+                    <a href="{{ url_for('logic_config.logic_config_list') }}" class="list-group-item list-group-item-action">計算ロジック管理</a>
+                    {% else %}
+                    <span class="list-group-item disabled text-muted" style="pointer-events:none;">計算ロジック管理（準備中）</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1 @@
+customer_pending_list.html and the customer_pending_list route have been removed as part of the unified customer approval flow. See /customers for all customer management.

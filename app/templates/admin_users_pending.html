@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>承認待ちユーザー一覧</h2>
+  {% if users %}
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>ログインID</th>
+          <th>表示名</th>
+          <th>役割</th>
+          <th>承認</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ user.id }}</td>
+          <td>{{ user.login_id }}</td>
+          <td>{{ user.display_name }}</td>
+          <td>{{ user.role }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('admin.approve_user', user_id=user.id) }}">
+              <button type="submit" class="btn btn-success btn-sm">承認</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="alert alert-info">承認待ちユーザーはありません。</div>
+  {% endif %}
+</div>
+{% endblock %}

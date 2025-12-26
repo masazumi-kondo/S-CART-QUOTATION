@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container" style="max-width: 520px; margin-top: 56px;">
+  <div class="alert alert-danger text-center mb-4">
+    <h4 class="mb-3">サーバーエラーが発生しました</h4>
+    お手数ですが、もう一度操作をお試しください。
+  </div>
+  <div class="text-center">
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary">メニューへ戻る</a>
+  </div>
+</div>
+{% endblock %}

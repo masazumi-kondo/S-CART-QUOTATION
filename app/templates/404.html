@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container" style="max-width: 480px; margin-top: 56px;">
+  <div class="alert alert-warning text-center mb-4">
+    <h4 class="mb-3">ページが見つかりません</h4>
+    URLをご確認ください。
+  </div>
+  <div class="text-center">
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary">メニューへ戻る</a>
+  </div>
+</div>
+{% endblock %}

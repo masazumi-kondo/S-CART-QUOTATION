@@ -1,0 +1,126 @@
+﻿name: SCART Tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scart-tests-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: concurrent_approve
+            script: scripts/test_concurrent_approve.py
+            artifact_suffix: concurrent
+            summary_title: concurrent_approve job
+          - name: register
+            script: scripts/test_register.py
+            artifact_suffix: register
+            summary_title: register job
+          - name: schema_users
+            script: scripts/test_schema_users.py
+            artifact_suffix: schema_users
+            summary_title: schema users guard job
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Show Python and pip version
+        run: |
+          python --version
+          pip --version
+
+      - name: Install dependencies if requirements.txt exists
+        shell: pwsh
+        run: |
+          if (Test-Path requirements.txt) { pip install -r requirements.txt } else { echo "skip pip install" }
+
+      - name: Seed test database
+        run: python scripts/ci_seed_db.py
+
+      - name: Start Flask server (background)
+        shell: pwsh
+        env:
+          SCART_DB_PATH: ${{ github.workspace }}\estimates.db
+        run: pwsh scripts/ci_start_server.ps1
+
+      - name: Run test (${{ matrix.name }})
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+          SCART_DB_PATH: ${{ github.workspace }}\estimates.db
+        run: python ${{ matrix.script }}
+
+      - name: Collect env snapshot (on failure)
+        if: failure()
+        shell: pwsh
+        run: |
+          $dir = "artifacts/env_snapshot/${{ matrix.artifact_suffix }}"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          python --version > "$dir/python_version.txt"
+          pip --version > "$dir/pip_version.txt"
+          pip freeze > "$dir/pip_freeze.txt"
+          where python > "$dir/where_python.txt"
+          Get-ChildItem Env: | Select-Object Name > "$dir/env_keys.txt"
+          Get-NetTCPConnection -State Listen | Format-Table > "$dir/netstat_listen.txt"
+
+      - name: Publish summary to GitHub Actions
+        if: always()
+        shell: pwsh
+        env:
+          JOB_LABEL: ${{ matrix.name }}
+          SCRIPT_LABEL: ${{ matrix.script }}
+          ARTIFACT_LABEL: ${{ matrix.artifact_suffix }}
+        run: pwsh scripts/ci_publish_summary.ps1
+
+      - name: Stop Flask server
+        if: always()
+        shell: pwsh
+        run: pwsh scripts/ci_stop_server.ps1
+
+      - name: Upload server logs (${{ matrix.artifact_suffix }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server_logs_${{ matrix.artifact_suffix }}
+          path: |
+            server.out
+            server.err
+            server.pid
+            server.port
+
+      - name: Upload test logs (${{ matrix.artifact_suffix }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test_logs_${{ matrix.artifact_suffix }}
+          path: artifacts/test_logs/**
+
+      - name: Upload env snapshot (${{ matrix.artifact_suffix }})
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: env_snapshot_${{ matrix.artifact_suffix }}
+          path: artifacts/env_snapshot/${{ matrix.artifact_suffix }}/**
+
+      - name: Upload CI diagnostics (${{ matrix.artifact_suffix }})
+        if: always() && hashFiles('artifacts/ci_diag/**') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci_diag_${{ matrix.artifact_suffix }}
+          path: artifacts/ci_diag/**

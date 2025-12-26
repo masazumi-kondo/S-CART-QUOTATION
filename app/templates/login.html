@@ -1,0 +1,44 @@
+
+{% extends "layout.html" %}
+{% block content %}
+<div class="container" style="max-width: 420px; margin-top: 56px;">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h3 class="mb-4 text-center">ログイン</h3>
+
+      {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+
+      <form method="post" action="{{ url_for('auth.login') }}">
+        {% if next %}
+          <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
+        <div class="mb-3">
+          <label for="user_id" class="form-label">ユーザーID</label>
+          <input type="text" class="form-control" id="login_id" name="login_id" required autofocus>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">パスワード</label>
+          <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">ログイン</button>
+      </form>
+
+      <div class="mt-3 text-center">
+        <a href="{{ url_for('auth.register') if 'auth.register' in view_functions else '/register' }}"
+           class="btn btn-outline-secondary w-100">
+          ユーザー登録
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

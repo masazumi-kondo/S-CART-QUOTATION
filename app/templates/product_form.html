@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <h2 class="mb-4">製品マスタ新規登録</h2>
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        <form method="POST">
+            <div class="mb-3">
+                <label for="name" class="form-label">製品名 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="name" name="name" required value="{{ values.name }}">
+            </div>
+            <div class="mb-3">
+                <label for="unit_price" class="form-label">単価 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="unit_price" name="unit_price" required value="{{ values.unit_price }}">
+            </div>
+            <div class="mb-3">
+                <label for="cost" class="form-label">原価</label>
+                <input type="number" class="form-control" id="cost" name="cost" step="0.01" value="{{ values.cost or 0 }}">
+                <small class="text-muted">※ 1台あたりの原価（税抜）</small>
+            </div>
+            <div class="mb-3">
+                <label for="note" class="form-label">備考</label>
+                <textarea class="form-control" id="note" name="note" rows="2">{{ values.note }}</textarea>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <a href="{{ url_for('product.product_list') }}" class="btn btn-link">一覧へ戻る</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

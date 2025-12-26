@@ -1,0 +1,157 @@
+[HEADER] timestamp=20251221_182019
+[HEADER] BASE_URL=http://127.0.0.1:5000
+[HEADER] DB path=C:\Users\3950\SCART Quotation\estimates.db
+[HEADER] python executable=C:\Users\3950\SCART Quotation\.venv\Scripts\python.exe
+[HEADER] cwd=C:\Users\3950\SCART Quotation
+[RESULTS]
+  FAIL: Unhandled exception [URLError: <urlopen error [WinError 10061] 対象のコンピューターによって拒否されたため、接続できませんでした。>]
+[DEBUG]
+  Traceback (most recent call last):
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1321, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              encode_chunked=req.has_header('Transfer-encoding'))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1338, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1384, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1333, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1093, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1037, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1003, in connect
+    self.sock = self._create_connection(
+                ~~~~~~~~~~~~~~~~~~~~~~~^
+        (self.host,self.port), self.timeout, self.source_address)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\socket.py", line 870, in create_connection
+    raise exceptions[0]
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\socket.py", line 855, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [WinError 10061] 対象のコンピューターによって拒否されたため、接続できませんでした。
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\3950\SCART Quotation\scripts\test_permissions.py", line 491, in <module>
+    main(results)
+    ~~~~^^^^^^^^^
+  File "C:\Users\3950\SCART Quotation\scripts\test_permissions.py", line 473, in main
+    admin_sess = test_admin_login(results)
+  File "C:\Users\3950\SCART Quotation\scripts\test_permissions.py", line 384, in test_admin_login
+    sess.login(ADMIN_USER, ADMIN_PASS)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\3950\SCART Quotation\scripts\test_permissions.py", line 285, in login
+    _, html, _ = self.get_html(LOGIN_URL)
+                 ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\3950\SCART Quotation\scripts\test_permissions.py", line 169, in get_html
+    resp = self.opener.open(req)
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 487, in open
+    response = self._open(req, data)
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 464, in _call_chain
+    result = func(*args)
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1350, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1324, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [WinError 10061] 対象のコンピューターによって拒否されたため、接続できませんでした。>
+
+[EXCEPTION]
+  Traceback (most recent call last):
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1321, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              encode_chunked=req.has_header('Transfer-encoding'))
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1338, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1384, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1333, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1093, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1037, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\http\client.py", line 1003, in connect
+    self.sock = self._create_connection(
+                ~~~~~~~~~~~~~~~~~~~~~~~^
+        (self.host,self.port), self.timeout, self.source_address)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\socket.py", line 870, in create_connection
+    raise exceptions[0]
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\socket.py", line 855, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+
+  ConnectionRefusedError: [WinError 10061] 対象のコンピューターによって拒否されたため、接続できませんでした。
+
+  
+During handling of the above exception, another exception occurred:
+
+
+  Traceback (most recent call last):
+
+    File "C:\Users\3950\SCART Quotation\scripts\test_permissions.py", line 491, in <module>
+    main(results)
+    ~~~~^^^^^^^^^
+
+    File "C:\Users\3950\SCART Quotation\scripts\test_permissions.py", line 473, in main
+    admin_sess = test_admin_login(results)
+
+    File "C:\Users\3950\SCART Quotation\scripts\test_permissions.py", line 384, in test_admin_login
+    sess.login(ADMIN_USER, ADMIN_PASS)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "C:\Users\3950\SCART Quotation\scripts\test_permissions.py", line 285, in login
+    _, html, _ = self.get_html(LOGIN_URL)
+                 ~~~~~~~~~~~~~^^^^^^^^^^^
+
+    File "C:\Users\3950\SCART Quotation\scripts\test_permissions.py", line 169, in get_html
+    resp = self.opener.open(req)
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 487, in open
+    response = self._open(req, data)
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 464, in _call_chain
+    result = func(*args)
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1350, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "C:\Users\3950\AppData\Local\Python\pythoncore-3.14-64\Lib\urllib\request.py", line 1324, in do_open
+    raise URLError(err)
+
+  urllib.error.URLError: <urlopen error [WinError 10061] 対象のコンピューターによって拒否されたため、接続できませんでした。>

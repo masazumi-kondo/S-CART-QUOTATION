@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>御見積書</title>
+    <style>
+                /* 品名・仕様セル */
+                .detail-table td.col-desc {
+                    text-align: left;
+                    line-height: 1.55;
+                    white-space: normal;
+                    overflow-wrap: anywhere;
+                    word-break: break-word;
+                }
+                /* 数量・単価・金額セル */
+                .detail-table td.col-qty,
+                .detail-table td.col-unitprice,
+                .detail-table td.col-amount {
+                    text-align: right;
+                }
+        body {
+            font-family: 'Meiryo', 'Yu Gothic', sans-serif;
+            margin: 20px;
+        }
+        .title {
+            text-align: center;
+            font-size: 2.2em;
+            font-weight: bold;
+            letter-spacing: 0.25em;
+            margin: 10px 0 20px 0;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .header-left {
+            font-size: 1.05em;
+        }
+        .header-left .contact {
+            font-size: 0.95em;
+            margin-top: 4px;
+        }
+        .header-right {
+            text-align: right;
+            font-size: 0.95em;
+        }
+        .header-right .quote-info div {
+            margin-bottom: 2px;
+        }
+        .company-info {
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+        .subject {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 10px 0 5px 0;
+        }
+        .info-table {
+            width: 100%;
+            margin: 10px 0;
+            border-collapse: collapse;
+        }
+        .info-table th,
+        .info-table td {
+            border: 1px solid #333;
+            padding: 4px 8px;
+            font-size: 0.95em;
+        }
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .detail-table th,
+        .detail-table td {
+            border: 1px solid #333;
+            padding: 4px 8px;
+            text-align: center;
+        }
+        .detail-table th {
+            background: #f5f5f5;
+        }
+        .total-row td {
+            border: none;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-align: right;
+        }
+        .note {
+            font-size: 0.95em;
+            color: #555;
+            margin-top: 10px;
+        }
+        .print-btns {
+            margin-bottom: 15px;
+        }
+        @media print {
+            .print-btns { display: none; }
+            a, button { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-btns">
+        <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">印刷</button>
+        <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-sm btn-outline-primary me-2">一覧へ戻る</a>
+        <form method="post" action="{{ url_for('quotation.quotation_delete', quotation_id=quotation.id) }}" style="display:inline;" onsubmit="return confirm('この見積を削除します。よろしいですか？（改定履歴も削除されます）');">
+            <button type="submit" class="btn btn-sm btn-outline-danger">見積削除</button>
+        </form>
+    </div>
+
+    <div class="title">御 見 積 書</div>
+
+    <div class="header-row">
+        <div class="header-left">
+            <div>{{ quotation.company_name }} 御中</div>
+            {% if quotation.contact_name %}
+                <div class="contact">ご担当：{{ quotation.contact_name }} 様</div>
+            {% endif %}
+        </div>
+        <div class="header-right">
+            <div class="quote-info">
+                <div>見積日：{{ quotation.created_at.strftime('%Y年%m月%d日') if quotation.created_at else '' }}</div>
+                <div>見積No.：{{ quotation.original_id }}-R{{ quotation.revision_no }}</div>
+                <div>見積作成担当：{{ quotation.estimator_name or '' }}</div>
+            </div>
+            <div class="company-info">
+                武蔵精密工業株式会社<br>
+                Smart Industry 営業グループ<br>
+                〒441-8560 愛知県豊橋市植田町字大膳39-5<br>
+                Tel：0532-25-8111
+            </div>
+        </div>
+    </div>
+
+    <div class="subject">件名　{{ quotation.project_name }}</div>
+    <div style="margin-bottom:10px;">下記の通りお見積り申し上げます。</div>
+
+    <table class="info-table">
+        <tr>
+            <th>納期</th>
+            <td>{{ quotation.delivery_date }}</td>
+            <th>引渡条件</th>
+            <td>{{ quotation.delivery_terms }}</td>
+        </tr>
+        <tr>
+            <th>御支払条件</th>
+            <td>{{ quotation.payment_terms }}</td>
+            <th>見積有効期限</th>
+            <td>{{ quotation.valid_until }}</td>
+        </tr>
+    </table>
+
+    <table class="detail-table">
+        <thead>
+            <tr>
+                <th>NO.</th>
+                <th>品名・仕様</th>
+                <th>数量</th>
+                <th>単位</th>
+                <th>単価</th>
+                <th>金額</th>
+            </tr>
+        </thead>
+        <tbody>
+                        {% for d in details %}
+                        {% set is_design = d.label == '設計費（パラメータ）' %}
+                        {% set is_setup = d.label == '現地セットアップ（パラメータ）' %}
+                        {% set is_free = (d.product_id is none or d.product_id|string in ['', '0']) and not is_design and not is_setup %}
+                        <tr>
+                                <td>{{ loop.index }}</td>
+                                <td class="col-desc">
+                                    {% if is_design or is_setup %}
+                                        {% set raw = d.description or '' %}
+                                        {% set name = raw.split('（')[0].split('(')[0].strip() %}
+                                        {% if is_design %}
+                                            {{ name if name else '設計費' }}
+                                        {% else %}
+                                            {{ name if name else '現地セットアップ費' }}
+                                        {% endif %}
+                                    {% elif is_free %}
+                                        {{ d.description or '' }}
+                                    {% elif d.product and d.product.name %}
+                                        {{ d.product.name }}
+                                    {% elif d.description %}
+                                        {{ d.description }}
+                                    {% elif d.code %}
+                                        {{ d.code }}
+                                    {% endif %}
+                                </td>
+                                <td class="col-qty">
+                                    {% if is_design or is_setup %}1{% else %}{{ d.quantity|int if d.quantity else '' }}{% endif %}
+                                </td>
+                                <td>
+                                    式
+                                </td>
+                                <td class="col-unitprice">
+                                    {% if is_design or is_setup %}-{% else %}{{ '{:,.0f}'.format(d.price) if d.price else '' }}{% endif %}
+                                </td>
+                                <td class="col-amount">{{ '{:,.0f}'.format(d.subtotal) if d.subtotal else '' }}</td>
+                        </tr>
+                        {% endfor %}
+        </tbody>
+    </table>
+
+
+
+        <!-- 金額サマリ（設計費・現地セットアップ費は枠外表示しない） -->
+        <table class="total-table" style="width:100%; margin-top:10px;">
+            {# 設計費・現地セットアップ費は明細テーブルで表示済みのため枠外サマリからは削除 #}
+            {#
+            <tr>
+                <td class="label">設計費</td>
+                <td class="value">￥{{ '{:,.0f}'.format((design_setup or {}).get('design_fee', 0)) }} 円</td>
+            </tr>
+            <tr>
+                <td class="label">現地セットアップ費</td>
+                <td class="value">￥{{ '{:,.0f}'.format((design_setup or {}).get('setup_fee', 0)) }} 円</td>
+            </tr>
+            #}
+            <tr>
+                <td class="label">小計</td>
+                <td class="value">￥{{ '{:,.0f}'.format(total_amount) }}</td>
+            </tr>
+            {% if quotation.discount_rate and quotation.discount_rate > 0 %}
+            <tr>
+                <td class="label">出精値引き</td>
+                <td class="value">
+                    {% set discount_amount = (total_amount * quotation.discount_rate / 100) | round(0, 'floor') %}
+                    ▲￥{{ '{:,.0f}'.format(discount_amount) }} 円
+                </td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="label"><strong>合計金額</strong></td>
+                <td class="value">
+                    <strong>
+                        ￥{{ '{:,.0f}'.format(total_amount - ((total_amount * quotation.discount_rate / 100) | round(0, 'floor'))) }} 円
+                    </strong>
+                </td>
+            </tr>
+        </table>
+
+    <div class="note">※本見積金額に消費税は含まれておりません。</div>
+
+        {% if quotation.remarks %}
+        <div style="margin-top:18px;">
+                <strong>備考</strong><br>
+                <div style="white-space:pre-line;">{{ quotation.remarks }}</div>
+        </div>
+        {% endif %}
+
+        {# 画面下部の削除フォームはprint-btnsに統一したため削除 #}
+</body>
+</html>

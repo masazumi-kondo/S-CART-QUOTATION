@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <!-- DEBUG: customer_list.html loaded -->
+  <h2 class="mb-4" id="page-title-customers">顧客マスタ</h2>
+
+  <form class="d-flex mb-3" method="get" action="{{ url_for('customer.customer_list') }}">
+    <input type="text" name="q" class="form-control form-control-sm me-2" placeholder="検索（社名/カナ）" value="{{ q or '' }}">
+    <button class="btn btn-sm btn-outline-primary" type="submit">検索</button>
+  </form>
+
+  <div class="table-responsive">
+  <table class="table table-bordered table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th style="width: 90px;">得意先コード</th>
+        <th>顧客名</th>
+        <th style="width: 160px;">カナ</th>
+        <th style="width: 100px;">郵便番号</th>
+        <th>住所</th>
+        <th style="width: 120px;">電話番号</th>
+        <th style="width: 120px;">取引区分</th>
+        <th style="width: 120px;">支払条件</th>
+        <th>備考</th>
+        {% if current_user and current_user.role == 'admin' %}
+          <th style="width: 100px;">ステータス</th>
+        {% endif %}
+        <th style="width: 120px;">操作</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% if customers and customers|length > 0 %}
+        {% for c in customers %}
+          <tr>
+            <td>{{ c.customer_code or '' }}</td>
+            <td>{{ c.name }}</td>
+            <td>{{ c.name_kana or '' }}</td>
+            <td>{{ c.postal_code or '' }}</td>
+            <td>{{ c.address or '' }}</td>
+            <td>{{ c.phone or '' }}</td>
+            <td>{{ c.transaction_type or '' }}</td>
+            <td>{{ c.payment_terms or '' }}</td>
+            <td>{{ c.note or '' }}</td>
+            {% if current_user and current_user.role == 'admin' %}
+              <td>
+                {% if c.status == 'pending' %}
+                  <span class="badge bg-warning text-dark" title="{{ c.approval_comment or '' }}">pending</span>
+                {% elif c.status == 'rejected' %}
+                  <span class="badge bg-secondary" title="{{ c.approval_comment or '' }}">rejected</span>
+                {% elif c.status == 'approved' %}
+                  <span class="badge bg-success">approved</span>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+            {% endif %}
+            <td class="text-center">
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for('customer.customer_edit', customer_id=c.id) }}">編集</a>
+            </td>
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="{% if current_user and current_user.role == 'admin' %}11{% else %}10{% endif %}" class="text-center text-muted py-4">
+            顧客がいません
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

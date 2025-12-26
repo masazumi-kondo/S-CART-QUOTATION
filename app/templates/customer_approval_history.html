@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">承認履歴（閲覧専用）</h2>
+
+  <div class="mb-3">
+    <div><span class="fw-bold">顧客名：</span>{{ customer.name }}</div>
+    <div><span class="fw-bold">顧客ID：</span>{{ customer.id }}</div>
+  </div>
+
+  <table class="table table-bordered table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>承認日時</th>
+        <th>承認者</th>
+        <th>対象ユーザーID</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>{{ log.approved_at }}</td>
+        <td>{{ user_map.get(log.approved_by, '不明') }}</td>
+        <td>{{ log.user_id }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="3" class="text-muted">承認履歴はありません</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <a class="btn btn-link" href="{{ url_for('customer.customer_edit', customer_id=customer.id) }}">← 顧客詳細に戻る</a>
+</div>
+{% endblock %}

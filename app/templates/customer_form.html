@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-7">
+    <h2 class="mb-4">{{ '顧客編集' if customer else '顧客新規登録' }}</h2>
+    <form method="post" action="{{ url_for('customer.customer_new') if not customer else url_for('customer.customer_edit', customer_id=customer.id) }}">
+      <div class="mb-3">
+        <label for="customer_code" class="form-label">得意先コード</label>
+        <input type="text" class="form-control" id="customer_code" name="customer_code" value="{{ customer.customer_code if customer else request.form.get('customer_code','') }}">
+      </div>
+      <div class="mb-3">
+        <label for="name" class="form-label">顧客名 <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="name" name="name" required value="{{ customer.name if customer else request.form.get('name','') }}">
+      </div>
+      <div class="mb-3">
+        <label for="name_kana" class="form-label">カナ</label>
+        <input type="text" class="form-control" id="name_kana" name="name_kana" value="{{ customer.name_kana if customer else request.form.get('name_kana','') }}">
+      </div>
+      <div class="mb-3">
+        <label for="postal_code" class="form-label">郵便番号</label>
+        <input type="text" class="form-control" id="postal_code" name="postal_code" value="{{ customer.postal_code if customer else request.form.get('postal_code','') }}">
+      </div>
+      <div class="mb-3">
+        <label for="address" class="form-label">住所</label>
+        <input type="text" class="form-control" id="address" name="address" value="{{ customer.address if customer else request.form.get('address','') }}">
+      </div>
+      <div class="mb-3">
+        <label for="phone" class="form-label">電話番号</label>
+        <input type="text" class="form-control" id="phone" name="phone" value="{{ customer.phone if customer else request.form.get('phone','') }}">
+      </div>
+      <div class="mb-3">
+        <label for="transaction_type" class="form-label">取引区分</label>
+        <select class="form-select" id="transaction_type" name="transaction_type">
+          {% set selected_type = customer.transaction_type if customer else request.form.get('transaction_type','') %}
+          <option value="">--選択--</option>
+          <option value="直接取引" {{ 'selected' if selected_type == '直接取引' else '' }}>直接取引</option>
+          <option value="商社経由" {{ 'selected' if selected_type == '商社経由' else '' }}>商社経由</option>
+          <option value="グループ会社" {{ 'selected' if selected_type == 'グループ会社' else '' }}>グループ会社</option>
+          <option value="代理店" {{ 'selected' if selected_type == '代理店' else '' }}>代理店</option>
+          <option value="その他" {{ 'selected' if selected_type == 'その他' else '' }}>その他</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="payment_terms" class="form-label">支払条件</label>
+        <input type="text" class="form-control" id="payment_terms" name="payment_terms" value="{{ customer.payment_terms if customer else request.form.get('payment_terms','') }}">
+      </div>
+      <div class="mb-3">
+        <label for="note" class="form-label">備考</label>
+        <textarea class="form-control" id="note" name="note" rows="2">{{ customer.note if customer else request.form.get('note','') }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">{{ '更新' if customer else '登録' }}</button>
+      <a href="{{ url_for('customer.customer_list') }}" class="btn btn-link">一覧へ戻る</a>
+    </form>
+
+    {% if is_admin and customer %}
+    <div class="card mt-4">
+      <div class="card-header bg-warning text-dark">承認操作</div>
+      <div class="card-body">
+        <div class="mb-2">
+          <span class="fw-bold">ステータス：</span>
+          {% if customer.status == 'pending' %}
+            <span class="badge bg-warning text-dark">pending</span>
+          {% elif customer.status == 'rejected' %}
+            <span class="badge bg-secondary">rejected</span>
+          {% elif customer.status == 'approved' %}
+            <span class="badge bg-success">approved</span>
+          {% else %}
+            <span class="text-muted">-</span>
+          {% endif %}
+        </div>
+        {% if customer.status == 'pending' %}
+        <form method="post" action="{{ url_for('customer.customer_approve', customer_id=customer.id) }}" class="mb-2">
+          <div class="mb-2">
+            <label for="comment" class="form-label">コメント（任意）</label>
+            <input type="text" class="form-control" id="comment" name="comment" value="">
+          </div>
+          <button type="submit" class="btn btn-success">承認</button>
+        </form>
+        <form method="post" action="{{ url_for('customer.customer_reject', customer_id=customer.id) }}">
+          <div class="mb-2">
+            <label for="comment" class="form-label">コメント（任意）</label>
+            <input type="text" class="form-control" name="comment" value="">
+          </div>
+          <button type="submit" class="btn btn-outline-danger">却下</button>
+        </form>
+        {% endif %}
+        <hr>
+        <a href="{{ url_for('customer.customer_approval_history', customer_id=customer.id) }}">
+          承認履歴を表示（閲覧専用）
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

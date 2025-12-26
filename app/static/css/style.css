@@ -1,0 +1,48 @@
+/* 顧客候補リスト（カスタム） */
+.customer-candidate-list .list-group-item {
+    background-color: #e9f2fb;
+    color: #333;
+    border: 1px solid #b6d4fe;
+    transition: background 0.2s, color 0.2s;
+}
+.customer-candidate-list .list-group-item:hover,
+.customer-candidate-list .list-group-item:focus {
+    background-color: #b6d4fe;
+    color: #222;
+}
+
+/* 製品プルダウン（カスタム） */
+.product-select-custom {
+    background-color: #f0f6fa;
+    color: #2a2a2a;
+    border: 1px solid #b6d4fe;
+    transition: background 0.2s, color 0.2s;
+}
+.product-select-custom:focus {
+    background-color: #e9f2fb;
+    color: #222;
+    border-color: #7bb6fa;
+}
+.product-select-custom option {
+    background: #f0f6fa;
+    color: #2a2a2a;
+}
+.product-select-custom option:checked {
+    background: #b6d4fe;
+    color: #222;
+}
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f8f9fa;
+}
+
+.card-header {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+    font-weight: 500;
+    font-size: 1.15rem;
+}
+
+footer {
+    color: #888;
+}

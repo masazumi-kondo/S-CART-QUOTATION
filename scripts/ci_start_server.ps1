@@ -1,94 +1,106 @@
 $ErrorActionPreference = 'Stop'
-$maxTries = 20
-$found = $false
-for ($try = 0; $try -lt $maxTries; $try++) {
-    $port = Get-Random -Minimum 20000 -Maximum 40000
-    $inUse = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
-    if (-not $inUse) {
-        $found = $true
-        break
-    }
+
+Write-Host "[CI] Starting Flask server..."
+
+# --- Files ---
+$serverPidFile  = "server.pid"
+$serverPortFile = "server.port"
+$serverOut      = "server.out"
+$serverErr      = "server.err"
+
+# --- Clean old ---
+Remove-Item $serverPidFile,$serverPortFile,$serverOut,$serverErr -ErrorAction SilentlyContinue
+
+# --- Pick free port ---
+function Get-FreePort {
+    $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+    $listener.Start()
+    $p = $listener.LocalEndpoint.Port
+    $listener.Stop()
+    return $p
 }
-if (-not $found) {
-    Write-Host "[ERROR] Could not find free port after $maxTries tries"
-    exit 1
-}
-Write-Host "[INFO] Selected free port: $port"
-$env:SCART_TEST_PORT = $port
-$env:BASE_URL = "http://127.0.0.1:$port"
+$port = Get-FreePort
+Write-Host "[CI] Selected free port: $port"
+
+# Persist port (other scripts can read it)
+Set-Content -Path $serverPortFile -Value $port -Encoding ascii
+
+# --- Build python inline server ---
+# IMPORTANT: use_reloader=False (avoid double process)
+$code = @"
+from app import create_app
+app = create_app()
+app.run(host="127.0.0.1", port=int($port), debug=False, use_reloader=False)
+"@
+
+# --- Start background process (with env inheritance) ---
+# Use Start-Process so stdout/err redirection is stable on Windows runner.
+$env:SCART_TEST_PORT = "$port"
+$env:BASE_URL        = "http://127.0.0.1:$port"
+
+# Export to subsequent GitHub Actions steps
 if ($env:GITHUB_ENV) {
-    Write-Output "BASE_URL=$($env:BASE_URL)" | Out-File -FilePath $env:GITHUB_ENV -Append
-    Write-Output "SCART_TEST_PORT=$port" | Out-File -FilePath $env:GITHUB_ENV -Append
+    "BASE_URL=$($env:BASE_URL)"      | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "SCART_TEST_PORT=$port"          | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 }
-Write-Output $port | Out-File -FilePath server.port -Encoding ascii
-$serverOut = "server.out"
-$serverErr = "server.err"
-$serverPid = "server.pid"
-$env:FLASK_APP = "app.py"
-$env:FLASK_ENV = "production"
+
+# Optional but recommended: these are safe defaults for CI
+$env:FLASK_ENV   = "production"
 $env:FLASK_DEBUG = "0"
-$proc = Start-Process -FilePath python -ArgumentList "-m", "flask", "run", "--host", "127.0.0.1", "--port", "$port" -RedirectStandardOutput $serverOut -RedirectStandardError $serverErr -PassThru
-$proc.Id | Out-File -FilePath $serverPid -Encoding ascii
-Write-Host "[INFO] Flask server started with PID $($proc.Id) on port $port"
-$maxTriesHealth = 30
- $success = $false
- $lastError = $null
-for ($i = 0; $i -lt $maxTriesHealth; $i++) {
+
+# Ensure DB path is actually visible to the python process
+# (YAML step must set SCART_DB_PATH; this line just confirms it's present)
+if (-not $env:SCART_DB_PATH -or $env:SCART_DB_PATH.Trim() -eq "") {
+    Write-Host "[WARN] SCART_DB_PATH is empty. Server may use default DB path."
+} else {
+    Write-Host "[CI] SCART_DB_PATH=$env:SCART_DB_PATH"
+}
+
+$proc = Start-Process -FilePath python `
+    -ArgumentList @("-c", $code) `
+    -RedirectStandardOutput $serverOut `
+    -RedirectStandardError  $serverErr `
+    -NoNewWindow `
+    -PassThru
+
+$proc.Id | Set-Content -Path $serverPidFile -Encoding ascii
+Write-Host "[CI] Flask server started with PID $($proc.Id) on port $port"
+
+# --- Health check ---
+$healthUrl = "http://127.0.0.1:$port/health"
+$ok = $false
+$lastError = $null
+
+for ($i = 1; $i -le 60; $i++) {
     try {
-        $resp = Invoke-WebRequest -Uri "http://127.0.0.1:$port/health" -UseBasicParsing -TimeoutSec 2
+        $resp = Invoke-WebRequest -Uri $healthUrl -UseBasicParsing -TimeoutSec 2
         if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400) {
-            Write-Host "[INFO] Health check succeeded (port $port, try $i)"
-            $success = $true
+            $ok = $true
             break
         }
     } catch {
         $lastError = $_.Exception.Message
-        Start-Sleep -Seconds 2
+        Start-Sleep -Milliseconds 500
     }
 }
-if (-not $success) {
-    Write-Host "[ERROR] Health check failed after $maxTriesHealth tries (port $port)"
-    $diagDir = "artifacts/ci_diag"
-    if (-not (Test-Path $diagDir)) { New-Item -ItemType Directory -Path $diagDir -Force | Out-Null }
-    $diagFile = "$diagDir/start_server_failed.txt"
-    $lines = @()
-    $lines += "==== CI DIAG: Health check failed ===="
-    $lines += "Port: $port"
-    $lines += "BASE_URL: $env:BASE_URL"
-    $procAlive = $false
-    try {
-        $procTest = Get-Process -Id $proc.Id -ErrorAction Stop
-        $procAlive = $true
-    } catch {}
-    $procAliveLabel = "no"
-    if ($procAlive) { $procAliveLabel = "yes" }
-    $lines += "Process alive: $procAliveLabel"
-    $lines += "--- NetTCPConnection (port $port) ---"
-    try {
-        $lines += (Get-NetTCPConnection -LocalPort $port -State Listen | Out-String)
-    } catch {
-        $lines += "Get-NetTCPConnection failed: $($_.Exception.Message)"
-    }
-    $lines += "--- Process Info (PID $($proc.Id)) ---"
-    try { $lines += (Get-Process -Id $proc.Id | Format-List * | Out-String) } catch { $lines += "Process info not available" }
-    $envKeys = Get-ChildItem Env: | Select-Object -ExpandProperty Name | Sort-Object
-    $lines += "--- Env Keys ---"
-    $lines += ("Env key count: " + $envKeys.Count)
-    $lines += $envKeys
-    if (Test-Path $serverOut) {
-        $lines += "--- server.out (last 200 lines) ---"
-        $lines += (Get-Content $serverOut -Tail 200 | Out-String)
-    }
-    if (Test-Path $serverErr) {
-        $lines += "--- server.err (last 200 lines) ---"
-        $lines += (Get-Content $serverErr -Tail 200 | Out-String)
-    }
-    $lines += "--- Last health check error ---"
-    if ($null -eq $lastError -or $lastError -eq "") { $lines += "(none)" } else { $lines += $lastError }
-    $lines | Out-File -FilePath $diagFile -Encoding utf8
-    if (Test-Path $serverPid) {
-        $serverProcessId = Get-Content $serverPid
-        try { Stop-Process -Id $serverProcessId -Force } catch {}
-    }
+
+if (-not $ok) {
+    Write-Host "[ERROR] Health check failed: $healthUrl"
+    if ($lastError) { Write-Host "[ERROR] Last error: $lastError" }
+
+    Write-Host "----- server.err (tail 200) -----"
+    if (Test-Path $serverErr) { Get-Content $serverErr -Tail 200 }
+
+    Write-Host "----- server.out (tail 200) -----"
+    if (Test-Path $serverOut) { Get-Content $serverOut -Tail 200 }
+
+    Write-Host "----- NetTCPConnection Listen (port $port) -----"
+    try { Get-NetTCPConnection -State Listen -LocalPort $port | Format-Table } catch {}
+
+    # cleanup
+    try { Stop-Process -Id $proc.Id -Force } catch {}
     exit 1
 }
+
+Write-Host "[CI] Health check OK: $healthUrl"
+exit 0

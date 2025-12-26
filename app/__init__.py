@@ -168,11 +168,7 @@ def create_app():
     app.logger.setLevel(logging.INFO)
     app.logger.info("[DB] Using database path: %s", db_path)
 
-    @app.route("/health", methods=["GET"])
-    def health():
-        return "OK", 200
-
-    app.logger.info("health endpoint ready: /health")
+    # ...existing code...
     logging.info("[TEMPLATE] template_folder=%s", app.template_folder)
     logging.info("[TEMPLATE] jinja searchpath=%s", getattr(app.jinja_loader, "searchpath", None))
 
@@ -513,6 +509,12 @@ def create_app():
             getattr(template, "filename", "N/A"),
             list(context.keys())[:10],
         )
+
+
+    # CI用ヘルスチェックルート（認証・DB依存なし）
+    @app.route("/health")
+    def health():
+        return "OK", 200
 
     # ★ create_appの末尾は必ずこれで終わる
     current_app_logger = app.logger

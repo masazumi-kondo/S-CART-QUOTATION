@@ -1,6 +1,6 @@
 ﻿name: SCART Tests
 
-"on":
+on:
   workflow_dispatch:
 
 jobs:
@@ -20,11 +20,9 @@ jobs:
             script: scripts/test_schema_users.py
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -33,43 +31,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip show flask
 
       - name: Seed DB
         shell: pwsh
         run: python scripts/ci_seed_db.py
 
       - name: Debug users
-        shell: pwsh
-        env:
-          SCART_DB_PATH: ${{ github.workspace }}\estimates.db
-        run: python scripts/list_users.py
-
-      - name: Start server
-        shell: pwsh
-        env:
-          SCART_DB_PATH: ${{ github.workspace }}\estimates.db
-        run: pwsh scripts/ci_start_server.ps1
-
-      - name: Run test
-        shell: pwsh
-        env:
-          SCART_DB_PATH: ${{ github.workspace }}\estimates.db
-        run: python ${{ matrix.script }}
-
-      - name: Stop server
-        if: always()
-        shell: pwsh
-        run: pwsh scripts/ci_stop_server.ps1
-
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs_${{ matrix.name }}
-          path: |
-            server.out
-            server.err
-            server.pid
-            server.port
-            artifacts/test_logs/**
+        shell:

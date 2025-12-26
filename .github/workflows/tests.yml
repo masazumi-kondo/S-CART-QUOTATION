@@ -60,7 +60,6 @@ jobs:
           pip install -r requirements.txt
           pip show flask
 
-
       - name: Seed test database
         run: python scripts/ci_seed_db.py
 

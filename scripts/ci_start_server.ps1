@@ -68,15 +68,27 @@ Write-Host "[CI] Flask server started with PID $($proc.Id) on port $port"
 
 # --- Health check ---
 $healthUrl = "http://127.0.0.1:$port/health"
+
+$maxTriesHealth = 120   # ← 30は短いので増やす
 $ok = $false
 $lastError = $null
 
-for ($i = 1; $i -le 60; $i++) {
+for ($i = 1; $i -le $maxTriesHealth; $i++) {
+    # 途中でプロセスが落ちていないか毎回確認（落ちていたら即ログ表示へ）
+    try {
+        $p = Get-Process -Id $proc.Id -ErrorAction Stop
+    } catch {
+        $lastError = "Process exited before health check succeeded."
+        break
+    }
+
     try {
         $resp = Invoke-WebRequest -Uri $healthUrl -UseBasicParsing -TimeoutSec 2
         if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400) {
             $ok = $true
             break
+        } else {
+            $lastError = "HTTP Status: $($resp.StatusCode)"
         }
     } catch {
         $lastError = $_.Exception.Message
@@ -88,16 +100,18 @@ if (-not $ok) {
     Write-Host "[ERROR] Health check failed: $healthUrl"
     if ($lastError) { Write-Host "[ERROR] Last error: $lastError" }
 
-    Write-Host "----- server.err (tail 200) -----"
-    if (Test-Path $serverErr) { Get-Content $serverErr -Tail 200 }
-
-    Write-Host "----- server.out (tail 200) -----"
-    if (Test-Path $serverOut) { Get-Content $serverOut -Tail 200 }
+    Write-Host "----- Process alive? -----"
+    try { Get-Process -Id $proc.Id | Select-Object Id, ProcessName, CPU, StartTime | Format-Table } catch { Write-Host "(dead)" }
 
     Write-Host "----- NetTCPConnection Listen (port $port) -----"
-    try { Get-NetTCPConnection -State Listen -LocalPort $port | Format-Table } catch {}
+    try { Get-NetTCPConnection -State Listen -LocalPort $port | Format-Table } catch { Write-Host "(not listening)" }
 
-    # cleanup
+    Write-Host "----- server.err (tail 200) -----"
+    if (Test-Path $serverErr) { Get-Content $serverErr -Tail 200 } else { Write-Host "(server.err not found)" }
+
+    Write-Host "----- server.out (tail 200) -----"
+    if (Test-Path $serverOut) { Get-Content $serverOut -Tail 200 } else { Write-Host "(server.out not found)" }
+
     try { Stop-Process -Id $proc.Id -Force } catch {}
     exit 1
 }

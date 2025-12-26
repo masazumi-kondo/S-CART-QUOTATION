@@ -49,13 +49,20 @@ jobs:
           python --version
           pip --version
 
-      - name: Install dependencies if requirements.txt exists
+      - name: Install dependencies
         shell: pwsh
         run: |
-          if (Test-Path requirements.txt) { pip install -r requirements.txt } else { echo "skip pip install" }
+          python -m pip install --upgrade pip
+          if (!(Test-Path requirements.txt)) {
+            Write-Host "requirements.txt not found in repo root"
+            exit 1
+          }
+          pip install -r requirements.txt
+          pip show flask
 
       - name: Seed test database
         run: python scripts/ci_seed_db.py
+
 
       - name: Start Flask server (background)
         shell: pwsh
@@ -63,9 +70,15 @@ jobs:
           SCART_DB_PATH: ${{ github.workspace }}\estimates.db
         run: pwsh scripts/ci_start_server.ps1
 
+      - name: Show BASE_URL from ci_start_server
+        shell: pwsh
+        run: |
+          Write-Host "BASE_URL=$env:BASE_URL"
+          Write-Host "SCART_TEST_PORT=$env:SCART_TEST_PORT"
+          Get-Content server.port -ErrorAction SilentlyContinue
+
       - name: Run test (${{ matrix.name }})
         env:
-          BASE_URL: ${{ env.BASE_URL }}
           SCART_DB_PATH: ${{ github.workspace }}\estimates.db
         run: python ${{ matrix.script }}
 

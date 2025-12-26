@@ -7,9 +7,10 @@ $serverPidFile  = "server.pid"
 $serverPortFile = "server.port"
 $serverOut      = "server.out"
 $serverErr      = "server.err"
+$serverPy       = "ci_server.py"
 
 # --- Clean old ---
-Remove-Item $serverPidFile,$serverPortFile,$serverOut,$serverErr -ErrorAction SilentlyContinue
+Remove-Item $serverPidFile,$serverPortFile,$serverOut,$serverErr,$serverPy -ErrorAction SilentlyContinue
 
 # --- Pick free port ---
 function Get-FreePort {
@@ -22,42 +23,38 @@ function Get-FreePort {
 $port = Get-FreePort
 Write-Host "[CI] Selected free port: $port"
 
-# Persist port (other scripts can read it)
+# Persist port
 Set-Content -Path $serverPortFile -Value $port -Encoding ascii
 
-# --- Build python inline server ---
-# IMPORTANT: use_reloader=False (avoid double process)
-$code = @"
-from app import create_app
-app = create_app()
-app.run(host="127.0.0.1", port=int($port), debug=False, use_reloader=False)
-"@
-
-# --- Start background process (with env inheritance) ---
-# Use Start-Process so stdout/err redirection is stable on Windows runner.
+# Export to subsequent GitHub Actions steps
 $env:SCART_TEST_PORT = "$port"
 $env:BASE_URL        = "http://127.0.0.1:$port"
-
-# Export to subsequent GitHub Actions steps
 if ($env:GITHUB_ENV) {
-    "BASE_URL=$($env:BASE_URL)"      | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-    "SCART_TEST_PORT=$port"          | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "BASE_URL=$($env:BASE_URL)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "SCART_TEST_PORT=$port"     | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 }
 
-# Optional but recommended: these are safe defaults for CI
+# Safe defaults
 $env:FLASK_ENV   = "production"
 $env:FLASK_DEBUG = "0"
 
-# Ensure DB path is actually visible to the python process
-# (YAML step must set SCART_DB_PATH; this line just confirms it's present)
 if (-not $env:SCART_DB_PATH -or $env:SCART_DB_PATH.Trim() -eq "") {
     Write-Host "[WARN] SCART_DB_PATH is empty. Server may use default DB path."
 } else {
     Write-Host "[CI] SCART_DB_PATH=$env:SCART_DB_PATH"
 }
 
+# --- Write server python to file (avoid -c quoting issues) ---
+@"
+from app import create_app
+
+app = create_app()
+app.run(host="127.0.0.1", port=int("$port"), debug=False, use_reloader=False)
+"@ | Out-File -FilePath $serverPy -Encoding utf8
+
+# --- Start background process ---
 $proc = Start-Process -FilePath python `
-    -ArgumentList @("-c", $code) `
+    -ArgumentList @($serverPy) `
     -RedirectStandardOutput $serverOut `
     -RedirectStandardError  $serverErr `
     -NoNewWindow `
@@ -69,14 +66,13 @@ Write-Host "[CI] Flask server started with PID $($proc.Id) on port $port"
 # --- Health check ---
 $healthUrl = "http://127.0.0.1:$port/health"
 
-$maxTriesHealth = 120   # ← 30は短いので増やす
+$maxTriesHealth = 120
 $ok = $false
 $lastError = $null
 
 for ($i = 1; $i -le $maxTriesHealth; $i++) {
-    # 途中でプロセスが落ちていないか毎回確認（落ちていたら即ログ表示へ）
     try {
-        $p = Get-Process -Id $proc.Id -ErrorAction Stop
+        Get-Process -Id $proc.Id -ErrorAction Stop | Out-Null
     } catch {
         $lastError = "Process exited before health check succeeded."
         break

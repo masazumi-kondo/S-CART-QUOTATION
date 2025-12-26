@@ -60,8 +60,15 @@ jobs:
           pip install -r requirements.txt
           pip show flask
 
+
       - name: Seed test database
         run: python scripts/ci_seed_db.py
+
+      - name: Debug: list users after seed
+        shell: pwsh
+        env:
+          SCART_DB_PATH: ${{ github.workspace }}\estimates.db
+        run: python scripts/list_users.py
 
 
       - name: Start Flask server (background)

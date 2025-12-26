@@ -68,8 +68,6 @@ jobs:
         env:
           SCART_DB_PATH: ${{ github.workspace }}\estimates.db
         run: python scripts/list_users.py
-
-
       - name: Start Flask server (background)
         shell: pwsh
         env:

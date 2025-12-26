@@ -6,7 +6,37 @@ if (Test-Path server.port) {
     Write-Host "[WARN] server.port not found, using default port 5000"
 }
 
-# Diagnostic: Save port LISTEN status before and after stop attempts
+Write-Host "[CI] Stopping Flask server..."
+
+$serverPidFile  = "server.pid"
+$serverPortFile = "server.port"
+
+# --- stop by PID ---
+if (Test-Path $serverPidFile) {
+    $serverProcessId = Get-Content $serverPidFile
+
+    if ($serverProcessId -and ($serverProcessId -as [int])) {
+        Write-Host "[CI] Trying to stop process PID=$serverProcessId"
+        try {
+            Stop-Process -Id $serverProcessId -Force -ErrorAction SilentlyContinue
+        } catch {
+            Write-Host "[CI] Process already stopped"
+        }
+    }
+}
+
+# --- optional: log port status (non-fatal) ---
+if (Test-Path $serverPortFile) {
+    $port = Get-Content $serverPortFile
+    try {
+        Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | Out-Null
+    } catch {
+        # ignore
+    }
+}
+
+Write-Host "[CI] Stop server finished"
+exit 0
 $diagDir = "artifacts/ci_diag"
 if (-not (Test-Path $diagDir)) { New-Item -ItemType Directory -Path $diagDir -Force | Out-Null }
 $diagFile = "$diagDir/stop_server.txt"

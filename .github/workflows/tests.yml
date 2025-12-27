@@ -16,3 +16,36 @@ jobs:
           Write-Host "Workflow dispatch OK"
           python --version
           pip --version
+
+      - name: DEBUG: show scripts/list_users.py head
+        shell: pwsh
+        run: |
+          Write-Host "----- scripts/list_users.py (first 40 lines, with numbers) -----"
+          $i=1
+          Get-Content scripts/list_users.py | Select-Object -First 40 | ForEach-Object { "{0,3}: {1}" -f $i, $_; $i++ }
+
+      - name: List users (best-effort)
+        shell: pwsh
+        env:
+          SCART_DB_PATH: ${{ github.workspace }}\estimates.db
+        run: |
+          if (Test-Path scripts/list_users.py) {
+            python scripts/list_users.py
+          } else {
+            Write-Host "scripts/list_users.py NOT FOUND"
+          }
+
+      - name: Show list_users.py (first 60 lines)
+        shell: pwsh
+        run: |
+          Write-Host "----- scripts/list_users.py (first 60 lines) -----"
+          if (!(Test-Path scripts/list_users.py)) { Write-Host "NOT FOUND"; exit 1 }
+          $i=1
+          Get-Content scripts/list_users.py | Select-Object -First 60 | ForEach-Object { "{0,3}: {1}" -f $i, $_; $i++ }
+
+      - name: Show git ref
+        shell: pwsh
+        run: |
+          git status
+          git log -1 --oneline
+          git rev-parse --abbrev-ref HEAD

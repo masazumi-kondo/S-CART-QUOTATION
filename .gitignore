@@ -1,0 +1,14 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Local DB / SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# Local scratch
+migration_log.txt
+check_db.py
+__init__disabled.py
+tatus

@@ -1,3 +1,37 @@
+def _form_bool(form, name: str) -> bool:
+    v = (form.get(name) or "").strip().lower()
+    return v in ("1", "true", "yes", "y", "on")
+
+def _form_int(form, name: str):
+    v = form.get(name)
+    if v is None or str(v).strip() == "":
+        return None
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return None
+
+def _form_float(form, name: str):
+    v = form.get(name)
+    if v is None or str(v).strip() == "":
+        return None
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+def _norm_calc_mode(v: str) -> str:
+    s = (v or "").strip().lower()
+    # official/rough regime（旧値は official に吸収）
+    if s in ("official", "new_v1", "legacy", ""):
+        return "official"
+    if s in ("rough", "estimate", "approx"):
+        return "rough"
+    return "official"
+
+def _norm_difficulty(v: str):
+    s = (v or "").strip().lower()
+    return s if s in ("medium", "high") else None
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from app import db
@@ -65,6 +99,12 @@ def quotation_revise(quotation_id):
         }
         for p in products_query
     ]
+    from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE
+    rates = {
+        "LABOR_RATE": LABOR_RATE,
+        "DESIGN_SELL_RATE": DESIGN_SELL_RATE,
+        "SETUP_SELL_RATE": SETUP_SELL_RATE,
+    }
     return render_template(
         "quotation_form.html",
         error=None,
@@ -73,7 +113,8 @@ def quotation_revise(quotation_id):
         details=detail_dicts,
         revise_source_id=orig.id,
         customers=customers_json,
-        customers_meta=customers_meta
+        customers_meta=customers_meta,
+        rates=rates
     )
 
 # 印刷用見積書の明細並び順ヘルパー
@@ -106,23 +147,112 @@ def quotation_view(quotation_id):
         total = sum([getattr(d, 'subtotal', 0) or 0 for d in details])
 
     # --- 新ロジックで設計/セットアップ費用計算 ---
+
+    import json
+    from flask import current_app
+    logger = current_app.logger
+    DEFAULT_DESIGN_SETUP = {
+        "design_hours": 0,
+        "design_cost": 0,
+        "design_fee": 0,
+        "design_profit_rate": 0,
+        "setup_hours": 0,
+        "setup_cost": 0,
+        "setup_fee": 0,
+        "setup_profit_rate": 0,
+    }
+    def _ensure_dict_design_setup(value):
+        if value is None:
+            return DEFAULT_DESIGN_SETUP.copy()
+        if isinstance(value, dict):
+            out = DEFAULT_DESIGN_SETUP.copy()
+            out.update(value)
+            return out
+        if isinstance(value, (bytes, bytearray)):
+            try:
+                value = value.decode("utf-8", errors="ignore")
+            except Exception:
+                return DEFAULT_DESIGN_SETUP.copy()
+        if isinstance(value, str):
+            s = value.strip()
+            if not s:
+                return DEFAULT_DESIGN_SETUP.copy()
+            # JSONの可能性
+            if (s.startswith("{") and s.endswith("}")) or (s.startswith("[") and s.endswith("]")):
+                try:
+                    obj = json.loads(s)
+                    if isinstance(obj, dict):
+                        out = DEFAULT_DESIGN_SETUP.copy()
+                        out.update(obj)
+                        return out
+                    return DEFAULT_DESIGN_SETUP.copy()
+                except Exception as e:
+                    logger.warning("[quotation_view] design_setup json parse failed: %s", e)
+                    return DEFAULT_DESIGN_SETUP.copy()
+            # 旧形式等はここでは解釈しない（落とさない）
+            return DEFAULT_DESIGN_SETUP.copy()
+        # その他型
+        return DEFAULT_DESIGN_SETUP.copy()
+
+
+    calc_ok = False
     try:
-        design_setup = calc_design_setup_for_quotation(quotation)
-        if not isinstance(design_setup, dict):
-            raise ValueError("design_setup is not dict")
+        design_setup_raw = calc_design_setup_for_quotation(quotation)
+        calc_ok = True
+        logger.info(
+            "[quotation_view] calc_design_setup_for_quotation return type=%s value=%r",
+            type(design_setup_raw).__name__, design_setup_raw
+        )
     except Exception:
-        from flask import current_app
-        current_app.logger.exception("failed to calc design/setup amounts for quotation %s", quotation_id)
-        design_setup = {
-            "design_hours": 0,
-            "design_cost": 0,
-            "design_fee": 0,
-            "design_profit_rate": 0,
-            "setup_hours": 0,
-            "setup_cost": 0,
-            "setup_fee": 0,
-            "setup_profit_rate": 0,
-        }
+        logger.exception("failed to calc design/setup amounts for quotation %s", quotation_id)
+        design_setup_raw = None
+
+    # どちらの経路でも必ずdict正規化（キー埋め）
+    design_setup = _ensure_dict_design_setup(design_setup_raw)
+
+    # フォールバック理由を判定し、発動時は理由をwarningログ
+    fallback_reason = None
+    if not calc_ok:
+        fallback_reason = "calc_exception"
+    elif design_setup_raw is None:
+        fallback_reason = "raw_is_none"
+    elif isinstance(design_setup_raw, dict) and not design_setup_raw:
+        fallback_reason = "raw_empty_dict"
+    elif isinstance(design_setup_raw, (list, tuple)) and len(design_setup_raw) == 0:
+        fallback_reason = "raw_empty_list"
+    elif isinstance(design_setup_raw, str) and design_setup_raw.strip().lower() in ("", "null", "none"):
+        fallback_reason = "raw_empty_or_null_string"
+
+    if fallback_reason:
+        def _pick_amount(label_prefix):
+            for d in details:
+                if getattr(d, "label", "") == label_prefix:
+                    val = getattr(d, "subtotal", None) or getattr(d, "price", None) or 0
+                    try:
+                        return float(val)
+                    except Exception:
+                        return 0
+            return 0
+
+        picked_design = _pick_amount("設計費（パラメータ）")
+        picked_setup  = _pick_amount("現地セットアップ（パラメータ）")
+
+        # 証跡ログ: 1行で全情報を出す
+        logger.warning(
+            "[quotation_view] fallback: qid=%s orig=%s rev=%s reason=%s raw_type=%s raw_val=%r picked_design=%s picked_setup=%s",
+            getattr(quotation, "id", None),
+            getattr(quotation, "original_id", None),
+            getattr(quotation, "revision_no", None),
+            fallback_reason,
+            type(design_setup_raw).__name__,
+            design_setup_raw,
+            picked_design,
+            picked_setup
+        )
+
+        design_setup["design_fee"] = picked_design
+        design_setup["setup_fee"]  = picked_setup
+        design_setup = _ensure_dict_design_setup(design_setup)
 
     return render_template(
         "quotation_view.html",
@@ -279,10 +409,12 @@ def quotation_new():
         subtotals = request.form.getlist("subtotal[]")
 
 
+
+        # --- 明細行の取得: 各配列の最大長でループし、product_idが空でも他があれば保存 ---
         details = []
         total = 0
-        for idx in range(len(product_ids)):
-            # 1) raw文字列取得
+        row_count = max(len(product_ids), len(codes), len(descs), len(unit_prices), len(quantities), len(subtotals))
+        for idx in range(row_count):
             product_id_raw = (product_ids[idx] if idx < len(product_ids) else '').strip()
             code = (codes[idx] if idx < len(codes) else '').strip()
             desc = (descs[idx] if idx < len(descs) else '').strip()
@@ -290,11 +422,11 @@ def quotation_new():
             quantity_raw = (quantities[idx] if idx < len(quantities) else '').replace(',', '').strip()
             subtotal_raw = (subtotals[idx] if idx < len(subtotals) else '').replace(',', '').strip()
 
-            # 2) 完全空行チェック
-            if not code and not desc and not unit_price_raw and not quantity_raw:
+            # 完全空行はスキップ（subtotal_rawも含めて厳密化）
+            if (not product_id_raw) and (not desc) and (not unit_price_raw) and (not quantity_raw) and (not subtotal_raw):
                 continue
 
-            # 3) 型変換（例外は0扱い）
+            # 型変換
             try:
                 unit_price_val = float(unit_price_raw) if unit_price_raw else 0
             except (ValueError, TypeError):
@@ -304,17 +436,20 @@ def quotation_new():
             except (ValueError, TypeError):
                 quantity_val = 0
 
-            # 4) 数量0以下はスキップ
-            if quantity_val <= 0:
-                continue
 
-            # 5) subtotalの型変換（例外/空は再計算）
+            # subtotalの型変換（例外/空は再計算）
             try:
                 subtotal_val = float(subtotal_raw) if subtotal_raw else unit_price_val * quantity_val
             except (ValueError, TypeError):
                 subtotal_val = unit_price_val * quantity_val
 
-            # 6) product_idのint変換
+            # (1) quantityが0/空でもsubtotal>0なら quantity=1 扱いで採用
+            if quantity_val <= 0 and subtotal_val <= 0:
+                continue
+            if quantity_val <= 0 and subtotal_val > 0:
+                quantity_val = 1
+
+            # product_idのint変換（空ならNone）
             if product_id_raw:
                 try:
                     product_id = int(product_id_raw)
@@ -329,7 +464,7 @@ def quotation_new():
                 if product:
                     desc = product.name
 
-            # 7) QuotationDetailインスタンス生成
+            # QuotationDetailインスタンス生成
             detail_kwargs = dict(
                 product_id=product_id,
                 label=None,
@@ -364,7 +499,7 @@ def quotation_new():
 
         from app.cost_utils import calc_design_and_setup_amounts
 
-        # パラメータ入力値をdictでまとめて渡す
+        # パラメータ入力値をdictでまとめて渡す（new_v1拡張対応）
         param_dict = {
             "distance_m": values["distance_m"],
             "intersection_count": values["intersection_count"],
@@ -372,13 +507,45 @@ def quotation_new():
             "vehicle_count": values["vehicle_count"],
             "equipment_count": values["equipment_count"],
             "circuit_difficulty": values["circuit_difficulty"],
+            # new_v1 fields
+            "avg_entry_dirs": request.form.get("avg_entry_dirs"),
+            "station_auto": request.form.get("station_auto"),
+            "station_manual": request.form.get("station_manual"),
+            "station_relay": request.form.get("station_relay"),
+            "station_charge": request.form.get("station_charge"),
+            "wait_position_count": request.form.get("wait_position_count"),
+            "has_swap_operation": _form_bool(request.form, "has_swap_operation"),
+            "has_plc_handshake": _form_bool(request.form, "has_plc_handshake"),
+            "has_ev_integration": _form_bool(request.form, "has_ev_integration"),
+            "difficulty_design": request.form.get("difficulty_design"),
+            "difficulty_setup": request.form.get("difficulty_setup"),
         }
 
-        # パラメータがすべて未入力なら設計費・現地セットアップ費は追加しない
-        if not (param_dict["distance_m"] or param_dict["intersection_count"] or param_dict["station_count"]):
+        calc_mode = _norm_calc_mode(request.form.get("calc_mode"))
+
+        # パラメータがすべて未入力なら設計費・現地セットアップ費は追加しない（official regime: 公式入力も判定）
+        has_any_param = any([
+            param_dict.get("distance_m"),
+            param_dict.get("intersection_count"),
+            param_dict.get("station_count"),
+            param_dict.get("vehicle_count"),
+            param_dict.get("equipment_count"),
+            param_dict.get("avg_entry_dirs"),
+            param_dict.get("station_auto"),
+            param_dict.get("station_manual"),
+            param_dict.get("station_relay"),
+            param_dict.get("station_charge"),
+            param_dict.get("wait_position_count"),
+            param_dict.get("has_swap_operation"),
+            param_dict.get("has_plc_handshake"),
+            param_dict.get("has_ev_integration"),
+            param_dict.get("difficulty_design"),
+            param_dict.get("difficulty_setup"),
+        ])
+        if not has_any_param:
             pass
         else:
-            design_fee, design_cost, design_hours, setup_fee, setup_cost, setup_hours = calc_design_and_setup_amounts(param_dict)
+            design_fee, design_cost, design_hours, setup_fee, setup_cost, setup_hours = calc_design_and_setup_amounts(param_dict, calc_mode=calc_mode)
             # 設計費
             if design_fee > 0:
                 design_kwargs = dict(
@@ -391,7 +558,7 @@ def quotation_new():
                 if hasattr(QuotationDetail, "code"):
                     design_kwargs["code"] = ""
                 if hasattr(QuotationDetail, "description"):
-                    design_kwargs["description"] = "設計費（走行条件）"
+                    design_kwargs["description"] = "設計費（走行条件/動作パターン）"
                 details.append(QuotationDetail(**design_kwargs))
                 total += design_fee
             # 現地セットアップ費
@@ -406,7 +573,7 @@ def quotation_new():
                 if hasattr(QuotationDetail, "code"):
                     setup_kwargs["code"] = ""
                 if hasattr(QuotationDetail, "description"):
-                    setup_kwargs["description"] = "現地セットアップ費（走行条件）"
+                    setup_kwargs["description"] = "現地セットアップ費（走行条件/動作パターン）"
                 details.append(QuotationDetail(**setup_kwargs))
                 total += setup_fee
 
@@ -426,11 +593,29 @@ def quotation_new():
                 cust_id_int = int(cust_id) if cust_id else None
             except Exception:
                 cust_id_int = None
-            cust_obj = Customer.query.get_or_404(cust_id_int) if cust_id_int else None
+            cust_obj = Customer.query.get(cust_id_int) if cust_id_int else None
+
+            # customer_id 必須にする（現状UIが無いなら、ここで明確に止める）
+            if not cust_obj:
+                error = "顧客を選択してください（customer_id が未設定です）。"
+                from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE
+                return render_template(
+                    "quotation_form.html",
+                    error=error,
+                    products=product_list,
+                    values=values,
+                    customers=customers_json,
+                    customers_meta=customers_meta,
+                    LABOR_RATE=LABOR_RATE,
+                    DESIGN_SELL_RATE=DESIGN_SELL_RATE,
+                    SETUP_SELL_RATE=SETUP_SELL_RATE
+                )
+
             # 顧客未承認ガード（pending/rejectedは不可）
-            if not cust_obj.is_approved:
+            if not getattr(cust_obj, "is_approved", False):
                 flash("未承認の顧客は見積作成できません。承認後に再度お試しください。", "warning")
                 return redirect(url_for("quotation.quotation_new"))
+
             # 顧客IDがある場合はcompany_nameをCustomer.nameで上書き
             values["company_name"] = cust_obj.name
             # 顧客IDが空の場合はcompany_nameはそのまま
@@ -474,6 +659,21 @@ def quotation_new():
                     updated_at=datetime.utcnow(),
                     customer_id=cust_id_int
                 )
+
+            # ---- calc_mode + new_v1 fields ----
+            quotation.calc_mode = _norm_calc_mode(request.form.get("calc_mode"))
+            quotation.avg_entry_dirs = _form_float(request.form, "avg_entry_dirs")
+            quotation.station_auto = _form_int(request.form, "station_auto")
+            quotation.station_manual = _form_int(request.form, "station_manual")
+            quotation.station_relay = _form_int(request.form, "station_relay")
+            quotation.station_charge = _form_int(request.form, "station_charge")
+            quotation.wait_position_count = _form_int(request.form, "wait_position_count")
+            quotation.has_swap_operation = _form_bool(request.form, "has_swap_operation")
+            quotation.has_plc_handshake = _form_bool(request.form, "has_plc_handshake")
+            quotation.has_ev_integration = _form_bool(request.form, "has_ev_integration")
+            quotation.difficulty_design = _norm_difficulty(request.form.get("difficulty_design"))
+            quotation.difficulty_setup = _norm_difficulty(request.form.get("difficulty_setup"))
+
             db.session.add(quotation)
             db.session.flush()  # quotation.id を確定
 
@@ -494,23 +694,37 @@ def quotation_new():
             return redirect(url_for("quotation.quotation_view", quotation_id=quotation.id))
 
         # エラー時：ヘッダ入力値をテンプレートに渡す
+        from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE
+        rates = {
+            "LABOR_RATE": LABOR_RATE,
+            "DESIGN_SELL_RATE": DESIGN_SELL_RATE,
+            "SETUP_SELL_RATE": SETUP_SELL_RATE,
+        }
         return render_template(
             "quotation_form.html",
             error=error,
             products=product_list,
             values=values,
             customers=customers_json,
-            customers_meta=customers_meta
+            customers_meta=customers_meta,
+            rates=rates
         )
 
     # GET 時：ヘッダ初期値と products, customers を渡す
+    from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE
+    rates = {
+        "LABOR_RATE": LABOR_RATE,
+        "DESIGN_SELL_RATE": DESIGN_SELL_RATE,
+        "SETUP_SELL_RATE": SETUP_SELL_RATE,
+    }
     return render_template(
         "quotation_form.html",
         error=error,
         products=product_list,
         values=values,
         customers=customers_json,
-        customers_meta=customers_meta
+        customers_meta=customers_meta,
+        rates=rates
     )
 
 # 見積削除（例: /quotation/<int:quotation_id>/delete）

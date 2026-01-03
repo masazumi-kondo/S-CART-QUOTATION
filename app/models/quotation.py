@@ -25,6 +25,19 @@ class Quotation(db.Model):
     original_id = db.Column(db.Integer, nullable=True, index=True)  # オリジナル見積ID（rev0は自分のid）
     revision_no = db.Column(db.Integer, nullable=False, default=0)  # 改定番号（rev0=0, 改定は1,2...）
 
+    # --- new_v1 calculation columns (2025/12) ---
+    calc_mode = db.Column(db.String, nullable=True)
+    avg_entry_dirs = db.Column(db.Float, nullable=True)
+    station_auto = db.Column(db.Integer, nullable=True)
+    station_manual = db.Column(db.Integer, nullable=True)
+    station_relay = db.Column(db.Integer, nullable=True)
+    station_charge = db.Column(db.Integer, nullable=True)
+    wait_position_count = db.Column(db.Integer, nullable=True)
+    has_swap_operation = db.Column(db.Boolean, nullable=True)
+    has_plc_handshake = db.Column(db.Boolean, nullable=True)
+    has_ev_integration = db.Column(db.Boolean, nullable=True)
+    difficulty_design = db.Column(db.String, nullable=True)
+    difficulty_setup = db.Column(db.String, nullable=True)
 
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=True, index=True)
     customer = relationship("Customer", back_populates="quotations")

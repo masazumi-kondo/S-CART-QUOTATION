@@ -1,94 +1,223 @@
 {% extends "layout.html" %}
 
+
 {% block content %}
+{% set values = values or {} %}
+
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-7">
-                <h2 class="mb-4">
-                    {% if revise_source_id %}
-                        見積改定（元見積ID: {{ revise_source_id }}）
-                    {% else %}
-                        見積新規作成
-                    {% endif %}
-                </h2>
+        <h2 class="mb-4">
+            {% if revise_source_id %}
+                見積改定（元見積ID: {{ revise_source_id }}）
+            {% else %}
+                見積新規作成
+            {% endif %}
+        </h2>
+        <form action="{{ url_for('quotation.quotation_new') }}" method="post" id="quotation-form">
+            <!-- ==============================
+                 V2: 設計費 / 現地セットアップ（Step Wizard）＋ライブサマリー
+                 ============================== -->
+            <div class="row">
+              <div class="col-lg-7 col-md-8">
+                <div class="card mb-3" id="v2-estimate-wizard">
+                  <div class="card-header bg-primary text-white">
+                    V2 見積入力（設計費 / 現地セットアップ）
+                  </div>
+                  <div class="card-body">
+                    <!-- ...existing Step1〜Step4 blocks... -->
+                    {{ super() }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-5 col-md-4">
+                <div class="card mb-3" id="v2-live-summary">
+                  <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <span>V2 ライブサマリー</span>
+                    <label class="ms-2 mb-0"><input type="checkbox" id="v2_debug_toggle"> デバッグ表示</label>
+                  </div>
+                  <div class="card-body">
+                    <div class="mb-2"><strong>入力値</strong></div>
+                    <div class="mb-2">
+                      AGV台数: <span id="sum_vehicleCount">-</span><br>
+                      ステーション数: <span id="sum_stationCount">-</span><br>
+                      走行エリア: <span id="sum_areaShort_m">-</span> × <span id="sum_areaLong_m">-</span> m
+                    </div>
+                    <div class="mb-2">
+                      <strong>ルートテンプレート</strong><br>
+                      {% for i in range(1,7) %}
+                        T{{ i }}: qty=<span id="sum_qty_T{{ i }}">-</span>, veh=<span id="sum_veh_T{{ i }}">-</span><br>
+                      {% endfor %}
+                    </div>
+                    <div class="mb-2">
+                      <strong>オプション</strong><br>
+                      設備: <span id="sum_equipmentCount">-</span>, 信号: <span id="sum_signalPoints">-</span>, 交差点: <span id="sum_junctionCount">-</span>, 通路幅: <span id="sum_minAisleWidth_m">-</span>, テープ: <span id="sum_tapeStops">-</span>, LM: <span id="sum_lmSpots">-</span>
+                    </div>
+                    <div class="mb-2"><strong>派生値</strong><br>
+                      totalQty: <span id="sum_totalQty">-</span>, complexity: <span id="sum_complexity">-</span>, area: <span id="sum_area">-</span> m²
+                    </div>
+                    <div class="mb-2"><strong>計算結果</strong><br>
+                      設計: raw=<span id="sum_designHoursRaw">-</span>, ceil=<span id="sum_designHoursCeil">-</span>, cost=<span id="sum_designCost">-</span>, sell=<span id="sum_designSell">-</span><br>
+                      現地: raw=<span id="sum_setupHoursRaw">-</span>, ceil=<span id="sum_setupHoursCeil">-</span>, cost=<span id="sum_setupCost">-</span>, sell=<span id="sum_setupSell">-</span>
+                    </div>
+                    <div class="mb-2"><strong>明細反映予定</strong><br>
+                      <span id="sum_fixedRow1">-</span><br>
+                      <span id="sum_fixedRow2">-</span>
+                    </div>
+                    <div id="v2_debug_detail" style="display:none;">
+                      <div class="mb-2"><strong>NG理由</strong><br>
+                        <span id="sum_missing">-</span>
+                      </div>
+                      <div class="mb-2"><strong>レート</strong><br>
+                        costRate: <span id="sum_costRate">-</span>, sellRate: <span id="sum_sellRate">-</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="mb-3">
-                <label for="company_name" class="form-label">宛先企業名 <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="company_name" name="company_name" required value="{{ values.company_name }}">
-            </div>
-            <div class="mb-3">
-                <label for="contact_name" class="form-label">宛先担当者名</label>
-                <input type="text" class="form-control" id="contact_name" name="contact_name" value="{{ values.contact_name }}">
-            </div>
-            <div class="mb-3">
-                <label for="project_name" class="form-label">案件名 <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="project_name" name="project_name" required value="{{ values.project_name }}">
-            </div>
-            <div class="mb-3">
-                <label for="delivery_date" class="form-label">納期</label>
-                <input type="text" class="form-control" id="delivery_date" name="delivery_date" value="{{ values.delivery_date }}">
-            </div>
-            <div class="mb-3">
-                <label for="delivery_terms" class="form-label">引渡条件</label>
-                <input type="text" class="form-control" id="delivery_terms" name="delivery_terms" value="{{ values.delivery_terms }}">
-            </div>
-            <div class="mb-3">
-                <h5>自動計算プレビュー（詳細）</h5>
-                <div>・設計費（概算）: <span id="preview-design-fee">0</span> 円</div>
-                <div>&nbsp;&nbsp;┗ 設計工数: <span id="preview-design-hours">0.0</span> h</div>
-                <div>&nbsp;&nbsp;┗ 設計原価: <span id="preview-design-cost">0</span> 円</div>
-                <div>&nbsp;&nbsp;┗ 設計費利益率: <span id="preview-design-profit-rate">0.0%</span></div>
-                <div class="mt-2">・現地セットアップ費（概算）: <span id="preview-setup-fee">0</span> 円</div>
-                <div>&nbsp;&nbsp;┗ セットアップ工数: <span id="preview-setup-hours">0.0</span> h</div>
-                <div>&nbsp;&nbsp;┗ セットアップ原価: <span id="preview-setup-cost">0</span> 円</div>
-                <div>&nbsp;&nbsp;┗ セットアップ利益率: <span id="preview-setup-profit-rate">0.0%</span></div>
-                <hr>
-                <div><strong>合計売価（製品＋設計＋セットアップ）:</strong> <span id="preview-total-sell">0</span> 円</div>
-                <div><strong>合計原価:</strong> <span id="preview-total-cost">0</span> 円</div>
-                <div><strong>最終売価:</strong> <span id="preview-final-sell">0</span> 円</div>
-                <div><strong>最終利益率:</strong> <span id="preview-total-profit-rate">0.0%</span></div>
-            </div>
+            <!-- ========== /V2 Wizard＋ライブサマリー ========== -->
+            {% if revise_source_id %}
+                <input type="hidden" name="revise_source_id" value="{{ revise_source_id }}">
+            {% endif %}
 
-            <div class="mt-3 border rounded p-3">
-                <div class="row align-items-center">
-                    <div class="col-auto">
-                        <label for="discount_rate" class="form-label mb-0">値引率</label>
-                    </div>
-                    <div class="col-auto">
-                        <input
-                            type="number"
-                            class="form-control"
-                            id="discount_rate"
-                            name="discount_rate"
-                            min="0"
-                            step="0.1"
-                            value="{{ values.discount_rate or 0 }}"
-                        >
-                    </div>
-                    <div class="col-auto">
-                        <span>%</span>
-                    </div>
-                    <div class="col-auto">
-                        <span>値引き額: <span id="discount-amount">0</span> 円</span>
-                    </div>
+            <style>
+              .q-section { border: 1px solid #e5e5e5; border-radius: 10px; padding: 14px; margin-bottom: 14px; background: #fff; }
+              .q-section h5 { font-weight: 700; margin: 0 0 10px 0; }
+              .q-muted { color: #666; font-size: 0.9rem; }
+              input[readonly], textarea[readonly] { background: #f5f5f5; }
+            </style>
+            <div class="q-section">
+                <h5>案件・顧客情報</h5>
+                <div class="mb-3 position-relative">
+                    <label for="customer_search" class="form-label">顧客名（宛先） <span class="text-danger">*</span></label>
+                    <input type="hidden" id="customer_id" name="customer_id" required value="{{ values.customer_id|default('') }}">
+                    <input type="text" class="form-control" id="customer_search" name="company_name"
+                        autocomplete="off" value="{{ values.company_name|default('') }}"
+                        placeholder="例：株式会社デンソーエレクトロニクス（入力→候補をクリック）">
+                    <div id="customer_candidates" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
+                    <div class="q-muted mt-1">入力すると顧客マスタ候補が表示されます。選択すると顧客IDがセットされます。</div>
+                </div>
+                <div class="mb-3">
+                    <label for="contact_name" class="form-label">宛先担当者名</label>
+                    <input type="text" class="form-control" id="contact_name" name="contact_name" value="{{ values.contact_name|default('') }}">
+                </div>
+                <div class="mb-3">
+                    <label for="project_name" class="form-label">案件名 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="project_name" name="project_name" required value="{{ values.project_name|default('') }}"
+                        placeholder="例：S-CART 導入見積（〇〇工場）">
+                </div>
+            </div>
+            <div class="q-section">
+                <h5>契約・取引条件</h5>
+                <div class="mb-3">
+                    <label for="delivery_date" class="form-label">納期</label>
+                    <input type="text" class="form-control" id="delivery_date" name="delivery_date" value="{{ values.delivery_date|default('') }}">
+                </div>
+                <div class="mb-3">
+                    <label for="delivery_terms" class="form-label">引渡条件</label>
+                    <input type="text" class="form-control" id="delivery_terms" name="delivery_terms" value="{{ values.delivery_terms|default('') }}"
+                        placeholder="例：工場渡し / 現地据付渡し / FCA Nagoya など">
+                </div>
+                <div class="mb-3">
+                    <label for="payment_terms" class="form-label">支払条件</label>
+                    <input type="text" class="form-control" id="payment_terms" name="payment_terms" value="{{ values.payment_terms|default('') }}"
+                        placeholder="（顧客選択で自動反映。必要に応じて編集可）">
+                </div>
+            </div>
+            <div class="q-section">
+                <h5 class="mb-2">明細（製品）</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle" id="details-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="min-width:220px;">製品（マスタ）</th>
+                                <th>内容</th>
+                                <th style="min-width:120px;" class="text-end">単価</th>
+                                <th style="min-width:90px;" class="text-end">数量</th>
+                                <th style="min-width:140px;" class="text-end">小計</th>
+                                <th style="min-width:90px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-body">
+                            <!-- 初期1行（revise時はJSが initial-details-json で復元する想定） -->
+                            <tr class="detail-row">
+                                <td>
+                                    <select class="form-select product-select-custom" name="product_id[]">
+                                        <option value="">-- 選択 --</option>
+                                        {% for p in products %}
+                                            <option value="{{ p.id }}">{{ p.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control description-input" name="description[]" value="">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control text-end unit-price-input" name="unit_price[]" value="" min="0" step="1">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control text-end quantity-input" name="quantity[]" value="" min="0" step="1">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control text-end subtotal-input" name="subtotal[]" value="" readonly>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm add-row">＋</button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm remove-row">－</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <!-- DEBUG: form action={{ url_for('quotation.quotation_new') }} method=post -->
-                <button type="submit" class="btn btn-primary">保存</button>
-                <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-link">一覧へ戻る</a>
+    <div class="q-section">
+        <h5 class="mb-2">値引き</h5>
+        <div class="row align-items-center g-2">
+            <div class="col-auto">
+                <label for="discount_amount" class="form-label mb-0">値引額</label>
             </div>
-        </form>
-
-        <!-- Jinja埋め込みデータをJSONスクリプトとして分離 -->
-        <script type="application/json" id="products-json">{{ products|tojson|safe }}</script>
-        <script type="application/json" id="customers-meta-json">{{ customers_meta|tojson|safe }}</script>
-        <script type="application/json" id="customers-json">{{ customers|tojson|safe }}</script>
-        {% if revise_source_id and values and details %}
-        <script type="application/json" id="initial-values-json">{{ values|tojson|safe }}</script>
-        <script type="application/json" id="initial-details-json">{{ details|tojson|safe }}</script>
-        {% endif %}
-        <script src="{{ url_for('static', filename='js/quotation_form.js') }}" defer onerror="console.error('Failed to load quotation_form.js'); /* alert('見積計算用JSの読み込みに失敗しました。static/js/quotation_form.js の配置・パスを確認してください。'); */"></script>
+            <div class="col-auto">
+                <input type="number" class="form-control text-end" id="discount_amount" name="discount_amount"
+                       min="0" step="1" value="{{ values.discount_amount|default('', true) }}">
+                <input type="hidden" id="discount_rate" name="discount_rate" value="{{ values.discount_rate|default(0) }}">
+            </div>
+            <div class="col-auto">
+                <span>値引率: <span id="discount-rate-view">0.0</span>%</span>
+            </div>
+        </div>
+        <div class="q-muted mt-1">値引きは下部の合計/最終表示に反映されます。</div>
     </div>
+
+    <div class="q-section">
+        <h5 class="mb-2">合計・最終計算結果</h5>
+        <div><strong>合計売価（製品＋設計＋セットアップ）:</strong> <span id="preview-total-sell">0</span> 円</div>
+        <div><strong>合計原価:</strong> <span id="preview-total-cost">0</span> 円</div>
+        <div><strong>最終売価:</strong> <span id="preview-final-sell">0</span> 円</div>
+        <div><strong>最終利益率:</strong> <span id="preview-total-profit-rate">0.0%</span></div>
+        <div><strong>最終利益額:</strong> <span id="preview-profit-amount">0</span> 円</div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-link">一覧へ戻る</a>
+    </div>
+    </form>
+
+    <!-- /#quotation-form : form ends here (do not move without updating JS bindings) -->
+    {# --- JSONデータブロック（Jinjaで埋め込む） --- #}
+    <script id="rates-json" type="application/json">{{ rates|default({})|tojson|safe }}</script>
+    <script id="products-json" type="application/json">{{ products|tojson|safe }}</script>
+    <script id="customers-meta-json" type="application/json">{{ customers_meta|tojson|safe }}</script>
+    <script id="customers-json" type="application/json">{{ customers|tojson|safe }}</script>
+    {% if revise_source_id and details %}
+    <script id="initial-values-json" type="application/json">{{ values|tojson|safe }}</script>
+    <script id="initial-details-json" type="application/json">{{ details|tojson|safe }}</script>
+    {% endif %}
+
+
+    {# --- 外部JS（defer推奨） --- #}
+    <script src="{{ url_for('static', filename='js/quotation_form.js') }}" defer></script>
+</div>
 </div>
 {% endblock %}

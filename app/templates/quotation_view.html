@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <title>御見積書</title>
     <style>
+                        .total-table {
+                            border-collapse: collapse;
+                        }
+                        .total-table td {
+                            padding: 2px 6px;
+                            font-size: 1.0em;
+                        }
+                        .total-table td.label {
+                            text-align: right;
+                            width: 85%;
+                            white-space: nowrap;
+                        }
+                        .total-table td.value {
+                            text-align: right;
+                            width: 15%;
+                            white-space: nowrap;
+                        }
                 /* 品名・仕様セル */
                 .detail-table td.col-desc {
                     text-align: left;
@@ -73,7 +90,21 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            table-layout: fixed;
         }
+        .detail-table th:nth-child(1),
+        .detail-table td:nth-child(1) { width: 6%; }
+        .detail-table th:nth-child(2),
+        .detail-table td:nth-child(2) { width: 46%; }
+        .detail-table th:nth-child(3),
+        .detail-table td:nth-child(3) { width: 8%; }
+        .detail-table th:nth-child(4),
+        .detail-table td:nth-child(4) { width: 8%; }
+        .detail-table th:nth-child(5),
+        .detail-table td:nth-child(5) { width: 16%; }
+        .detail-table th:nth-child(6),
+        .detail-table td:nth-child(6) { width: 16%; }
+        .detail-table tr { page-break-inside: avoid; }
         .detail-table th,
         .detail-table td {
             border: 1px solid #333;

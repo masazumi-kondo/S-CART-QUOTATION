@@ -1,24 +1,27 @@
 
 
-from app.services.notifications import notify_customer_status_changed
-from sqlalchemy import text
-from flask import Blueprint, render_template, request, redirect, url_for, flash, g, current_app, session, abort
-from sqlalchemy import or_
+
 from datetime import datetime
-from app.decorators import login_required, roles_required
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash, g, current_app
+from sqlalchemy import or_
+
 from app import db
+from app.decorators import login_required, roles_required
 from app.models.customer import Customer, CustomerStatus
 from app.models.customer_approval_log import CustomerApprovalLog
 from app.models.user import User
-from app.models.quotation import Quotation
 from app.models.customer_credit import CustomerCredit
-import logging
+from app.models.quotation import Quotation
+from app.services.notifications import notify_customer_status_changed
 
 # Blueprint定義は必ず先
 customer_bp = Blueprint('customer', __name__)
 
 # 顧客承認履歴（閲覧専用・管理者のみ）
-@customer_bp.route('/customers/<int:customer_id>/approval-history')
+
+# 新URL（正規）
+@customer_bp.route('/customers/<int:customer_id>/approval_history')
 @login_required
 @roles_required('admin')
 def customer_approval_history(customer_id):
@@ -34,7 +37,7 @@ def customer_approval_history(customer_id):
     # 承認者ユーザー名を引く（最小構成）
     user_map = {}
     if logs:
-        user_ids = {log.approved_by for log in logs}
+        user_ids = {log.approved_by for log in logs if log.approved_by}
         users = User.query.filter(User.id.in_(user_ids)).all()
         user_map = {u.id: u.login_id for u in users}
 
@@ -44,6 +47,13 @@ def customer_approval_history(customer_id):
         logs=logs,
         user_map=user_map
     )
+
+# 旧URLは新URLへ301リダイレクト
+@customer_bp.route('/customers/<int:customer_id>/approval-history')
+@login_required
+@roles_required('admin')
+def customer_approval_history_legacy(customer_id):
+    return redirect(url_for('customer.customer_approval_history', customer_id=customer_id), code=301)
 
 
 # 与信情報取得ヘルパー
@@ -93,6 +103,34 @@ def upsert_customer_credits(customer_id, form):
 
 
 
+@customer_bp.route('/customers/pending')
+@login_required
+@roles_required('admin')
+def customer_pending_list():
+    q = request.args.get('q', '').strip()
+    query = Customer.query.filter(Customer.status == CustomerStatus.PENDING.value)
+    if q:
+        query = query.filter(or_(Customer.name.contains(q), Customer.name_kana.contains(q)))
+    customers = query.order_by(Customer.name).all()
+
+    # 申請者（requested_by_user_id）のlogin_idを引く（最小）
+    user_map = {}
+    try:
+        ids = {c.requested_by_user_id for c in customers if getattr(c, "requested_by_user_id", None)}
+        if ids:
+            users = User.query.filter(User.id.in_(ids)).all()
+            user_map = {u.id: u.login_id for u in users}
+    except Exception:
+        user_map = {}
+
+    return render_template(
+        'customer_pending_list.html',
+        customers=customers,
+        q=q,
+        current_user=g.current_user,
+        user_map=user_map
+    )
+
 @customer_bp.route('/customers')
 @login_required
 def customer_list():
@@ -102,7 +140,8 @@ def customer_list():
     if q:
         query = query.filter(or_(Customer.name.contains(q), Customer.name_kana.contains(q)))
     # 一般ユーザーはapprovedのみ、管理者は全件
-    is_admin = g.current_user and getattr(g.current_user, 'role', None) == 'admin'
+    role = getattr(g.current_user, 'role', None)
+    is_admin = role == 'admin'
     if not is_admin:
         query = query.filter(Customer.status == CustomerStatus.APPROVED.value)
     customers = query.order_by(Customer.name).all()
@@ -138,12 +177,14 @@ def customer_new():
                 transaction_type=transaction_type,
                 payment_terms=payment_terms,
                 note=note,
-                status=CustomerStatus.PENDING.value,
-                requested_by_user_id=getattr(g.current_user, "id", None)
+                status=CustomerStatus.PENDING.value,  # 必ずpendingで保存
+                requested_by_user_id=g.current_user.id,
+                # approved_by, approved_at, rejected_reasonは触らない
             )
             db.session.add(customer)
             db.session.flush()  # Allocate customer.id without committing
 
+            # 与信3項目はupsert_customer_creditsで保存（空欄はNoneになる）
             duplicate_years = upsert_customer_credits(customer.id, request.form)
             db.session.commit()
             if duplicate_years:
@@ -161,8 +202,10 @@ def customer_new():
 @login_required
 def customer_edit(customer_id):
     customer = Customer.query.get_or_404(customer_id)
-    is_admin = g.current_user and getattr(g.current_user, "role", None) == "admin"
-    is_owner = customer.requested_by_user_id == getattr(g.current_user, "id", None)
+    role = getattr(g.current_user, "role", None)
+    is_admin = role == "admin"
+    requested_by = getattr(customer, "requested_by_user_id", None)
+    is_owner = (requested_by is not None) and (requested_by == getattr(g.current_user, "id", None))
     # アクセス制御: admin以外はapprovedのみ閲覧可。申請者もpendingは閲覧可（要件により変更可）
     if not is_admin:
         if customer.status == CustomerStatus.APPROVED.value:
@@ -212,7 +255,28 @@ def customer_edit(customer_id):
             flash('保存に失敗しました。入力内容を確認してください。', 'danger')
             return render_template('customer_form.html', customer=customer, credit_rows=get_credit_rows(customer.id), is_admin=is_admin, current_user=g.current_user)
     # GET時もcredit_rows, is_admin, current_userを渡す
-    return render_template('customer_form.html', customer=customer, credit_rows=get_credit_rows(customer.id), is_admin=is_admin, current_user=g.current_user)
+    latest_log = None
+    requester_login_id = None
+    if is_admin:
+        latest_log = (
+            CustomerApprovalLog.query
+            .filter(CustomerApprovalLog.customer_id == customer.id)
+            .order_by(CustomerApprovalLog.approved_at.desc())
+            .first()
+        )
+        rid = getattr(customer, "requested_by_user_id", None)
+        if rid:
+            u = db.session.get(User, rid)
+            requester_login_id = (u.login_id if u else None)
+    return render_template(
+        'customer_form.html',
+        customer=customer,
+        credit_rows=get_credit_rows(customer.id),
+        is_admin=is_admin,
+        current_user=g.current_user,
+        latest_log=latest_log,
+        requester_login_id=requester_login_id
+    )
 
 @customer_bp.route('/customers/<int:customer_id>/delete', methods=['POST'])
 @login_required
@@ -221,16 +285,16 @@ def customer_delete(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     used_by_fk = None
     used_by_name = None
-    has_fk = hasattr(Quotation, 'customer_id')
-    has_name = hasattr(Quotation, 'company_name')
-    if has_fk:
-        used_by_fk = Quotation.query.filter(Quotation.customer_id == customer.id).first()
-    if has_name:
-        used_by_name = Quotation.query.filter(Quotation.company_name == customer.name).first()
-    if not has_fk and not has_name:
-        flash('見積との紐付け情報が無いため安全のため削除できません（管理者に確認してください）', 'danger')
-        return redirect(url_for('customer.customer_list'))
-    if used_by_fk or used_by_name:
+    try:
+        if hasattr(Quotation, "customer_id"):
+            used_by_fk = Quotation.query.filter(Quotation.customer_id == customer.id).first()
+        if hasattr(Quotation, "company_name"):
+            used_by_name = Quotation.query.filter(Quotation.company_name == customer.name).first()
+    except Exception as e:
+        current_app.logger.exception("[DELETE] quotation relation check failed: %s", e)
+        flash("見積との関連確認に失敗しました（管理者に確認してください）", "danger")
+        return redirect(url_for("customer.customer_list"))
+    if (hasattr(Quotation, "customer_id") and used_by_fk) or (hasattr(Quotation, "company_name") and used_by_name):
         flash('見積に使用されているため削除できません', 'danger')
         return redirect(url_for('customer.customer_list'))
     db.session.delete(customer)
@@ -239,72 +303,144 @@ def customer_delete(customer_id):
     return redirect(url_for('customer.customer_list'))
 
 
+
+
+# --- robust approval log insert (model-diff-absorbing) ---
+def _safe_add_approval_log(**kwargs) -> bool:
+    try:
+        table = getattr(CustomerApprovalLog, "__table__", None)
+        if table is None:
+            return False
+        cols = {c.name for c in table.columns}
+        data = {k: v for k, v in kwargs.items() if k in cols}
+        if data:
+            db.session.add(CustomerApprovalLog(**data))
+            return True
+    except Exception:
+        pass
+    return False
+
 @customer_bp.route('/customers/<int:customer_id>/approve', methods=['POST'])
 @login_required
 @roles_required('admin')
 def customer_approve(customer_id):
-
     customer = Customer.query.get_or_404(customer_id)
-    user = User.query.get(customer.requested_by_user_id)
-    if not user:
-        abort(400)
 
-    # ユーザー有効化
-    user.is_active = 1
+    if customer.status != CustomerStatus.PENDING.value:
+        flash('この顧客は承認待ちではありません', 'warning')
+        return redirect(url_for('customer.customer_pending_list'))
 
-    # 承認ログ記録（最小構成）
-
-    approved_by = session.get("user_id")
-    if not approved_by:
-        abort(401)
-    approval_log = CustomerApprovalLog(
-        customer_id=customer.id,
-        user_id=user.id,
-        approved_by=approved_by,
-        approved_at=datetime.utcnow()
-    )
-    db.session.add(approval_log)
-
-    # 顧客ステータス更新
     customer.status = CustomerStatus.APPROVED.value
-    customer.approved_by_user_id = session["user_id"]
-    customer.approved_at = datetime.utcnow()
-    db.session.commit()
+    customer.approved_by = g.current_user.id
+    customer.approved_at = datetime.utcnow().isoformat()
+    customer.rejected_reason = None
 
-    flash('顧客を承認しました（承認ログ記録済み）', 'success')
-    return redirect(url_for("customer.customer_list"))
+    # 先に顧客の更新だけ commit（ここは必ず通したい）
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception("[APPROVE] customer update commit failed: %s", e)
+        flash("承認処理に失敗しました（DB更新）。", "danger")
+        return redirect(url_for("customer.customer_pending_list"))
+
+    # 監査ログは別トランザクションで、失敗しても承認は成功扱いにする
+    try:
+        added = _safe_add_approval_log(
+            customer_id=customer.id,
+            user_id=getattr(customer, "requested_by_user_id", None) or g.current_user.id,
+            approved_by=g.current_user.id,
+            approved_at=datetime.utcnow(),
+            action="approve",
+            comment=None,
+            actor_user_id=g.current_user.id,
+            actor_username=getattr(g.current_user, "login_id", None),
+            actor_role=getattr(g.current_user, "role", None),
+            ip_addr=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+        )
+        if added:
+            db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception("[APPROVE] approval log commit failed (ignored): %s", e)
+
+    try:
+        customer = db.session.get(Customer, customer.id)
+        if customer:
+            try:
+                notify_customer_status_changed(customer)
+            except TypeError:
+                # 多引数版だった場合のフォールバック
+                notify_customer_status_changed(customer, "approve", g.current_user, None)
+    except Exception:
+        pass
+
+    flash(f'顧客を承認しました（企業名: {customer.name}）', 'success')
+    return redirect(url_for('customer.customer_pending_list'))
 
 @customer_bp.route('/customers/<int:customer_id>/reject', methods=['POST'])
 @login_required
 @roles_required('admin')
 def customer_reject(customer_id):
-    comment = (request.form.get('approval_comment') or request.form.get('comment') or '').strip()
-    now = datetime.utcnow()
-    # 原子的UPDATEでpending→rejectedのみ更新
-    result = db.session.execute(
-        text("""
-            UPDATE customers SET status=:to_status, approval_comment=:comment, rejected_at=:now, approved_at=NULL, approved_by_user_id=NULL
-            WHERE id=:id AND status=:from_status
-        """),
-        {
-            "to_status": CustomerStatus.REJECTED.value,
-            "comment": comment,
-            "now": now,
-            "id": customer_id,
-            "from_status": CustomerStatus.PENDING.value
-        }
-    )
-    if result.rowcount == 1:
-        # 却下はDBログを取らず、loggerのみ（設計方針どおり）
-        current_app.logger.info(f"[REJECT] user_id={g.current_user.id} customer_id={customer_id} pending->rejected")
+    comment = (request.form.get('reason') or '').strip()
+    if not comment:
+        flash('却下理由は必須です。', 'danger')
+        return redirect(url_for('customer.customer_pending_list'))
+
+    customer = Customer.query.get_or_404(customer_id)
+
+    if customer.status != CustomerStatus.PENDING.value:
+        flash('この顧客は承認待ちではありません', 'warning')
+        return redirect(url_for('customer.customer_pending_list'))
+
+    customer.status = CustomerStatus.REJECTED.value
+    customer.rejected_reason = comment
+    customer.approved_by = g.current_user.id
+    customer.approved_at = datetime.utcnow().isoformat()
+
+    # 先に顧客の更新だけ commit（ここは必ず通したい）
+    try:
         db.session.commit()
-        # 最新状態取得（404安全化）
-        customer = Customer.query.get_or_404(customer_id)
-        notify_customer_status_changed(customer, 'reject', g.current_user, comment)
-        flash(f"顧客を却下しました（企業名: {customer.name}）", "warning")
-        return redirect(url_for('customer.customer_edit', customer_id=customer.id))
-    else:
+    except Exception as e:
         db.session.rollback()
-        flash("既に処理済み、または承認待ちではありません", "warning")
-        return redirect(url_for('customer.customer_edit', customer_id=customer_id))
+        current_app.logger.exception("[REJECT] customer update commit failed: %s", e)
+        flash("却下処理に失敗しました（DB更新）。", "danger")
+        return redirect(url_for("customer.customer_pending_list"))
+
+    # 監査ログは別トランザクションで、失敗しても却下は成功扱いにする
+    try:
+        added = _safe_add_approval_log(
+            customer_id=customer.id,
+            user_id=getattr(customer, "requested_by_user_id", None) or g.current_user.id,
+            approved_by=g.current_user.id,
+            approved_at=datetime.utcnow(),
+            action="reject",
+            comment=comment,
+            actor_user_id=g.current_user.id,
+            actor_username=getattr(g.current_user, "login_id", None),
+            actor_role=getattr(g.current_user, "role", None),
+            ip_addr=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+        )
+        if added:
+            db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception("[REJECT] approval log commit failed (ignored): %s", e)
+
+    try:
+        customer = db.session.get(Customer, customer.id)
+        if customer:
+            try:
+                notify_customer_status_changed(customer)
+            except TypeError:
+                # 多引数版だった場合のフォールバック
+                notify_customer_status_changed(customer, "reject", g.current_user, comment)
+    except Exception:
+        pass
+
+    flash(f'顧客を却下しました（企業名: {customer.name}）', 'warning')
+    return redirect(url_for('customer.customer_pending_list'))
+
 

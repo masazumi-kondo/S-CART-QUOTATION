@@ -59,11 +59,14 @@ class Customer(db.Model):
     contact_name = db.Column(db.String(255))
     email = db.Column(db.String(255))
 
-    # 承認フロー用カラム
+    # 承認フロー用カラム（DBカラムに合わせて統一）
     status = db.Column(db.String(20), nullable=False, default="approved")
+    approved_by = db.Column(db.Integer, nullable=True)
+    approved_at = db.Column(db.String, nullable=True)  # TEXT型で保存
+    rejected_reason = db.Column(db.Text, nullable=True)
+    # --- 以下は旧カラム（今後未使用、削除予定） ---
     requested_by_user_id = db.Column(db.Integer, nullable=True)
     approved_by_user_id = db.Column(db.Integer, nullable=True)
-    approved_at = db.Column(db.DateTime, nullable=True)
     rejected_at = db.Column(db.DateTime, nullable=True)
     approval_comment = db.Column(db.Text, nullable=True)
 

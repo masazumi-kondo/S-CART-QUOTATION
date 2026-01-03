@@ -3,6 +3,122 @@
 <div class="row justify-content-center">
   <div class="col-md-8 col-lg-7">
     <h2 class="mb-4">{{ '顧客編集' if customer else '顧客新規登録' }}</h2>
+
+    {# --- 管理者向け 承認カード（詳細画面のみ） --- #}
+    {% if is_admin and customer %}
+      <div class="card border-warning mb-3">
+        <div class="card-header bg-warning-subtle d-flex justify-content-between align-items-center">
+          <div class="fw-semibold">承認情報</div>
+          <div class="d-flex gap-2">
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('customer.customer_approval_history', customer_id=customer.id) }}">
+              履歴
+            </a>
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{{ url_for('customer.customer_pending_list') }}">
+              承認待ち一覧
+            </a>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <span class="me-2">状態:</span>
+            {% if customer.status == "pending" %}
+              <span class="badge bg-warning text-dark">承認待ち</span>
+            {% elif customer.status == "approved" %}
+              <span class="badge bg-success">承認済</span>
+            {% elif customer.status == "rejected" %}
+              <span class="badge bg-danger">却下</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ customer.status }}</span>
+            {% endif %}
+          </div>
+          <div class="text-muted mb-2" style="font-size:0.9em;">
+            {% set rid = customer.requested_by_user_id %}
+            <div>申請者: {{ (requester_login_id|default(None)) or (rid if rid else '-') }}</div>
+            <div>
+              申請日時:
+              {% if customer.created_at is defined and customer.created_at %}
+                {{ customer.created_at }}
+              {% elif customer.requested_at is defined and customer.requested_at %}
+                {{ customer.requested_at }}
+              {% elif customer.created_on is defined and customer.created_on %}
+                {{ customer.created_on }}
+              {% else %}
+                -
+              {% endif %}
+            </div>
+            <div>承認者: {{ customer.approved_by or '-' }}</div>
+            <div>承認日時: {{ customer.approved_at or '-' }}</div>
+            <div>却下理由: {{ customer.rejected_reason or '-' }}</div>
+          </div>
+          {% if latest_log %}
+            <div class="text-muted mb-2" style="font-size:0.9em;">
+              最終処理: {{ latest_log.approved_at }} /
+              {{ latest_log.action }} /
+              {{ latest_log.actor_username or latest_log.approved_by or '' }}
+              {% if latest_log.comment %}
+                / {{ latest_log.comment }}
+              {% endif %}
+            </div>
+          {% endif %}
+          {# --- pending のときだけ承認/却下操作を表示（一覧ではなく詳細で判断） --- #}
+          {% if customer.status == "pending" %}
+            <hr class="my-3">
+
+            <div class="d-flex flex-wrap gap-2">
+              <!-- 承認 -->
+              <form method="post"
+                    action="{{ url_for('customer.customer_approve', customer_id=customer.id) }}"
+                    style="display:inline;">
+                <button type="submit"
+                        class="btn btn-sm btn-success"
+                        onclick="return confirm('承認しますか？\n{{ customer.name }}');">
+                  承認
+                </button>
+              </form>
+
+              <!-- 却下（理由入力必須） -->
+              <button type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      onclick="toggleRejectDetail()">
+                却下
+              </button>
+            </div>
+
+            <form method="post"
+                  action="{{ url_for('customer.customer_reject', customer_id=customer.id) }}"
+                  id="reject-form-detail"
+                  style="display:none; margin-top:8px;">
+              <label class="form-label mb-1" for="reject-reason">却下理由（必須）</label>
+              <textarea id="reject-reason"
+                        name="reason"
+                        class="form-control form-control-sm"
+                        rows="3"
+                        placeholder="例：与信情報不足のため。直近3期の売上高・純利益・純資産の根拠資料をご提示ください。"
+                        required></textarea>
+              <div class="mt-2 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-danger">却下を確定</button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="toggleRejectDetail()">キャンセル</button>
+              </div>
+            </form>
+
+            <script>
+            function toggleRejectDetail() {
+              const form = document.getElementById('reject-form-detail');
+              if (!form) return;
+              const show = (form.style.display === 'none' || form.style.display === '');
+              form.style.display = show ? 'block' : 'none';
+              if (show) {
+                const ta = document.getElementById('reject-reason');
+                if (ta) ta.focus();
+              }
+            }
+            </script>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
     <form method="post" action="{{ url_for('customer.customer_new') if not customer else url_for('customer.customer_edit', customer_id=customer.id) }}">
       <div class="mb-3">
         <label for="customer_code" class="form-label">得意先コード</label>
@@ -48,49 +164,35 @@
         <label for="note" class="form-label">備考</label>
         <textarea class="form-control" id="note" name="note" rows="2">{{ customer.note if customer else request.form.get('note','') }}</textarea>
       </div>
+      <div class="mb-3">
+        <label class="form-label">与信情報（直近3期）</label>
+        <div class="row g-2 align-items-end">
+          <div class="col-3"><small>年度</small></div>
+          <div class="col-3"><small>売上高</small></div>
+          <div class="col-3"><small>当期純利益</small></div>
+          <div class="col-3"><small>純資産</small></div>
+        </div>
+        {% for i in range(3) %}
+        <div class="row g-2 mb-1">
+          <div class="col-3">
+            <input type="text" class="form-control form-control-sm" name="credit_year[]" placeholder="例: 2023" value="{{ credit_rows[i].fiscal_year if credit_rows and credit_rows[i] else '' }}">
+          </div>
+          <div class="col-3">
+            <input type="text" class="form-control form-control-sm" name="credit_sales[]" placeholder="売上高" value="{{ credit_rows[i].sales_amount if credit_rows and credit_rows[i] else '' }}">
+          </div>
+          <div class="col-3">
+            <input type="text" class="form-control form-control-sm" name="credit_profit[]" placeholder="純利益" value="{{ credit_rows[i].net_income if credit_rows and credit_rows[i] else '' }}">
+          </div>
+          <div class="col-3">
+            <input type="text" class="form-control form-control-sm" name="credit_equity[]" placeholder="純資産" value="{{ credit_rows[i].equity if credit_rows and credit_rows[i] else '' }}">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
       <button type="submit" class="btn btn-primary">{{ '更新' if customer else '登録' }}</button>
       <a href="{{ url_for('customer.customer_list') }}" class="btn btn-link">一覧へ戻る</a>
     </form>
 
-    {% if is_admin and customer %}
-    <div class="card mt-4">
-      <div class="card-header bg-warning text-dark">承認操作</div>
-      <div class="card-body">
-        <div class="mb-2">
-          <span class="fw-bold">ステータス：</span>
-          {% if customer.status == 'pending' %}
-            <span class="badge bg-warning text-dark">pending</span>
-          {% elif customer.status == 'rejected' %}
-            <span class="badge bg-secondary">rejected</span>
-          {% elif customer.status == 'approved' %}
-            <span class="badge bg-success">approved</span>
-          {% else %}
-            <span class="text-muted">-</span>
-          {% endif %}
-        </div>
-        {% if customer.status == 'pending' %}
-        <form method="post" action="{{ url_for('customer.customer_approve', customer_id=customer.id) }}" class="mb-2">
-          <div class="mb-2">
-            <label for="comment" class="form-label">コメント（任意）</label>
-            <input type="text" class="form-control" id="comment" name="comment" value="">
-          </div>
-          <button type="submit" class="btn btn-success">承認</button>
-        </form>
-        <form method="post" action="{{ url_for('customer.customer_reject', customer_id=customer.id) }}">
-          <div class="mb-2">
-            <label for="comment" class="form-label">コメント（任意）</label>
-            <input type="text" class="form-control" name="comment" value="">
-          </div>
-          <button type="submit" class="btn btn-outline-danger">却下</button>
-        </form>
-        {% endif %}
-        <hr>
-        <a href="{{ url_for('customer.customer_approval_history', customer_id=customer.id) }}">
-          承認履歴を表示（閲覧専用）
-        </a>
-      </div>
-    </div>
-    {% endif %}
   </div>
 </div>
 {% endblock %}

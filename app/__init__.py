@@ -22,23 +22,88 @@ def resource_path(relative_path: str) -> str:
         base = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base, relative_path)
 
+
 def create_app():
+
+    from sqlalchemy import text
     from flask import g, session, render_template
     from app.models.user import User
     from flask.signals import template_rendered
+
+    def ensure_table_exists_payment_terms(conn):
+        logging.info("[MIG] ensure payment_terms...")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS payment_terms (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                description TEXT,
+                is_active INTEGER NOT NULL DEFAULT 1
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS ix_payment_terms_is_active ON payment_terms(is_active)")
+        # seed (idempotent) - always
+        conn.execute("""
+            INSERT OR IGNORE INTO payment_terms (code, name, description, is_active) VALUES
+            ('CASH',  '現金',                 NULL, 1),
+            ('NET30', '月末締め翌月末払い',   NULL, 1),
+            ('NET60', '月末締め翌々月末払い', NULL, 1),
+            ('OTHER', 'その他',               NULL, 1)
+        """)
+        conn.commit()
+        logging.info("[MIG] payment_terms ensured + seeded")
+
+    def ensure_table_exists_transaction_types(conn):
+        logging.info("[MIG] ensure transaction_types...")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS transaction_types (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                description TEXT,
+                is_active INTEGER NOT NULL DEFAULT 1
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS ix_transaction_types_is_active ON transaction_types(is_active)")
+        # seed (idempotent) - always
+        conn.execute("""
+            INSERT OR IGNORE INTO transaction_types (code, name, description, is_active) VALUES
+            ('SALE',  '売買',     NULL, 1),
+            ('LEASE', 'リース',   NULL, 1),
+            ('RENT',  'レンタル', NULL, 1),
+            ('OTHER', 'その他',   NULL, 1)
+        """)
+        conn.commit()
+        logging.info("[MIG] transaction_types ensured + seeded")
+
+    def ensure_products_table():
+        # SQLite想定：不足テーブルだけ安全に作る
+        db.session.execute(text("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            unit_price INTEGER DEFAULT 0,
+            note TEXT,
+            cost INTEGER DEFAULT 0
+        );
+        """))
+        db.session.execute(text("""
+        CREATE INDEX IF NOT EXISTS ix_products_name ON products(name);
+        """))
+        db.session.commit()
 
     def load_current_user():
         user_id = session.get("user_id")
         if not user_id:
             g.current_user = None
             return
-
         user = db.session.get(User, user_id)  # SQLAlchemy 2系互換
         if not user or not getattr(user, "is_active", True):
             session.clear()
             g.current_user = None
         else:
             g.current_user = user
+
 
     def inject_current_user():
         return {"current_user": g.get("current_user")}
@@ -79,7 +144,8 @@ def create_app():
             cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (backup,))
 
         logging.warning("[MIG] renaming users -> %s", backup)
-        conn.execute(f"ALTER TABLE users RENAME TO {backup}")
+        backup_tbl = backup.replace('"', '""')
+        conn.execute(f'ALTER TABLE users RENAME TO "{backup_tbl}"')
         conn.commit()
 
         _create_users_table()
@@ -94,7 +160,7 @@ def create_app():
                     COALESCE(role, 'user') AS role,
                     COALESCE(is_active, 1) AS is_active,
                     COALESCE(created_at, CURRENT_TIMESTAMP) AS created_at
-                FROM {backup}
+                FROM "{backup_tbl}"
             """)
             conn.commit()
         except Exception as e:
@@ -108,6 +174,21 @@ def create_app():
             raise RuntimeError(f"usersテーブルの移行後も必須列がありません: {missing2}")
 
         logging.warning("[MIG] users table migrated successfully. legacy table kept as %s", backup)
+
+        # --- add: password management columns (minimal) ---
+        def ensure_column_exists_sqlite(conn, table, column, coldef):
+            safe_table = table.replace('"', '""')
+            safe_col = column.replace('"', '""')
+            cur = conn.execute(f'PRAGMA table_info("{safe_table}")')
+            cols = [r[1] for r in cur.fetchall()]
+            if column not in cols:
+                logging.info("[MIG] adding %s.%s", table, column)
+                conn.execute(f'ALTER TABLE "{safe_table}" ADD COLUMN "{safe_col}" {coldef}')
+                conn.commit()
+
+        ensure_column_exists_sqlite(conn, "users", "must_change_password", "INTEGER NOT NULL DEFAULT 0")
+        ensure_column_exists_sqlite(conn, "users", "password_changed_at", "TEXT")
+        ensure_column_exists_sqlite(conn, "users", "password_reset_at", "TEXT")
 
     def ensure_table_exists_quotations(conn):
         cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='quotations'")
@@ -202,6 +283,41 @@ def create_app():
 
     db.init_app(app)
 
+    from app.models.customer import Customer, CustomerStatus
+
+    @app.context_processor
+    def inject_unread_notification_count():
+        """
+        通知の未読件数をナビ表示用に注入
+        """
+        try:
+            user = getattr(g, "current_user", None)
+            if not user:
+                return {"unread_notification_count": 0}
+            from app.models.notification import Notification  # 遅延import
+            cnt = (
+                Notification.query
+                .filter(Notification.user_id == user.id, Notification.is_read == False)
+                .count()
+            )
+            return {"unread_notification_count": cnt}
+        except Exception:
+            return {"unread_notification_count": 0}
+
+    @app.context_processor
+    def inject_pending_customer_count():
+        """
+        admin/approver のときだけ承認待ち件数をナビ表示用に注入する
+        """
+        try:
+            user = getattr(g, "current_user", None)
+            if user and getattr(user, "role", None) == "admin":
+                cnt = Customer.query.filter(Customer.status == CustomerStatus.PENDING.value).count()
+                return {"pending_customer_count": cnt}
+        except Exception:
+            pass
+        return {"pending_customer_count": 0}
+
     # --- migration helpers (move above usage) ---
     def ensure_table_exists(conn, table_name):
         cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
@@ -222,15 +338,17 @@ def create_app():
         conn.commit()
 
     def ensure_column_exists(conn, table, column, coldef):
+        safe_table = table.replace('"', '""')
+        safe_col = column.replace('"', '""')
         if not ensure_table_exists(conn, table):
             logging.error(f"[MIG] Table '{table}' does not exist; cannot add column '{column}'")
             return
-        cur = conn.execute(f"PRAGMA table_info({table})")
+        cur = conn.execute(f'PRAGMA table_info("{safe_table}")')
         cols = [row[1] for row in cur.fetchall()]
         if column not in cols:
             try:
                 logging.info(f"[MIG] Adding column '{column}' to '{table}' ({coldef})")
-                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coldef}")
+                conn.execute(f'ALTER TABLE "{safe_table}" ADD COLUMN "{safe_col}" {coldef}')
                 conn.commit()
                 logging.info(f"[MIG] Added column '{column}' to '{table}'")
             except Exception as e:
@@ -284,9 +402,19 @@ def create_app():
         logging.info("[MIG] quotation_details table created")
 
     def apply_migrations(conn):
+        # --- role migration: approver -> admin (one-time) ---
+        uv_role = get_user_version(conn)
+        if isinstance(uv_role, int) and uv_role < 4:
+            try:
+                conn.execute("UPDATE users SET role='admin' WHERE role='approver'")
+                conn.commit()
+                logging.info("[MIG] migrated users.role approver -> admin")
+            except Exception as e:
+                logging.warning("[MIG] role migration approver->admin skipped: %s", e)
+            set_user_version(conn, 4)
         logging.info("[MIG] start apply_migrations")
         try:
-            uv = conn.execute("PRAGMA user_version").fetchone()[0]
+            uv = get_user_version(conn)
         except Exception:
             uv = "N/A"
         try:
@@ -294,6 +422,12 @@ def create_app():
         except Exception:
             tables = "N/A"
         logging.info("[MIG] precheck user_version=%s tables=%s", uv, tables)
+
+        # v1確定（旧スキーマからの移行が終わっていれば1に）
+        if isinstance(uv, int) and uv < 1:
+            set_user_version(conn, 1)
+            logging.info("[MIG] user_version set to 1 (legacy migration complete)")
+
 
         logging.info("[MIG] ensure auth_login_log")
         cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='auth_login_log'")
@@ -310,6 +444,8 @@ def create_app():
             conn.commit()
 
 
+
+
         logging.info("[MIG] ensure customer_approval_log (minimal approval log schema)")
 
         def _table_exists(name: str) -> bool:
@@ -317,20 +453,15 @@ def create_app():
             return cur.fetchone() is not None
 
         def _columns(name: str) -> set[str]:
-            cur = conn.execute(f"PRAGMA table_info({name})")
+            safe_name = name.replace('"', '""')
+            cur = conn.execute(f'PRAGMA table_info("{safe_name}")')
             return {r[1] for r in cur.fetchall()}
 
         # 目標：最小承認ログ型
-        required_cols = {"id", "customer_id", "user_id", "approved_by", "approved_at"}
+        required_cols = {"id", "customer_id", "user_id", "approved_by", "approved_at", "action", "comment"}
 
-        # 監査ログ型にありがちな列（現DBに合わせて広めに拾う）
-        audit_like_cols = {
-            "action", "from_status", "to_status",
-            "actor_user_id", "acted_by_user_id",
-            "acted_at", "created_at",
-            "comment",
-        }
-
+        # 監査ログ型にありがちな列（from_status, to_status, acted_at など）
+        # actor_user_id などは除外し、最小必須列が揃っていない場合のみ作り直す
         if not _table_exists("customer_approval_log"):
             conn.execute("""
                 CREATE TABLE customer_approval_log (
@@ -338,21 +469,22 @@ def create_app():
                     customer_id INTEGER NOT NULL,
                     user_id INTEGER NOT NULL,
                     approved_by INTEGER NOT NULL,
-                    approved_at DATETIME NOT NULL
+                    approved_at DATETIME NOT NULL,
+                    action TEXT NOT NULL,
+                    comment TEXT
                 )
             """)
             conn.commit()
+
         else:
             cols = _columns("customer_approval_log")
-
             is_minimal_ok = required_cols.issubset(cols)
-            looks_audit = len(cols.intersection(audit_like_cols)) > 0
-
-            # 最小型じゃない、または監査ログっぽい列があるなら退避→作り直し
-            if (not is_minimal_ok) or looks_audit:
+            # 最小型じゃない場合のみ退避→作り直し
+            if not is_minimal_ok:
                 legacy = f"customer_approval_log_legacy_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+                legacy_tbl = legacy.replace('"', '""')
                 logging.warning("[MIG] customer_approval_log schema mismatch. rename to %s and recreate", legacy)
-                conn.execute(f"ALTER TABLE customer_approval_log RENAME TO {legacy}")
+                conn.execute(f'ALTER TABLE customer_approval_log RENAME TO "{legacy_tbl}"')
                 conn.commit()
 
                 conn.execute("""
@@ -361,17 +493,122 @@ def create_app():
                         customer_id INTEGER NOT NULL,
                         user_id INTEGER NOT NULL,
                         approved_by INTEGER NOT NULL,
-                        approved_at DATETIME NOT NULL
+                        approved_at DATETIME NOT NULL,
+                        action TEXT NOT NULL,
+                        comment TEXT
                     )
                 """)
                 conn.commit()
-                logging.warning("[MIG] legacy approval log kept as %s (no data migration)", legacy)
+
+                # 可能な範囲で旧ログを新ログへ移送（必須列が取れない行は移送しない）
+                try:
+                    legacy_cols = _columns(legacy)
+                    legacy_tbl = legacy.replace('"', '""')  # 念のため
+
+                    # customer_id は必須。無いなら移送不可（0で埋めない）
+                    if "customer_id" not in legacy_cols:
+                        raise RuntimeError("legacy table has no customer_id; cannot migrate safely")
+
+                    # action（NOT NULL）
+                    if "action" in legacy_cols:
+                        action_expr = "COALESCE(action, 'approve')"
+                    elif "to_status" in legacy_cols:
+                        action_expr = """
+                            CASE
+                              WHEN LOWER(COALESCE(to_status, '')) LIKE '%reject%' THEN 'reject'
+                              WHEN LOWER(COALESCE(to_status, '')) LIKE '%deny%' THEN 'reject'
+                              ELSE 'approve'
+                            END
+                        """
+                    else:
+                        action_expr = "'approve'"
+
+                    # comment（NULL可）
+                    if "comment" in legacy_cols:
+                        comment_expr = "comment"
+                    elif "rejected_reason" in legacy_cols:
+                        comment_expr = "rejected_reason"
+                    else:
+                        comment_expr = "NULL"
+
+                    # user_id / approved_by（NOT NULL）
+                    # 取れなければ actor/acted_by を使う。どれも無い行は移送しない（0で埋めない）
+                    if "user_id" in legacy_cols:
+                        user_id_expr = "user_id"
+                    elif "actor_user_id" in legacy_cols:
+                        user_id_expr = "actor_user_id"
+                    elif "acted_by_user_id" in legacy_cols:
+                        user_id_expr = "acted_by_user_id"
+                    else:
+                        user_id_expr = None
+
+                    if "approved_by" in legacy_cols:
+                        approved_by_expr = "approved_by"
+                    elif "acted_by_user_id" in legacy_cols:
+                        approved_by_expr = "acted_by_user_id"
+                    elif "actor_user_id" in legacy_cols:
+                        approved_by_expr = "actor_user_id"
+                    else:
+                        approved_by_expr = None
+
+                    if user_id_expr is None or approved_by_expr is None:
+                        raise RuntimeError("legacy table has no user_id/approved_by equivalent; cannot migrate safely")
+
+                    # approved_at（NOT NULL）
+                    if "approved_at" in legacy_cols:
+                        approved_at_expr = "approved_at"
+                    elif "acted_at" in legacy_cols:
+                        approved_at_expr = "acted_at"
+                    elif "created_at" in legacy_cols:
+                        approved_at_expr = "created_at"
+                    else:
+                        approved_at_expr = "CURRENT_TIMESTAMP"
+
+                    # 実行（customer_id/user_id/approved_by がNULLな行は除外）
+                    conn.execute(f"""
+                        INSERT INTO customer_approval_log (customer_id, user_id, approved_by, approved_at, action, comment)
+                        SELECT
+                            customer_id,
+                            {user_id_expr},
+                            {approved_by_expr},
+                            {approved_at_expr},
+                            {action_expr},
+                            {comment_expr}
+                        FROM "{legacy_tbl}"
+                        WHERE customer_id IS NOT NULL
+                          AND {user_id_expr} IS NOT NULL
+                          AND {approved_by_expr} IS NOT NULL
+                    """)
+                    conn.commit()
+                    logging.warning("[MIG] migrated legacy approval logs: %s -> customer_approval_log", legacy)
+
+                except Exception as e:
+                    logging.warning("[MIG] legacy approval log migration skipped: %s", e)
+
+        # --- add: customer_approval_log action/comment column ---
+
+
+
+        # --- ensure customer_approval_log extra audit columns (always) ---
+        try:
+            ensure_column_exists(conn, "customer_approval_log", "actor_user_id", "INTEGER")
+            ensure_column_exists(conn, "customer_approval_log", "actor_username", "TEXT")
+            ensure_column_exists(conn, "customer_approval_log", "actor_role", "TEXT")
+            ensure_column_exists(conn, "customer_approval_log", "ip_addr", "TEXT")
+            ensure_column_exists(conn, "customer_approval_log", "user_agent", "TEXT")
+            logging.info("[MIG] ensure customer_approval_log audit columns (actor/ip/ua)")
+        except Exception as e:
+            logging.warning("[MIG] customer_approval_log audit columns ensure failed: %s", e)
+
+
 
         try:
             logging.info("[MIG] ensure customers/users/admin")
             ensure_table_exists_customers(conn)
             ensure_table_exists_users(conn)
             seed_admin_user(conn)
+            ensure_table_exists_payment_terms(conn)
+            ensure_table_exists_transaction_types(conn)
             ensure_table_exists_quotations(conn)
             q = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='quotations'").fetchone()
             logging.info("[MIG] quotations exists after ensure? %s", bool(q))
@@ -401,13 +638,31 @@ def create_app():
             ensure_column_exists(conn, "customers", "note", "TEXT")
             ensure_column_exists(conn, "customers", "created_at", "DATETIME")
             ensure_column_exists(conn, "customers", "updated_at", "DATETIME")
-            logging.info("[MIG] ensure customers approval columns")
-            ensure_column_exists(conn, "customers", "status", "TEXT NOT NULL DEFAULT 'approved'")
+            logging.info("[MIG] ensure customers approval columns (new spec)")
+            ensure_column_exists(conn, "customers", "status", "TEXT NOT NULL DEFAULT 'pending'")
+            ensure_column_exists(conn, "customers", "sales_3y", "REAL")
+            ensure_column_exists(conn, "customers", "net_profit_3y", "REAL")
+            ensure_column_exists(conn, "customers", "equity", "REAL")
+            ensure_column_exists(conn, "customers", "approved_by", "INTEGER")
+            ensure_column_exists(conn, "customers", "approved_at", "TEXT")
+            ensure_column_exists(conn, "customers", "rejected_reason", "TEXT")
             ensure_column_exists(conn, "customers", "requested_by_user_id", "INTEGER")
-            ensure_column_exists(conn, "customers", "approved_by_user_id", "INTEGER")
-            ensure_column_exists(conn, "customers", "approved_at", "DATETIME")
-            ensure_column_exists(conn, "customers", "rejected_at", "DATETIME")
-            ensure_column_exists(conn, "customers", "approval_comment", "TEXT")
+
+            # 既存データを一度だけapproved化（user_version<2の時のみ）
+            uv2 = get_user_version(conn)
+            if isinstance(uv2, int) and uv2 < 2:
+                try:
+                    conn.execute("""
+                        UPDATE customers
+                        SET status = 'approved'
+                        WHERE status = 'pending' OR status = ''
+                    """)
+                    conn.commit()
+                    logging.info("[MIG] updated existing customers to status=approved (user_version<2)")
+                except Exception as e:
+                    logging.warning(f"[MIG] failed to update existing customers status: {e}")
+                set_user_version(conn, 2)
+                logging.info("[MIG] user_version set to 2 (approval migration complete)")
             logging.info("[MIG] ensure customer_credit")
             cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='customer_credit'")
             if not cur.fetchone():
@@ -439,14 +694,14 @@ def create_app():
             conn.execute("UPDATE quotations SET revision_no = 0 WHERE revision_no IS NULL")
             conn.commit()
             ensure_column_exists(conn, "quotation_details", "profit_rate", "REAL")
-            if get_user_version(conn) < 1:
-                set_user_version(conn, 1)
+            # v1判定は冒頭で済ませたのでここは削除
             logging.info("[MIG] done user_version=%s", get_user_version(conn))
         except Exception as e:
             logging.exception("DB migration failed: %s", e)
             raise RuntimeError(f"DB migration failed: {e}")
 
     # --- end migration helpers ---
+
 
     # Apply migrations
     if not os.path.exists(db_path):
@@ -455,8 +710,9 @@ def create_app():
             from app.models.quotation_detail import QuotationDetail
             from app.models.product import Product
             from app.models.logic_config import LogicConfig
-            from app.models.customer import Customer
+            # Customer is already imported above
             db.create_all()
+
         conn = sqlite3.connect(db_path, timeout=30)
         safe_set_pragma(conn, "PRAGMA foreign_keys=ON")
         safe_set_pragma(conn, "PRAGMA journal_mode=WAL")
@@ -464,6 +720,11 @@ def create_app():
             apply_migrations(conn)
         finally:
             conn.close()
+
+        # 新規DBでも products を必ず確保（1回だけ）
+        with app.app_context():
+            ensure_products_table()
+
     else:
         conn = sqlite3.connect(db_path, timeout=30)
         safe_set_pragma(conn, "PRAGMA foreign_keys=ON")
@@ -473,13 +734,19 @@ def create_app():
         finally:
             conn.close()
 
+        # 既存DBでも products を必ず確保（1回だけ）
+        with app.app_context():
+            ensure_products_table()
+
     # Blueprints
+
     from app.routes.main import main_bp
     from app.routes.quotation import quotation_bp
     from app.routes.product import product_bp
     from app.routes.customer import customer_bp
     from app.routes.auth import auth_bp
     from app.routes.admin import admin_bp
+    from app.routes.notifications import notifications_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(quotation_bp)
@@ -487,6 +754,7 @@ def create_app():
     app.register_blueprint(customer_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(notifications_bp)
 
     @app.context_processor
     def inject_view_functions():

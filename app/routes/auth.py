@@ -1,8 +1,10 @@
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from app.auth_utils import login_required, roles_required
-
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g
+from datetime import datetime
+from app.decorators import login_required, roles_required
+from app import db
 from app.models.user import User
+from werkzeug.security import generate_password_hash
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -18,27 +20,35 @@ def login():
         user = User.query.filter_by(login_id=login_id).first()
         result = None
         user_id_val = None
-        if user and user.check_password(password):
-            if not user.is_active:
-                flash("無効ユーザーです。", "danger")
-                result = "inactive"
-                user_id_val = user.id
-            else:
-                session["user_id"] = user.id
-                flash("ログインしました。", "success")
-                result = "success"
-                user_id_val = user.id
-                # オープンリダイレクト対策: next_urlが / で始まる場合のみ許可
-                if next_url and next_url.startswith("/") and not next_url.startswith("//") and not next_url.startswith("/\\"):
-                    _insert_login_log(login_id, user_id_val, result)
-                    return redirect(next_url)
-                else:
-                    _insert_login_log(login_id, user_id_val, result)
-                    return redirect(url_for("main.index"))
-        else:
-            flash("ログインIDまたはパスワードが違います。", "danger")
+        from werkzeug.security import check_password_hash
+        if (not user) or (not check_password_hash(user.password_hash, password)):
+            flash("ユーザーIDまたはパスワードが違います。", "danger")
             result = "fail"
-        _insert_login_log(login_id, user_id_val, result)
+            _insert_login_log(login_id, user_id_val, result)
+            return render_template("login.html", next=next_url)
+
+        if not user.is_active:
+            flash("このアカウントは承認待ちです。管理者に連絡してください。", "warning")
+            result = "inactive"
+            user_id_val = user.id
+            _insert_login_log(login_id, user_id_val, result)
+            return render_template("login.html", next=next_url)
+
+        # OKならログイン処理へ
+        session["user_id"] = user.id
+        flash("ログインしました。", "success")
+        result = "success"
+        user_id_val = user.id
+        if getattr(user, "must_change_password", 0) == 1:
+            _insert_login_log(login_id, user_id_val, "success")
+            return redirect(url_for("auth.force_change_password"))
+        # オープンリダイレクト対策: next_urlが / で始まる場合のみ許可
+        if next_url and next_url.startswith("/") and not next_url.startswith("//") and not next_url.startswith("/\\"):
+            _insert_login_log(login_id, user_id_val, result)
+            return redirect(next_url)
+        else:
+            _insert_login_log(login_id, user_id_val, result)
+            return redirect(url_for("main.index"))
     return render_template("login.html", next=next_url)
 
 
@@ -80,37 +90,119 @@ def logout():
     return redirect(url_for("auth.login"))
 
 
+
 @auth_bp.route("/register", methods=["GET", "POST"])
-def register():
-    from app import db
+@login_required
+@roles_required("admin")
+def register_user():
     if request.method == "POST":
-        login_id = request.form.get("login_id", "").strip()
-        display_name = request.form.get("display_name", "").strip()
-        password = request.form.get("password", "")
-        error = None
+        login_id = (request.form.get("login_id") or "").strip()
+        display_name = (request.form.get("display_name") or "").strip()
+        password = (request.form.get("password") or "").strip()
+        role = (request.form.get("role") or "user").strip()
+        # 承認制: 登録直後は is_active=0
+        is_active = 0
+
         if not login_id or not display_name or not password:
-            error = "全ての項目を入力してください。"
-        elif len(password) < 8:
-            error = "パスワードは8文字以上で入力してください。"
-        elif User.query.filter_by(login_id=login_id).first():
-            error = "このログインIDは既に登録されています。"
-        if error:
-            flash(error, "danger")
-            return render_template("register.html", login_id=login_id, display_name=display_name)
+            flash("必須項目が未入力です", "danger")
+            return render_template("register.html", form=request.form)
+
+        # approver 廃止：user / admin のみ許可
+        if role not in ("user", "admin"):
+            flash("権限(role)が不正です", "danger")
+            return render_template("register.html", form=request.form)
+
+        if User.query.filter_by(login_id=login_id).first():
+            flash("同じログインIDが既に存在します", "danger")
+            return render_template("register.html", form=request.form)
+
         try:
-            user = User(
+            u = User(
                 login_id=login_id,
                 display_name=display_name,
-                role="user",
-                is_active=False
+                password_hash=generate_password_hash(password),
+                role=role,
+                is_active=is_active,
+                must_change_password=1,
             )
-            user.set_password(password)
-            db.session.add(user)
+            db.session.add(u)
             db.session.commit()
-            flash("ユーザー登録が完了しました。ログインしてください。", "success")
-            return redirect(url_for("auth.login"))
-        except Exception as e:
+            flash(f"ユーザーを登録しました: {login_id} ({role})", "success")
+            return redirect(url_for("auth.register_user"))
+        except Exception:
             db.session.rollback()
-            flash(f"登録に失敗しました: {e}", "danger")
-            return render_template("register.html", login_id=login_id, display_name=display_name)
-    return render_template("register.html")
+            flash("登録に失敗しました。ログを確認してください。", "danger")
+            return render_template("register.html", form=request.form)
+    # GET
+    return render_template("register.html", form=None)
+
+@auth_bp.route("/account/force_change", methods=["GET", "POST"])
+@login_required
+def force_change_password():
+    user = g.current_user
+    if not user:
+        return redirect(url_for("auth.login"))
+
+    if request.method == "POST":
+        new_login_id = (request.form.get("login_id") or "").strip()
+        new_password = (request.form.get("password") or "").strip()
+        new_password2 = (request.form.get("password2") or "").strip()
+
+        if not new_login_id or not new_password:
+            flash("ログインIDとパスワードは必須です", "danger")
+            return render_template("account_force_change.html", form=request.form)
+
+        if new_password != new_password2:
+            flash("パスワードが一致しません", "danger")
+            return render_template("account_force_change.html", form=request.form)
+
+        exists = User.query.filter(User.login_id == new_login_id, User.id != user.id).first()
+        if exists:
+            flash("同じログインIDが既に存在します", "danger")
+            return render_template("account_force_change.html", form=request.form)
+
+        try:
+            user.login_id = new_login_id
+            user.password_hash = generate_password_hash(new_password)
+            user.must_change_password = 0
+            user.password_changed_at = datetime.utcnow().isoformat()
+            db.session.commit()
+            flash("ユーザーIDとパスワードを更新しました", "success")
+            return redirect(url_for("main.index"))
+        except Exception:
+            db.session.rollback()
+            flash("更新に失敗しました。ログを確認してください。", "danger")
+
+    return render_template("account_force_change.html", form={"login_id": user.login_id})
+
+
+@auth_bp.route("/admin/users", methods=["GET"])
+@login_required
+@roles_required("admin")
+def admin_user_list():
+    users = User.query.order_by(User.id.desc()).all()
+    return render_template("admin_user_list.html", users=users)
+
+
+@auth_bp.route("/admin/users/<int:user_id>/reset", methods=["POST"])
+@login_required
+@roles_required("admin")
+def admin_reset_user(user_id):
+    user = User.query.get_or_404(user_id)
+
+    # 事故防止：admin自身はリセット不可
+    if user.login_id == "admin":
+        flash("admin はリセットできません。", "danger")
+        return redirect(url_for("auth.admin_user_list"))
+
+    initial_password = "Temp1234!"
+    try:
+        user.password_hash = generate_password_hash(initial_password)
+        user.must_change_password = 1
+        user.password_reset_at = datetime.utcnow().isoformat()
+        db.session.commit()
+        flash("初期パスワードにリセットしました（ユーザーへ初期PWを連絡してください）", "warning")
+    except Exception:
+        db.session.rollback()
+        flash("リセットに失敗しました。ログを確認してください。", "danger")
+    return redirect(url_for("auth.admin_user_list"))

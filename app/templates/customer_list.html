@@ -1,8 +1,22 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="container mt-4">
+  <!-- 権限・pending表示案内（検証用） -->
+  <div class="mb-2">
+    <span class="fw-bold">あなたの権限：</span>
+    <span class="badge bg-info text-dark">{{ current_user.role if current_user and current_user.role else '不明' }}</span>
+    {% if not (current_user and current_user.role == 'admin') %}
+      <span class="ms-3 text-danger">pending は表示されません（一般ユーザー）</span>
+    {% endif %}
+  </div>
   <!-- DEBUG: customer_list.html loaded -->
-  <h2 class="mb-4" id="page-title-customers">顧客マスタ</h2>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0" id="page-title-customers">顧客マスタ</h2>
+    <a class="btn btn-primary" href="{{ url_for('customer.customer_new') }}">
+      新規顧客登録
+    </a>
+  </div>
 
   <form class="d-flex mb-3" method="get" action="{{ url_for('customer.customer_list') }}">
     <input type="text" name="q" class="form-control form-control-sm me-2" placeholder="検索（社名/カナ）" value="{{ q or '' }}">
@@ -45,9 +59,9 @@
             {% if current_user and current_user.role == 'admin' %}
               <td>
                 {% if c.status == 'pending' %}
-                  <span class="badge bg-warning text-dark" title="{{ c.approval_comment or '' }}">pending</span>
+                  <span class="badge bg-warning text-dark">pending</span>
                 {% elif c.status == 'rejected' %}
-                  <span class="badge bg-secondary" title="{{ c.approval_comment or '' }}">rejected</span>
+                  <span class="badge bg-secondary" title="{{ c.rejected_reason or '' }}">rejected</span>
                 {% elif c.status == 'approved' %}
                   <span class="badge bg-success">approved</span>
                 {% else %}

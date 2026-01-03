@@ -32,11 +32,8 @@
         <button type="submit" class="btn btn-primary w-100">ログイン</button>
       </form>
 
-      <div class="mt-3 text-center">
-        <a href="{{ url_for('auth.register') if 'auth.register' in view_functions else '/register' }}"
-           class="btn btn-outline-secondary w-100">
-          ユーザー登録
-        </a>
+      <div class="text-muted mt-2" style="font-size: 0.9em;">
+        管理者のユーザー登録は、管理者でログイン後、画面上部メニューの「ユーザー登録」から行ってください。
       </div>
     </div>
   </div>

@@ -11,7 +11,5 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route("/")
 @login_required
 def index():
-    pending_count = 0
-    if g.current_user and g.current_user.role == "admin":
-        pending_count = Customer.query.filter(Customer.status == "pending").count()
-        return render_template("main_menu.html")
+    # すべてのユーザーで index.html（中央メニュー統一）を表示
+    return render_template("index.html", current_user=g.current_user)

@@ -1,49 +1,64 @@
-from flask import current_app
-from datetime import datetime
 
-def notify_customer_status_changed(customer, action, actor_user, comment):
+import logging
+from flask import url_for
+from app import db
+from app.models.notification import Notification
+
+logger = logging.getLogger(__name__)
+
+def notify_customer_status_changed(customer, action: str, actor_user=None, comment: str = ""):
     """
-    Notify about customer approval/rejection event.
-    Args:
-        customer: Customer instance
-        action: str (e.g. 'approved', 'rejected')
-        actor_user: User instance or identifier
-        comment: Optional string
-    Behavior:
-        - Log a one-line [NOTIFY] event
-        - Build a payload for future email integration
-        - Never break main flow (catch and log all exceptions)
+    顧客ステータス変更通知（最小実装）
+    - DBに通知を保存（宛先=申請者）
+    - メール送信等は後で差し替え可能
     """
     try:
-        # action正規化
-        action_map = {'approved': 'approve', 'rejected': 'reject'}
-        normalized_action = action_map.get(str(action), str(action))
+        # 申請者
+        requester_id = getattr(customer, "requested_by_user_id", None)
+        if not requester_id:
+            logger.info("[NOTIFY] skip: requester_id missing (customer_id=%s)", getattr(customer, "id", None))
+            return
 
-        # actor情報
-        actor_user_id = getattr(actor_user, 'id', None)
-        actor_user_name = getattr(actor_user, 'username', None) or getattr(actor_user, 'name', None) or str(actor_user)
+        # 自分が自分を却下/承認したケースは通知不要（ノイズ削減）
+        actor_id = getattr(actor_user, "id", None) if actor_user else None
+        if actor_id and actor_id == requester_id:
+            logger.info("[NOTIFY] skip: actor==requester (user_id=%s)", actor_id)
+            return
 
-        # payload構築
-        payload = {
-            'customer_id': getattr(customer, 'id', None),
-            'customer_name': getattr(customer, 'name', None),
-            'customer_status': getattr(customer, 'status', None),
-            'requested_by_user_id': getattr(customer, 'requested_by_user_id', None),
-            'action': normalized_action,
-            'actor': actor_user_name,
-            'actor_user_id': actor_user_id,
-            'actor_user_name': actor_user_name,
-            'comment': comment,
-            'comment_len': len(comment) if comment else 0,
-            'timestamp_utc': datetime.utcnow().isoformat(),
-        }
-        current_app.logger.info(
-            '[NOTIFY] action=%s customer_id=%s actor_user_id=%s status=%s',
-            payload['action'], payload['customer_id'], payload['actor_user_id'], payload['customer_status']
+        company = getattr(customer, "name", "") or ""
+        cid = getattr(customer, "id", None)
+
+        if action == "reject":
+            title = "顧客申請が却下されました"
+            message = f"顧客「{company}」が却下されました。"
+            if comment:
+                message += f"\n理由: {comment}"
+        elif action == "approve":
+            title = "顧客申請が承認されました"
+            message = f"顧客「{company}」が承認されました。"
+        else:
+            logger.info("[NOTIFY] skip: unknown action=%s", action)
+            return
+
+        # 申請者は pending でも edit を閲覧可にしている前提
+        link = url_for("customer.customer_edit", customer_id=cid) if cid else None
+
+        n = Notification(
+            user_id=requester_id,
+            title=title,
+            message=message,
+            link=link,
+            is_read=False,
         )
-        # send_email(payload)  # 拡張点: 今は呼ばない
+        db.session.add(n)
+        db.session.commit()
+
+        logger.info("[NOTIFY] saved: user_id=%s action=%s customer_id=%s", requester_id, action, cid)
+
     except Exception as e:
-        current_app.logger.exception('[NOTIFY] Notification failed: %s', e)
+        db.session.rollback()
+        logger.exception("[NOTIFY] failed: %s", e)
+        return
 
 # メール送信スタブ（未使用、将来拡張用）
 def send_email(payload):

@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">承認待ち一覧</h2>
+
+  <form class="d-flex mb-3" method="get" action="{{ url_for('customer.customer_pending_list') }}">
+    <input type="text" name="q" class="form-control form-control-sm me-2" placeholder="検索（社名/カナ）" value="{{ q or '' }}">
+    <button class="btn btn-sm btn-outline-primary" type="submit">検索</button>
+  </form>
+
+  <div class="mb-2 text-muted">
+    承認待ち：{{ customers|length }} 件
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 90px;">得意先コード</th>
+          <th>顧客名</th>
+          <th style="width: 160px;">カナ</th>
+          <th style="width: 160px;">申請者</th>
+          <th style="width: 100px;">ステータス</th>
+          <th style="width: 220px;">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if customers and customers|length > 0 %}
+          {% for c in customers %}
+            <tr>
+              <td>{{ c.customer_code or '' }}</td>
+              <td>{{ c.name }}</td>
+              <td>{{ c.name_kana or '' }}</td>
+              <td>{{ user_map.get(c.requested_by_user_id, '') }}</td>
+              <td><span class="badge bg-warning text-dark">pending</span></td>
+              <td class="text-nowrap">
+                <a class="btn btn-sm btn-outline-primary"
+                   href="{{ url_for('customer.customer_edit', customer_id=c.id) }}">
+                  詳細（審査）
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="6" class="text-center text-muted py-4">承認待ち顧客はありません</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <a href="{{ url_for('customer.customer_list') }}" class="btn btn-link">顧客一覧へ戻る</a>
+<!-- container閉じタグはこの1つでOK -->
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{# templates/_menu.html : 呼び出し側から wrapper_tag/wrapper_class/a_class を受ける #}
+
+{% set wrapper_tag = wrapper_tag|default('li') %}
+{% set wrapper_class = wrapper_class|default('nav-item') %}
+
+{% macro item(label, endpoint) -%}
+  {% if wrapper_tag == 'a' %}
+    <a class="{{ a_class }}" href="{{ url_for(endpoint) }}">{{ label }}</a>
+  {% else %}
+    <{{ wrapper_tag }} class="{{ wrapper_class }}">
+      <a class="{{ a_class }}" href="{{ url_for(endpoint) }}">{{ label }}</a>
+    </{{ wrapper_tag }}>
+  {% endif %}
+{%- endmacro %}
+
+{% macro item_html(html, endpoint) -%}
+  {% if wrapper_tag == 'a' %}
+    <a class="{{ a_class }}" href="{{ url_for(endpoint) }}">{{ html|safe }}</a>
+  {% else %}
+    <{{ wrapper_tag }} class="{{ wrapper_class }}">
+      <a class="{{ a_class }}" href="{{ url_for(endpoint) }}">{{ html|safe }}</a>
+    </{{ wrapper_tag }}>
+  {% endif %}
+{%- endmacro %}
+
+{# ホーム（上部ナビでは表示、中央メニューでは非表示） #}
+{% if wrapper_tag != 'a' %}
+  {{ item('メインメニュー', 'main.index') }}
+{% endif %}
+
+{# 見積 #}
+{% if 'quotation.quotation_list' in view_functions %}
+  {{ item('見積一覧', 'quotation.quotation_list') }}
+{% endif %}
+{% if 'quotation.quotation_new' in view_functions %}
+  {{ item('見積作成', 'quotation.quotation_new') }}
+{% endif %}
+
+{# マスタ #}
+{% if 'customer.customer_list' in view_functions %}
+  {{ item('顧客マスタ一覧', 'customer.customer_list') }}
+{% endif %}
+{% if 'product.product_list' in view_functions %}
+  {{ item('製品マスタ一覧', 'product.product_list') }}
+{% endif %}
+
+{# 管理（管理者のみ） #}
+{% if current_user and current_user.role == 'admin' and 'customer.customer_pending_list' in view_functions %}
+  {% set badge %}
+    顧客承認（審査待ち）
+    {% if pending_customer_count and pending_customer_count > 0 %}
+      <span class="badge bg-warning text-dark ms-1">{{ pending_customer_count }}</span>
+    {% endif %}
+  {% endset %}
+  {{ item_html(badge, 'customer.customer_pending_list') }}
+{% endif %}
+
+{% if current_user and current_user.role == 'admin' and 'admin.user_list' in view_functions %}
+  {{ item('ユーザー管理', 'admin.user_list') }}
+{% endif %}
+
+{# 通知 #}
+{% if 'notifications.list_notifications' in view_functions %}
+  {% set nbadge %}
+    通知
+    {% if unread_notification_count and unread_notification_count > 0 %}
+      <span class="badge bg-danger ms-1">{{ unread_notification_count }}</span>
+    {% endif %}
+  {% endset %}
+  {{ item_html(nbadge, 'notifications.list_notifications') }}
+{% endif %}

@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>通知</h2>
+    <div class="text-muted">未読: {{ unread_count }}</div>
+  </div>
+  {% if notifications %}
+    <div class="list-group">
+      {% for n in notifications %}
+          <a class="list-group-item list-group-item-action {% if not n.is_read %}fw-bold{% endif %}"
+            href="{{ url_for('notifications.notification_open', notification_id=n.id) }}">
+          <div class="d-flex w-100 justify-content-between">
+            <div>
+              <div class="mb-1">{{ n.title }}</div>
+              <div class="small text-muted" style="white-space: pre-wrap;">{{ n.message }}</div>
+            </div>
+            <div class="text-end small text-muted ms-3" style="min-width: 8rem;">
+              {% if not n.is_read %}
+                <span class="badge bg-primary">未読</span>
+              {% else %}
+                <span class="badge bg-secondary">既読</span>
+              {% endif %}
+              <div class="mt-1">
+                {{ n.created_at.strftime("%Y-%m-%d %H:%M") if n.created_at else "" }}
+              </div>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-secondary">通知はありません。</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>メインメニュー</h2>
+
+  <p class="text-muted">
+    ようこそ {{ current_user.display_name or current_user.login_id }} さん
+  </p>
+
+  {% set a_class = "list-group-item list-group-item-action" %}
+  {% set wrapper_tag = "a" %}
+  <div class="list-group">
+    {% include "_menu.html" %}
+
+    <a class="list-group-item list-group-item-action text-danger"
+       href="{{ url_for('auth.logout') }}"
+       onclick="return confirm('ログアウトします。よろしいですか？');">
+      ログアウト
+    </a>
+  </div>
+</div>
+{% endblock %}

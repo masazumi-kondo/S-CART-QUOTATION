@@ -423,9 +423,16 @@
 // 明細テーブル生成・追加・削除・合計計算・イベント委譲
 // 依存: common.js
 
-// ...実装はquotation_form.jsから順次移植...
 // V2固定2行（設計費・現地セットアップ費）upsert
-window.upsertV2FixedRows = function upsertV2FixedRows({ designSell, designCost, setupSell, setupCost }) {
+// 新仕様（v2_core_new.js）: designSellAmount, designCostAmount, setupSellAmount, setupCostAmount
+// 旧仕様（互換性）: designSell, designCost, setupSell, setupCost
+window.upsertV2FixedRows = function upsertV2FixedRows({ designSellAmount, designCostAmount, setupSellAmount, setupCostAmount, designSell, designCost, setupSell, setupCost }) {
+	// 新仕様パラメータがなければ旧仕様パラメータを使用（後方互換性）
+	const sell1 = designSellAmount || designSell || 0;
+	const cost1 = designCostAmount || designCost || 0;
+	const sell2 = setupSellAmount || setupSell || 0;
+	const cost2 = setupCostAmount || setupCost || 0;
+
 	const tbody = document.getElementById("detail-body");
 	if (!tbody) return;
 
@@ -486,8 +493,8 @@ window.upsertV2FixedRows = function upsertV2FixedRows({ designSell, designCost, 
 		return tr;
 	}
 
-	const trDesign = ensureRow("v2_design", "設計費（V2自動算出）", designSell, designCost);
-	const trSetup = ensureRow("v2_setup", "現地セットアップ費（V2自動算出）", setupSell, setupCost);
+	const trDesign = ensureRow("v2_design", "設計費（V2自動算出）", sell1, cost1);
+	const trSetup = ensureRow("v2_setup", "現地セットアップ費（V2自動算出）", sell2, cost2);
 
 	// 並び順：設計費 → 現地セットアップ費 → 通常明細
 	if (trDesign && tbody.firstChild !== trDesign) {

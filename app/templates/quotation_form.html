@@ -128,113 +128,135 @@
 
 <div class="q-section" id="v2-estimate-wizard">
     <h5>設計費・現地セットアップ費（V2 自動算出）</h5>
+    <div class="alert alert-warning py-2 mb-2">
+      <b>概算見積について：</b> 本機能は概算見積用です。ルート詳細が未確定な段階でも入力できるよう、現場イメージに基づく係数で設計費・現地セットアップ費を自動算出します。詳細仕様確定後は、正式見積時に工数の再確認を行ってください。
+    </div>
     <div class="card mb-3 border-primary" id="v2_wizard">
         <div class="card-header d-flex align-items-center justify-content-between">
             <span>V2 設計費・現地セットアップ費ウィザード</span>
             <span></span>
         </div>
         <div class="card-body">
-            <!-- Step2 -->
+            <!-- Step2: 搬送条件 -->
             <div class="mb-3">
-                <span class="badge bg-primary">Step2 ルート規模</span>
+                <span class="badge bg-primary">Step2 搬送条件</span>
             </div>
             <div id="v2_step2" data-v2-step="2" class="border rounded p-3 mb-3">
-                <h5 class="mb-3">Step2：ルート規模（テンプレ別）</h5>
-                <div class="row">
-                {% set tpl_guidance = [
-                    '単純搬送(A→B)',
-                    '投入先複数(A/B/C→D)',
-                    '排出先複数(A→B/C/D)',
-                    '中継あり(A→X→B)',
-                    '交通制約あり（待避/対向不可/合流多い）',
-                    'EV/階層またぎ'
-                ] %}
-                {% for i in range(1,7) %}
-                <div class="col-12 mb-3">
-                    <div class="card border-primary">
-                        <div class="card-header d-flex justify-content-between align-items-center py-2">
-                            <span><strong>T{{ i }}</strong> <span class="text-muted small">{{ tpl_guidance[i-1] }}</span></span>
-                            <span>
-                                <button type="button" class="btn btn-outline-secondary btn-sm v2-step2-add" data-tidx="{{ i }}">＋</button>
-                                <button type="button" class="btn btn-outline-danger btn-sm v2-step2-remove" data-tidx="{{ i }}">－</button>
-                            </span>
-                        </div>
-                        <div class="card-body py-2">
-                            <div class="table-responsive">
-                                <table class="table table-sm align-middle mb-0 v2-step2-table" style="width:100%;">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th style="width: 10%;">ルートID</th>
-                                            <th style="width: 12%;">台数</th>
-                                            <th style="width: 14%;">ステーション数</th>
-                                            <th style="width: 14%;">短辺[m]</th>
-                                            <th style="width: 14%;">長辺[m]</th>
-                                            <th style="width: 12%;">待機</th>
-                                            <th style="width: 24%;">メモ（任意）</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="v2_step2_tbody_T{{ i }}">
-                                        <tr data-row-index="1">
-                                            <td class="align-middle"><span class="v2-route-id">T{{ i }}-1</span></td>
-                                            <td><input type="number" class="form-control form-control-lg" id="v2_vehicle_T{{ i }}_1" name="v2_vehicle_T{{ i }}[]" min="0" step="1" value="0"></td>
-                                            <td><input type="number" class="form-control form-control-lg" id="v2_station_T{{ i }}_1" name="v2_station_T{{ i }}[]" min="0" step="1" value="0"></td>
-                                            <td><input type="number" class="form-control form-control-lg" id="v2_short_T{{ i }}_1" name="v2_short_T{{ i }}[]" min="0" step="0.1" value="0"></td>
-                                            <td><input type="number" class="form-control form-control-lg" id="v2_long_T{{ i }}_1" name="v2_long_T{{ i }}[]" min="0" step="0.1" value="0"></td>
-                                            <td><input type="number" class="form-control form-control-lg" id="v2_wait_T{{ i }}_1" name="v2_wait_T{{ i }}[]" min="0" step="1" value="0"></td>
-                                            <td><input type="text" class="form-control form-control-lg" id="v2_memo_T{{ i }}_1" name="v2_memo_T{{ i }}[]" placeholder="例：搬送A→B、充電、待機など"></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                <h5 class="mb-3">Step2：搬送条件</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_vehicle_count">AGV台数 *</label>
+                        <input type="number" class="form-control" id="v2_vehicle_count" name="v2_vehicle_count" min="1" step="1" value="1">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_pickup_count">搬送元数 * <span class="small text-muted">(材料・ワークを取りに行く場所)</span></label>
+                        <input type="number" class="form-control" id="v2_pickup_count" name="v2_pickup_count" min="1" step="1" value="1">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_dropoff_count">搬送先数 * <span class="small text-muted">(届ける場所)</span></label>
+                        <input type="number" class="form-control" id="v2_dropoff_count" name="v2_dropoff_count" min="1" step="1" value="1">
+                    </div>
+                    <div class="col-md-6">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_area_short_m">走行エリア短辺 [m] *</label>
+                        <input type="number" class="form-control" id="v2_area_short_m" name="v2_area_short_m" min="1" step="0.1" value="10">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_area_long_m">走行エリア長辺 [m] *</label>
+                        <input type="number" class="form-control" id="v2_area_long_m" name="v2_area_long_m" min="1" step="0.1" value="20">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_route_complexity">搬送ルートの複雑さ *</label>
+                        <select class="form-select" id="v2_route_complexity" name="v2_route_complexity">
+                            <option value="simple">単純 (搬送元・先が少なく、ルートが分かりやすい)</option>
+                            <option value="standard" selected>標準 (一般的な製造現場の搬送)</option>
+                            <option value="complex">複雑 (搬送パターンや分岐が多い)</option>
+                            <option value="unknown">未定 (まだルート詳細が決まっていない)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_merge_level">すれ違い・合流の多さ *</label>
+                        <select class="form-select" id="v2_merge_level" name="v2_merge_level">
+                            <option value="low">少ない (AGV同士の干渉が少ない想定)</option>
+                            <option value="standard" selected>標準 (一般的な多台数搬送)</option>
+                            <option value="high">多い (合流・交差・干渉が多そうな現場)</option>
+                            <option value="unknown">未定 (まだ詳細不明)</option>
+                        </select>
                     </div>
                 </div>
-                {% endfor %}
-                </div>
             </div>
-            <!-- Step3 -->
+
+            <!-- Step3: 現地設置・補正条件 -->
             <div class="mb-3">
-                <span class="badge bg-primary">Step3 外部I/F</span>
+                <span class="badge bg-primary">Step3 現地設置・補正条件</span>
             </div>
             <div id="v2_step3" data-v2-step="3" class="border rounded p-3 mb-3">
-                <h5 class="mb-3">Step3：外部設備I/F（連携規模）</h5>
-                <div class="alert alert-info py-2 mb-2">
-                  <b>ガイダンス:</b> 外部設備信号点数は、設備ごとに下記を目安に合計してください。<br>
-                  目安：単純設備 4–8点/台、状態監視 8–16点/台、複雑 16–32点/台。合計点数を入力してください。
-                </div>
+                <h5 class="mb-3">Step3：現地設置・補正条件</h5>
                 <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label" for="v2_equipmentCount">連携外部設備台数</label>
-                        <input type="number" class="form-control" id="v2_equipmentCount" name="v2_equipmentCount" min="0" step="1"
-                                     value="{{ values.v2_equipmentCount|default(0) }}">
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_charger_count">充電器数</label>
+                        <input type="number" class="form-control" id="v2_charger_count" name="v2_charger_count" min="0" step="1" value="1">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label" for="v2_signalPoints">外部設備信号点数合計</label>
-                        <input type="number" class="form-control" id="v2_signalPoints" name="v2_signalPoints" min="0" step="1"
-                                     value="{{ values.v2_signalPoints|default(0) }}">
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_magnetic_stop_count">磁気テープ停止箇所 <span class="small text-muted">(停止精度向上用)</span></label>
+                        <input type="number" class="form-control" id="v2_magnetic_stop_count" name="v2_magnetic_stop_count" min="0" step="1" value="0">
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label" for="v2_chargerCount">充電器台数</label>
-                        <input type="number" class="form-control" id="v2_chargerCount" name="v2_chargerCount" min="0" step="1"
-                                     value="{{ values.v2_chargerCount|default(0) }}">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label" for="v2_elevatorCount">エレベーター台数</label>
-                        <input type="number" class="form-control" id="v2_elevatorCount" name="v2_elevatorCount" min="0" step="1"
-                                     value="{{ values.v2_elevatorCount|default(0) }}">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label" for="v2_autoDoorCount">自動扉台数</label>
-                        <input type="number" class="form-control" id="v2_autoDoorCount" name="v2_autoDoorCount" min="0" step="1"
-                                     value="{{ values.v2_autoDoorCount|default(0) }}">
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_landmark_range">ランドマーク設置範囲 *</label>
+                        <select class="form-select" id="v2_landmark_range" name="v2_landmark_range">
+                            <option value="small">小</option>
+                            <option value="medium">中</option>
+                            <option value="large">大</option>
+                            <option value="full">全域</option>
+                            <option value="unknown" selected>未定 (自己位置補正範囲未確定)</option>
+                        </select>
                     </div>
                 </div>
             </div>
+
+            <!-- Step4: 設備連携 -->
+            <div class="mb-3">
+                <span class="badge bg-primary">Step4 設備連携</span>
+            </div>
+            <div id="v2_step4" data-v2-step="4" class="border rounded p-3 mb-3">
+                <h5 class="mb-3">Step4：設備連携</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_elevator_count">エレベーター連携数</label>
+                        <input type="number" class="form-control" id="v2_elevator_count" name="v2_elevator_count" min="0" step="1" value="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_auto_door_count">自動扉連携数</label>
+                        <input type="number" class="form-control" id="v2_auto_door_count" name="v2_auto_door_count" min="0" step="1" value="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_plc_scale">PLC/設備連携規模 *</label>
+                        <select class="form-select" id="v2_plc_scale" name="v2_plc_scale">
+                            <option value="none" selected>なし</option>
+                            <option value="small">小：1～5点相当</option>
+                            <option value="medium">中：6～15点相当</option>
+                            <option value="large">大：16点以上相当</option>
+                            <option value="unknown">未定</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="v2_host_system">上位システム連携 *</label>
+                        <select class="form-select" id="v2_host_system" name="v2_host_system">
+                            <option value="none" selected>なし</option>
+                            <option value="yes">あり</option>
+                            <option value="unknown">未定</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <div class="d-flex justify-content-end mb-2">
                     <button type="button" class="btn btn-primary" id="v2_run">
                         実行（設計費／現地セットアップ費を自動反映）
                     </button>
                 </div>
+
                 <!-- V2結果カード -->
 <div class="card mt-3" id="v2_preview_card">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -242,29 +264,26 @@
     </div>
     <div class="card-body">
         <div class="row g-3">
-            <div class="col-md-6 d-none">
-                <div class="small text-muted">入力要点</div>
-                <div>AGV台数: <span id="sum_vehicleCount">-</span></div>
-                <div>ステーション数: <span id="sum_stationCount">-</span></div>
-                <div>短辺[m]: <span id="sum_areaShort_m">-</span></div>
-                <div>長辺[m]: <span id="sum_areaLong_m">-</span></div>
-            </div>
             <div class="col-md-6">
                 <div class="small text-muted">自動算出結果</div>
-                <div>設計工数(切上): <span id="sum_designHoursCeil">-</span></div>
-                <div>設計費(売): <span id="sum_designSell">-</span></div>
-                <div>現地工数(切上): <span id="sum_setupHoursCeil">-</span></div>
-                <div>現地費(売): <span id="sum_setupSell">-</span></div>
+                <div>設計工数: <span id="sum_designHoursCeil">-</span> h</div>
+                <div>現地セットアップ工数: <span id="sum_setupHoursCeil">-</span> h</div>
+                <div class="mt-2">
+                  <div>推定走行パターンスコア: <span id="sum_estimatedPatternScore">-</span></div>
+                  <div>走行エリア規模スコア: <span id="sum_layoutScaleScore">-</span></div>
+                  <div>ランドマーク係数: <span id="sum_landmarkFactor">-</span></div>
+                  <div>PLC相当信号点数: <span id="sum_plcSignalCount">-</span></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="small text-muted">V2固定行の金額</div>
+                <div>設計費（売価）: <span id="sum_designSell">-</span> ¥</div>
+                <div>現地セットアップ費（売価）: <span id="sum_setupSell">-</span> ¥</div>
             </div>
         </div>
 
         <div class="mt-3 small text-muted d-none" id="v2_ng_reason_block">
             NG理由: <span id="sum_missing">-</span>
-        </div>
-
-        <div class="mt-2">
-            <div id="sum_fixedRow1">-</div>
-            <div id="sum_fixedRow2">-</div>
         </div>
 
         <div class="d-none">
@@ -373,10 +392,8 @@
     {# --- 外部JS（defer推奨） --- #}
     <script defer src="{{ url_for('static', filename='js/quotation/common.js') }}"></script>
     <script defer src="{{ url_for('static', filename='js/quotation/details_table.js') }}"></script>
-    <script defer src="{{ url_for('static', filename='js/quotation/v2_core.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/quotation/v2_core_new.js') }}"></script>
     <script defer src="{{ url_for('static', filename='js/quotation/v2_sync.js') }}"></script>
-    <script defer src="{{ url_for('static', filename='js/quotation/v2_live_summary.js') }}"></script>
-    <script defer src="{{ url_for('static', filename='js/quotation/v2_step2_rows.js') }}"></script>
     <script defer src="{{ url_for('static', filename='js/quotation/quotation_form.js') }}"></script>
 </div>
 {% endblock %}

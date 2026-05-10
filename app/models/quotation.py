@@ -51,6 +51,13 @@ class Quotation(db.Model):
 
     def __repr__(self):
         return f"<Quotation id={self.id} project_name={self.project_name} estimator_name={self.estimator_name}>"
+    
+    @property
+    def total_after_discount(self):
+        """最終合計売価を計算"""
+        total_sell = sum((d.subtotal or 0) for d in self.details) if self.details else 0
+        discount_amount = (self.discount_amount or 0)
+        return max(0, total_sell - discount_amount)
 
 # --- 注意 ---
 # この変更後は Flask サーバを再起動してください。

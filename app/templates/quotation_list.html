@@ -8,11 +8,12 @@
     <table class="table table-bordered table-hover align-middle">
         <thead class="table-light">
             <tr>
-                <th>見積ID</th>
+                <th>見積No.</th>
+                <th>改定</th>
+                <th>顧客名</th>
                 <th>案件名</th>
-                <th>宛先企業名</th>
-                <th>納期</th>
                 <th>作成日</th>
+                <th class="text-end">最終合計売価</th>
                 <th>操作</th>
             </tr>
         </thead>
@@ -23,20 +24,22 @@
                 <td>
                     {{ q.original_id }}-R{{ q.revision_no }}
                 </td>
-                <td>{{ q.project_name }}</td>
+                <td>{{ q.revision_no }}</td>
                 <td>{{ q.company_name }}</td>
-                <td>{{ q.delivery_date or "" }}</td>
+                <td>{{ q.project_name }}</td>
                 <td>
-                    {% if q.created_at %}
-                        {{ q.created_at.strftime('%Y-%m-%d %H:%M') }}
-                    {% endif %}
+                    {{ q.created_at }}
+                </td>
+                <td class="text-end">
+                    ¥{{ "{:,}".format(q.total_after_discount|int) }}
                 </td>
                 <td>
-                    <div class="d-flex gap-2">
-                        <a href="{{ url_for('quotation.quotation_view', quotation_id=q.id) }}" class="btn btn-sm btn-outline-secondary">表示</a>
-                        <a href="{{ url_for('quotation.quotation_revise', quotation_id=q.id) }}" class="btn btn-sm btn-outline-primary">改定</a>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('quotation.quotation_view', quotation_id=q.id) }}" class="btn btn-sm btn-outline-secondary" title="詳細表示">詳細</a>
+                        <a href="{{ url_for('quotation.print_view', quotation_id=q.id) }}" class="btn btn-sm btn-outline-info" title="印刷画面へ">印刷</a>
+                        <a href="{{ url_for('quotation.quotation_revise', quotation_id=q.id) }}" class="btn btn-sm btn-outline-primary" title="改定版を作成">改定</a>
                         <form method="post" action="{{ url_for('quotation.quotation_delete', quotation_id=q.id) }}" style="display:inline;" onsubmit="return confirm('この見積を削除します。よろしいですか？（改定履歴も削除されます）');">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">削除</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="削除">削除</button>
                         </form>
                     </div>
                 </td>
@@ -44,7 +47,7 @@
             {% endfor %}
         {% else %}
             <tr>
-                <td colspan="6" class="text-center">見積データがありません。</td>
+                <td colspan="7" class="text-center">見積データがありません。</td>
             </tr>
         {% endif %}
         </tbody>

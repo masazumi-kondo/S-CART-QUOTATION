@@ -331,7 +331,26 @@ def quotation_list():
         quotations.append(orig)
         if orig.id in latest_rev_map:
             quotations.append(latest_rev_map[orig.id])
-    return render_template("quotation_list.html", quotations=quotations)
+    
+    # Convert Quotation objects to dictionaries with calculated totals
+    def get_total_after_discount(q):
+        total_sell = sum((d.subtotal or 0) for d in q.details) if q.details else 0
+        discount_amount = (q.discount_amount or 0) if q.discount_amount else 0
+        return max(0, total_sell - discount_amount)
+    
+    quotations_data = []
+    for q in quotations:
+        quotations_data.append({
+            'original_id': q.original_id,
+            'revision_no': q.revision_no,
+            'company_name': q.company_name,
+            'project_name': q.project_name,
+            'created_at': q.created_at.strftime('%Y-%m-%d') if q.created_at else '',
+            'total_after_discount': get_total_after_discount(q),
+            'id': q.id
+        })
+    
+    return render_template("quotation_list.html", quotations=quotations_data)
 
 
 @quotation_bp.route("/quotation/new", methods=["GET", "POST"])

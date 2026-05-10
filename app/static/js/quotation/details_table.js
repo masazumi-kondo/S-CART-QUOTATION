@@ -452,6 +452,11 @@ window.upsertV2FixedRows = function upsertV2FixedRows({ designSellAmount, design
 			tr.classList.add("js-fixed-row");
 			tr.setAttribute("data-fixed-code", code);
 
+			// Prepare formatted values for HTML template
+			const sellStr = raw(sell);
+			const costStr = raw(cost);
+			const sellFormatted = fmt(sell);
+
 			tr.innerHTML = `
 				<td>
 					<input type="hidden" name="product_id[]" value="">
@@ -462,14 +467,14 @@ window.upsertV2FixedRows = function upsertV2FixedRows({ designSellAmount, design
 					<input type="hidden" name="code[]" value="${code}">
 				</td>
 				<td>
-					<input type="number" class="form-control text-end unit-price-input" name="unit_price[]" value="0" readonly>
+					<input type="number" class="form-control text-end unit-price-input" name="unit_price[]" value="${sellStr}" readonly>
 				</td>
 				<td>
 					<input type="number" class="form-control text-end quantity-input" name="quantity[]" value="1" readonly>
 				</td>
 				<td>
-					<input type="text" class="form-control text-end subtotal-input" name="subtotal[]" value="0" readonly>
-					<input type="hidden" name="cost[]" value="0">
+					<input type="text" class="form-control text-end subtotal-input" name="subtotal[]" value="${sellFormatted}" readonly>
+					<input type="hidden" name="cost[]" value="${costStr}">
 				</td>
 				<td class="text-center">
 					<span class="text-muted small">固定</span>
@@ -479,10 +484,24 @@ window.upsertV2FixedRows = function upsertV2FixedRows({ designSellAmount, design
 			tbody.insertBefore(tr, tbody.firstChild);
 		}
 
-		tr.querySelector('input[name="unit_price[]"]').value = raw(sell);
-		tr.querySelector('input[name="quantity[]"]').value = "1";
-		tr.querySelector('input[name="subtotal[]"]').value = fmt(sell);
-		tr.querySelector('input[name="cost[]"]').value = raw(cost);
+		// 念のため、既存行の場合も値を再更新（セキュアネス重視）
+		const unitPriceInput = tr.querySelector('input[name="unit_price[]"]');
+		unitPriceInput.value = raw(sell);
+		unitPriceInput.setAttribute('value', raw(sell)); // HTML属性も更新
+		
+		const qtyInput = tr.querySelector('input[name="quantity[]"]');
+		qtyInput.value = "1";
+		qtyInput.setAttribute('value', "1");
+		
+		const subtotalInput = tr.querySelector('input[name="subtotal[]"]');
+		const subtotalFormatted = fmt(sell);
+		subtotalInput.value = subtotalFormatted;
+		subtotalInput.setAttribute('value', subtotalFormatted);
+		
+		const costInput = tr.querySelector('input[name="cost[]"]');
+		const costRaw = raw(cost);
+		costInput.value = costRaw;
+		costInput.setAttribute('value', costRaw);
 
 		// 集計対象から外れないよう disabled は使わない。readonlyのみ。
 		tr.querySelectorAll("input").forEach(el => {

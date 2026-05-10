@@ -28,11 +28,23 @@
                 <div class="mb-3 position-relative">
                     <label for="customer_search" class="form-label">顧客名（宛先） <span class="text-danger">*</span></label>
                     <input type="hidden" id="customer_id" name="customer_id" value="{{ values.customer_id|default('') }}">
-                    <input type="text" class="form-control" id="customer_search" name="company_name"
-                        autocomplete="off" value="{{ values.company_name|default('') }}"
-                        placeholder="例：株式会社デンソーエレクトロニクス（入力→候補をクリック）">
-                    <div id="customer_candidates" class="list-group position-absolute w-100" style="z-index: 1000;"></div>
-                    <div class="q-muted mt-1">入力すると顧客マスタ候補が表示されます。選択すると顧客IDがセットされます。</div>
+                    <input type="text"
+                           class="form-control"
+                           id="customer_search"
+                           name="company_name"
+                           autocomplete="off"
+                           value="{{ values.company_name|default('') }}"
+                           placeholder="顧客名・カナで検索して選択、または直接入力">
+                    <div id="customer_candidates"
+                         class="list-group position-absolute w-100 shadow-sm d-none"
+                         style="z-index: 1000; max-height: 280px; overflow-y: auto;">
+                    </div>
+                    <div class="q-muted mt-1">
+                      顧客名またはカナを入力すると、顧客マスタ候補が表示されます。
+                    </div>
+                    <div class="small mt-1 d-none" id="customer_selected_label">
+                      選択済み：<span id="customer_selected_name"></span>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="contact_name" class="form-label">宛先担当者名</label>
@@ -351,6 +363,7 @@
     <script src="{{ url_for('static', filename='js/quotation/profit_summary.js') }}"></script>
     <script id="customers-meta-json" type="application/json">{{ customers_meta|tojson|safe }}</script>
     <script id="customers-json" type="application/json">{{ customers|tojson|safe }}</script>
+    <script src="{{ url_for('static', filename='js/quotation/customer_search.js') }}"></script>
     {% if revise_source_id and details %}
     <script id="initial-values-json" type="application/json">{{ values|tojson|safe }}</script>
     <script id="initial-details-json" type="application/json">{{ details|tojson|safe }}</script>

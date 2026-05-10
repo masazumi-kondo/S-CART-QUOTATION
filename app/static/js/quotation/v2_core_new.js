@@ -321,24 +321,6 @@ function convertAmountsV2(designHours, setupHours, settings = V2_DEFAULT_SETTING
 }
 
 // ============================================================
-// メイン計算関数
+// Note: runEstimateV2() is defined in v2_sync.js
+// v2_sync.js handles DOM updates and orchestration
 // ============================================================
-
-/**
- * V2推定を実行し、全ての計算結果を返す
- */
-function runEstimateV2(settings = V2_DEFAULT_SETTINGS) {
-  const params = readParamsV2FromWizard();
-  const metrics = deriveComplexityMetricsV2(params, settings);
-  const designHours = calcDesignHoursV2(params, metrics, settings);
-  const setupHours = calcSetupHoursV2(params, metrics, settings);
-  const amounts = convertAmountsV2(designHours, setupHours, settings);
-
-  return {
-    params,
-    metrics,
-    designHours,
-    setupHours,
-    amounts
-  };
-}

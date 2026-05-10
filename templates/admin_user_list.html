@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>ユーザー管理（管理者）</h2>
+
+  <div class="table-responsive mt-3">
+    <table class="table table-bordered table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>ID</th>
+          <th>login_id</th>
+          <th>表示名</th>
+          <th>role</th>
+          <th>状態</th>
+          <th>初回変更</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.login_id }}</td>
+          <td>{{ u.display_name }}</td>
+          <td>{{ 'administrator' if u.role == 'admin' else u.role }}</td>
+          <td>{{ '有効' if u.is_active else '無効' }}</td>
+          <td>
+            {% if u.must_change_password == 1 %}
+              <span class="badge bg-warning text-dark">要変更</span>
+            {% else %}
+              <span class="badge bg-success">OK</span>
+            {% endif %}
+          </td>
+          <td>
+            <form method="post"
+                  action="{{ url_for('auth.admin_reset_user', user_id=u.id) }}"
+                  onsubmit="return confirm('初期パスワードにリセットします。よろしいですか？');">
+              <button class="btn btn-sm btn-outline-danger" type="submit">リセット</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

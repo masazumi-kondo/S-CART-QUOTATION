@@ -694,6 +694,7 @@ def create_app():
             conn.execute("UPDATE quotations SET revision_no = 0 WHERE revision_no IS NULL")
             conn.commit()
             ensure_column_exists(conn, "quotation_details", "profit_rate", "REAL")
+            ensure_column_exists(conn, "quotation_details", "cost", "REAL DEFAULT 0")
             # v1判定は冒頭で済ませたのでここは削除
             logging.info("[MIG] done user_version=%s", get_user_version(conn))
         except Exception as e:

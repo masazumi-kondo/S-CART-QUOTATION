@@ -254,12 +254,38 @@ def quotation_view(quotation_id):
         design_setup["setup_fee"]  = picked_setup
         design_setup = _ensure_dict_design_setup(design_setup)
 
+    # 値引き額と値引き後合計を計算
+    discount_amount = getattr(quotation, "discount_amount", 0) or 0
+    total_after_discount = max(0, total - discount_amount)
+
     return render_template(
         "quotation_view.html",
         quotation=quotation,
         details=details,
         total_amount=total,
+        discount_amount=discount_amount,
+        total_after_discount=total_after_discount,
         design_setup=design_setup,
+    )
+
+
+@quotation_bp.route("/quotation/<int:quotation_id>/print")
+def print_view(quotation_id):
+    quotation = Quotation.query.get_or_404(quotation_id)
+    details = sort_details_for_display(quotation.details)
+    
+    total_amount = sum((getattr(d, "subtotal", 0) or 0) for d in details)
+    discount_amount = getattr(quotation, "discount_amount", 0) or 0
+    total_after_discount = max(0, total_amount - discount_amount)
+    
+    return render_template(
+        "quotation_view.html",
+        quotation=quotation,
+        details=details,
+        total_amount=total_amount,
+        discount_amount=discount_amount,
+        total_after_discount=total_after_discount,
+        print_mode=True
     )
 
 
@@ -359,11 +385,21 @@ def quotation_new():
         "equipment_count": "",
         "circuit_difficulty": "",
         "customer_id": "",
-        "discount_rate": 0.0
+        "discount_rate": 0.0,
+        "discount_amount": 0
     }
 
 
     if request.method == "POST":
+        # 保存前ログ
+        from flask import current_app
+        current_app.logger.info("quotation_new action=%s company_name=%s customer_id=%s project=%s",
+            request.form.get("action"),
+            request.form.get("company_name"),
+            request.form.get("customer_id"),
+            request.form.get("project_name")
+        )
+
         # ヘッダ項目取得
         values["company_name"] = request.form.get("company_name", "").strip()
         values["contact_name"] = request.form.get("contact_name", "").strip()
@@ -391,6 +427,13 @@ def quotation_new():
         except ValueError:
             values["discount_rate"] = 0.0
 
+        # 値引き額取得
+        discount_amount_raw = request.form.get("discount_amount", "0").replace(",", "")
+        try:
+            values["discount_amount"] = int(float(discount_amount_raw))
+        except ValueError:
+            values["discount_amount"] = 0
+
         # --- デバッグログ追加 ---
         from flask import current_app
         current_app.logger.info("quotation_new POST: product_id=%s", request.form.getlist("product_id[]"))
@@ -399,21 +442,26 @@ def quotation_new():
         current_app.logger.info("quotation_new POST: unit_price=%s", request.form.getlist("unit_price[]"))
         current_app.logger.info("quotation_new POST: quantity=%s", request.form.getlist("quantity[]"))
         current_app.logger.info("quotation_new POST: subtotal=%s", request.form.getlist("subtotal[]"))
+        current_app.logger.info("quotation_new POST: discount_amount=%s discount_rate=%s",
+            request.form.get("discount_amount"),
+            request.form.get("discount_rate")
+        )
 
-        # --- 明細行の取得（新しいname属性に対応） ---
+        # --- 明細行の取得（新しいname属性に対応）---
         product_ids = request.form.getlist("product_id[]")
         codes = request.form.getlist("code[]")
         descs = request.form.getlist("description[]")
         unit_prices = request.form.getlist("unit_price[]")
         quantities = request.form.getlist("quantity[]")
         subtotals = request.form.getlist("subtotal[]")
+        costs = request.form.getlist("cost[]")
 
 
 
         # --- 明細行の取得: 各配列の最大長でループし、product_idが空でも他があれば保存 ---
         details = []
         total = 0
-        row_count = max(len(product_ids), len(codes), len(descs), len(unit_prices), len(quantities), len(subtotals))
+        row_count = max(len(product_ids), len(codes), len(descs), len(unit_prices), len(quantities), len(subtotals), len(costs))
         for idx in range(row_count):
             product_id_raw = (product_ids[idx] if idx < len(product_ids) else '').strip()
             code = (codes[idx] if idx < len(codes) else '').strip()
@@ -421,6 +469,7 @@ def quotation_new():
             unit_price_raw = (unit_prices[idx] if idx < len(unit_prices) else '').replace(',', '').strip()
             quantity_raw = (quantities[idx] if idx < len(quantities) else '').replace(',', '').strip()
             subtotal_raw = (subtotals[idx] if idx < len(subtotals) else '').replace(',', '').strip()
+            cost_raw = (costs[idx] if idx < len(costs) else '').replace(',', '').strip()
 
             # 完全空行はスキップ（subtotal_rawも含めて厳密化）
             if (not product_id_raw) and (not desc) and (not unit_price_raw) and (not quantity_raw) and (not subtotal_raw):
@@ -435,7 +484,10 @@ def quotation_new():
                 quantity_val = int(quantity_raw) if quantity_raw else 0
             except (ValueError, TypeError):
                 quantity_val = 0
-
+            try:
+                cost_val = float(cost_raw) if cost_raw else 0
+            except (ValueError, TypeError):
+                cost_val = 0
 
             # subtotalの型変換（例外/空は再計算）
             try:
@@ -476,13 +528,16 @@ def quotation_new():
                 detail_kwargs['code'] = code
             if hasattr(QuotationDetail, 'description'):
                 detail_kwargs['description'] = desc
+            if hasattr(QuotationDetail, 'cost'):
+                detail_kwargs['cost'] = cost_val
 
             detail = QuotationDetail(**detail_kwargs)
             details.append(detail)
             total += subtotal_val
 
+
         # --- 明細件数と内容をログ出力 ---
-        from flask import current_app
+        from flask import current_app, flash
         current_app.logger.info("quotation_new: details count = %s", len(details))
         for d in details:
             current_app.logger.info(
@@ -494,6 +549,27 @@ def quotation_new():
                 getattr(d, "price", None),
                 getattr(d, "subtotal", None),
             )
+
+        # --- 設計費/現地セットアップ費の明細が無い場合は0円で自動追加し、警告flash ---
+        def _has_row(desc):
+            for d in details:
+                if hasattr(d, "description") and getattr(d, "description", "").strip() == desc:
+                    return True
+            return False
+        def _make_fixed(desc_text):
+            kwargs = dict(product_id=None, label=None, quantity=1, price=0, subtotal=0)
+            if hasattr(QuotationDetail, "description"):
+                kwargs["description"] = desc_text
+            return QuotationDetail(**kwargs)
+        added_fixed = False
+        if not _has_row("設計費（V2自動算出）"):
+            details.append(_make_fixed("設計費（V2自動算出）"))
+            added_fixed = True
+        if not _has_row("現地セットアップ費（V2自動算出）"):
+            details.append(_make_fixed("現地セットアップ費（V2自動算出）"))
+            added_fixed = True
+        if added_fixed:
+            flash("設計費/現地セットアップ費が明細に無かったため、0円で自動追加しました。", "warning")
 
         # --- 設計費・現地セットアップ費の自動計算（パラメーター優先） ---
 
@@ -595,30 +671,39 @@ def quotation_new():
                 cust_id_int = None
             cust_obj = Customer.query.get(cust_id_int) if cust_id_int else None
 
-            # customer_id 必須にする（現状UIが無いなら、ここで明確に止める）
-            if not cust_obj:
-                error = "顧客を選択してください（customer_id が未設定です）。"
-                from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE
-                return render_template(
-                    "quotation_form.html",
-                    error=error,
-                    products=product_list,
-                    values=values,
-                    customers=customers_json,
-                    customers_meta=customers_meta,
-                    LABOR_RATE=LABOR_RATE,
-                    DESIGN_SELL_RATE=DESIGN_SELL_RATE,
-                    SETUP_SELL_RATE=SETUP_SELL_RATE
-                )
+            if cust_obj:
+                # 顧客IDがある場合のみ承認チェック
+                if not getattr(cust_obj, "is_approved", False):
+                    error = "未承認の顧客は見積作成できません。承認後に再度お試しください。"
+                    current_app.logger.warning("[quotation_new] rejected unapproved customer_id=%s", cust_id_int)
+                    return render_template(
+                        "quotation_form.html",
+                        error=error,
+                        products=product_list,
+                        values=values,
+                        customers=customers_json,
+                        customers_meta=customers_meta,
+                        rates=rates
+                    )
 
-            # 顧客未承認ガード（pending/rejectedは不可）
-            if not getattr(cust_obj, "is_approved", False):
-                flash("未承認の顧客は見積作成できません。承認後に再度お試しください。", "warning")
-                return redirect(url_for("quotation.quotation_new"))
+                # 顧客IDがある場合のみマスタ名で上書き
+                values["company_name"] = cust_obj.name
+            else:
+                # customer_id がなくても、会社名が入力されていれば保存を許可
+                cust_id_int = None
+                if not values.get("company_name"):
+                    error = "顧客名（宛先）を入力してください。"
+                    current_app.logger.warning("[quotation_new] company_name missing")
+                    return render_template(
+                        "quotation_form.html",
+                        error=error,
+                        products=product_list,
+                        values=values,
+                        customers=customers_json,
+                        customers_meta=customers_meta,
+                        rates=rates
+                    )
 
-            # 顧客IDがある場合はcompany_nameをCustomer.nameで上書き
-            values["company_name"] = cust_obj.name
-            # 顧客IDが空の場合はcompany_nameはそのまま
             if revise_source_id:
                 # 改定保存: 系列max(revision_no)+1を採番
                 src = Quotation.query.get_or_404(int(revise_source_id))
@@ -636,6 +721,7 @@ def quotation_new():
                     remarks=values["remarks"],
                     estimator_name=values.get("estimator_name", ""),
                     discount_rate=values.get("discount_rate", 0.0),
+                    discount_amount=values.get("discount_amount", 0),
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
                     original_id=original_id,
@@ -655,6 +741,7 @@ def quotation_new():
                     remarks=values["remarks"],
                     estimator_name=values.get("estimator_name", ""),
                     discount_rate=values.get("discount_rate", 0.0),
+                    discount_amount=values.get("discount_amount", 0),
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
                     customer_id=cust_id_int
@@ -674,6 +761,15 @@ def quotation_new():
             quotation.difficulty_design = _norm_difficulty(request.form.get("difficulty_design"))
             quotation.difficulty_setup = _norm_difficulty(request.form.get("difficulty_setup"))
 
+            current_app.logger.info(
+                "[quotation_new] ready to save action=%s company_name=%s customer_id=%s details=%s total=%s",
+                request.form.get("action"),
+                values.get("company_name"),
+                cust_id_int,
+                len(details),
+                total
+            )
+
             db.session.add(quotation)
             db.session.flush()  # quotation.id を確定
 
@@ -690,8 +786,19 @@ def quotation_new():
                 quotation.total_amount = total
 
             db.session.commit()
+            current_app.logger.info(
+                "[quotation_new] saved quotation_id=%s action=%s",
+                quotation.id,
+                request.form.get("action")
+            )
             flash("見積を登録しました。", "success")
-            return redirect(url_for("quotation.quotation_view", quotation_id=quotation.id))
+            
+            # action値に応じた遷移先を分岐
+            action = request.form.get("action", "")
+            if action == "save_and_print":
+                return redirect(url_for("quotation.print_view", quotation_id=quotation.id))
+            else:
+                return redirect(url_for("quotation.quotation_view", quotation_id=quotation.id))
 
         # エラー時：ヘッダ入力値をテンプレートに渡す
         from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE

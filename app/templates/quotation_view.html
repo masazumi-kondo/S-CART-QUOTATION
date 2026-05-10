@@ -135,6 +135,7 @@
     </style>
 </head>
 <body>
+    {% if not print_mode|default(false) %}
     <div class="print-btns">
         <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">印刷</button>
         <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-sm btn-outline-primary me-2">一覧へ戻る</a>
@@ -142,6 +143,12 @@
             <button type="submit" class="btn btn-sm btn-outline-danger">見積削除</button>
         </form>
     </div>
+    {% else %}
+    <div class="print-btns">
+        <button onclick="window.print()" class="btn btn-sm btn-primary me-2">印刷</button>
+        <a href="{{ url_for('quotation.quotation_view', quotation_id=quotation.id) }}" class="btn btn-sm btn-outline-secondary">戻る</a>
+    </div>
+    {% endif %}
 
     <div class="title">御 見 積 書</div>
 
@@ -256,12 +263,11 @@
                 <td class="label">小計</td>
                 <td class="value">￥{{ '{:,.0f}'.format(total_amount) }}</td>
             </tr>
-            {% if quotation.discount_rate and quotation.discount_rate > 0 %}
+            {% if discount_amount|default(0)|int > 0 %}
             <tr>
-                <td class="label">出精値引き</td>
+                <td class="label">値引き額</td>
                 <td class="value">
-                    {% set discount_amount = (total_amount * quotation.discount_rate / 100) | round(0, 'floor') %}
-                    ▲￥{{ '{:,.0f}'.format(discount_amount) }} 円
+                    ▲￥{{ "{:,}".format(discount_amount|int) }} 円
                 </td>
             </tr>
             {% endif %}
@@ -269,7 +275,7 @@
                 <td class="label"><strong>合計金額</strong></td>
                 <td class="value">
                     <strong>
-                        ￥{{ '{:,.0f}'.format(total_amount - ((total_amount * quotation.discount_rate / 100) | round(0, 'floor'))) }} 円
+                        ￥{{ "{:,}".format(total_after_discount|default(total_amount)|int) }} 円
                     </strong>
                 </td>
             </tr>

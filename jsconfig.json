@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "checkJs": false
+  },
+  "exclude": [
+    "node_modules",
+    ".venv",
+    "dist",
+    "build",
+    "coverage",
+    "**/*.min.js",
+    "**/*.map",
+    "**/_archive/**",
+    "**/_legacy/**"
+  ]
+}

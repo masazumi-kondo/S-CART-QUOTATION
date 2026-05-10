@@ -20,6 +20,7 @@ class Quotation(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     discount_rate = db.Column(db.Float, nullable=False, default=0.0)  # 値引率(%)を保存
+    discount_amount = db.Column(db.Integer, nullable=False, default=0)  # 値引き額を保存
 
     # 改定管理用
     original_id = db.Column(db.Integer, nullable=True, index=True)  # オリジナル見積ID（rev0は自分のid）

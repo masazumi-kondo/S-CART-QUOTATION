@@ -12,6 +12,7 @@ class QuotationDetail(db.Model):
     label = db.Column(db.String(100), nullable=True)
     quantity = db.Column(db.Float, nullable=False)  # 数量は float 型
     price = db.Column(db.Float, nullable=False)
+    cost = db.Column(db.Float, nullable=False, default=0)  # 原価
     profit_rate = db.Column(db.Float, nullable=True)
     subtotal = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(255), nullable=True)  # 品名・仕様

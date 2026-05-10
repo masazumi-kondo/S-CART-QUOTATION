@@ -1,81 +1,18 @@
 {% extends "layout.html" %}
-
-
 {% block content %}
-{% set values = values or {} %}
+<style>
+    /* Step2: 視認性を上げる */
+    #v2_step2 .card { border-width: 2px; }
+    #v2_step2 .card-header { font-size: 1.05rem; }
+    #v2_step2 .v2-step2-table th { white-space: nowrap; }
+    #v2_step2 .v2-step2-table td { vertical-align: middle; }
+    #v2_step2 .form-control-lg { padding-top: .35rem; padding-bottom: .35rem; }
+    #v2_step2 .v2-route-id { font-weight: 700; }
+    #v2_step2 .table-responsive { overflow-x: auto; }
+</style>
 
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-7">
-        <h2 class="mb-4">
-            {% if revise_source_id %}
-                見積改定（元見積ID: {{ revise_source_id }}）
-            {% else %}
-                見積新規作成
-            {% endif %}
-        </h2>
-        <form action="{{ url_for('quotation.quotation_new') }}" method="post" id="quotation-form">
-            <!-- ==============================
-                 V2: 設計費 / 現地セットアップ（Step Wizard）＋ライブサマリー
-                 ============================== -->
-            <div class="row">
-              <div class="col-lg-7 col-md-8">
-                <div class="card mb-3" id="v2-estimate-wizard">
-                  <div class="card-header bg-primary text-white">
-                    V2 見積入力（設計費 / 現地セットアップ）
-                  </div>
-                  <div class="card-body">
-                    <!-- ...existing Step1〜Step4 blocks... -->
-                    {{ super() }}
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-5 col-md-4">
-                <div class="card mb-3" id="v2-live-summary">
-                  <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                    <span>V2 ライブサマリー</span>
-                    <label class="ms-2 mb-0"><input type="checkbox" id="v2_debug_toggle"> デバッグ表示</label>
-                  </div>
-                  <div class="card-body">
-                    <div class="mb-2"><strong>入力値</strong></div>
-                    <div class="mb-2">
-                      AGV台数: <span id="sum_vehicleCount">-</span><br>
-                      ステーション数: <span id="sum_stationCount">-</span><br>
-                      走行エリア: <span id="sum_areaShort_m">-</span> × <span id="sum_areaLong_m">-</span> m
-                    </div>
-                    <div class="mb-2">
-                      <strong>ルートテンプレート</strong><br>
-                      {% for i in range(1,7) %}
-                        T{{ i }}: qty=<span id="sum_qty_T{{ i }}">-</span>, veh=<span id="sum_veh_T{{ i }}">-</span><br>
-                      {% endfor %}
-                    </div>
-                    <div class="mb-2">
-                      <strong>オプション</strong><br>
-                      設備: <span id="sum_equipmentCount">-</span>, 信号: <span id="sum_signalPoints">-</span>, 交差点: <span id="sum_junctionCount">-</span>, 通路幅: <span id="sum_minAisleWidth_m">-</span>, テープ: <span id="sum_tapeStops">-</span>, LM: <span id="sum_lmSpots">-</span>
-                    </div>
-                    <div class="mb-2"><strong>派生値</strong><br>
-                      totalQty: <span id="sum_totalQty">-</span>, complexity: <span id="sum_complexity">-</span>, area: <span id="sum_area">-</span> m²
-                    </div>
-                    <div class="mb-2"><strong>計算結果</strong><br>
-                      設計: raw=<span id="sum_designHoursRaw">-</span>, ceil=<span id="sum_designHoursCeil">-</span>, cost=<span id="sum_designCost">-</span>, sell=<span id="sum_designSell">-</span><br>
-                      現地: raw=<span id="sum_setupHoursRaw">-</span>, ceil=<span id="sum_setupHoursCeil">-</span>, cost=<span id="sum_setupCost">-</span>, sell=<span id="sum_setupSell">-</span>
-                    </div>
-                    <div class="mb-2"><strong>明細反映予定</strong><br>
-                      <span id="sum_fixedRow1">-</span><br>
-                      <span id="sum_fixedRow2">-</span>
-                    </div>
-                    <div id="v2_debug_detail" style="display:none;">
-                      <div class="mb-2"><strong>NG理由</strong><br>
-                        <span id="sum_missing">-</span>
-                      </div>
-                      <div class="mb-2"><strong>レート</strong><br>
-                        costRate: <span id="sum_costRate">-</span>, sellRate: <span id="sum_sellRate">-</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- ========== /V2 Wizard＋ライブサマリー ========== -->
+<form id="quotation-form" method="POST" action="{{ url_for('quotation.quotation_new') }}">
+
             {% if revise_source_id %}
                 <input type="hidden" name="revise_source_id" value="{{ revise_source_id }}">
             {% endif %}
@@ -90,7 +27,7 @@
                 <h5>案件・顧客情報</h5>
                 <div class="mb-3 position-relative">
                     <label for="customer_search" class="form-label">顧客名（宛先） <span class="text-danger">*</span></label>
-                    <input type="hidden" id="customer_id" name="customer_id" required value="{{ values.customer_id|default('') }}">
+                    <input type="hidden" id="customer_id" name="customer_id" value="{{ values.customer_id|default('') }}">
                     <input type="text" class="form-control" id="customer_search" name="company_name"
                         autocomplete="off" value="{{ values.company_name|default('') }}"
                         placeholder="例：株式会社デンソーエレクトロニクス（入力→候補をクリック）">
@@ -126,6 +63,10 @@
             </div>
             <div class="q-section">
                 <h5 class="mb-2">明細（製品）</h5>
+                <div class="q-muted mb-2">
+                  この下の明細には、設計費・現地セットアップ費が自動で2行追加されます（編集不可）。<br>
+                  内容を確認後、「保存」を押してください。
+                </div>
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle" id="details-table">
                         <thead class="table-light">
@@ -160,6 +101,7 @@
                                 </td>
                                 <td>
                                     <input type="text" class="form-control text-end subtotal-input" name="subtotal[]" value="" readonly>
+                                    <input type="hidden" class="cost-input" name="cost[]" value="">
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-outline-secondary btn-sm add-row">＋</button>
@@ -171,43 +113,242 @@
                 </div>
             </div>
 
-    <div class="q-section">
-        <h5 class="mb-2">値引き</h5>
-        <div class="row align-items-center g-2">
-            <div class="col-auto">
-                <label for="discount_amount" class="form-label mb-0">値引額</label>
+
+<div class="q-section" id="v2-estimate-wizard">
+    <h5>設計費・現地セットアップ費（V2 自動算出）</h5>
+    <div class="card mb-3 border-primary" id="v2_wizard">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <span>V2 設計費・現地セットアップ費ウィザード</span>
+            <span></span>
+        </div>
+        <div class="card-body">
+            <!-- Step2 -->
+            <div class="mb-3">
+                <span class="badge bg-primary">Step2 ルート規模</span>
             </div>
-            <div class="col-auto">
-                <input type="number" class="form-control text-end" id="discount_amount" name="discount_amount"
-                       min="0" step="1" value="{{ values.discount_amount|default('', true) }}">
-                <input type="hidden" id="discount_rate" name="discount_rate" value="{{ values.discount_rate|default(0) }}">
+            <div id="v2_step2" data-v2-step="2" class="border rounded p-3 mb-3">
+                <h5 class="mb-3">Step2：ルート規模（テンプレ別）</h5>
+                <div class="row">
+                {% set tpl_guidance = [
+                    '単純搬送(A→B)',
+                    '投入先複数(A/B/C→D)',
+                    '排出先複数(A→B/C/D)',
+                    '中継あり(A→X→B)',
+                    '交通制約あり（待避/対向不可/合流多い）',
+                    'EV/階層またぎ'
+                ] %}
+                {% for i in range(1,7) %}
+                <div class="col-12 mb-3">
+                    <div class="card border-primary">
+                        <div class="card-header d-flex justify-content-between align-items-center py-2">
+                            <span><strong>T{{ i }}</strong> <span class="text-muted small">{{ tpl_guidance[i-1] }}</span></span>
+                            <span>
+                                <button type="button" class="btn btn-outline-secondary btn-sm v2-step2-add" data-tidx="{{ i }}">＋</button>
+                                <button type="button" class="btn btn-outline-danger btn-sm v2-step2-remove" data-tidx="{{ i }}">－</button>
+                            </span>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0 v2-step2-table" style="width:100%;">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 10%;">ルートID</th>
+                                            <th style="width: 12%;">台数</th>
+                                            <th style="width: 14%;">ステーション数</th>
+                                            <th style="width: 14%;">短辺[m]</th>
+                                            <th style="width: 14%;">長辺[m]</th>
+                                            <th style="width: 12%;">待機</th>
+                                            <th style="width: 24%;">メモ（任意）</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="v2_step2_tbody_T{{ i }}">
+                                        <tr data-row-index="1">
+                                            <td class="align-middle"><span class="v2-route-id">T{{ i }}-1</span></td>
+                                            <td><input type="number" class="form-control form-control-lg" id="v2_vehicle_T{{ i }}_1" name="v2_vehicle_T{{ i }}[]" min="0" step="1" value="0"></td>
+                                            <td><input type="number" class="form-control form-control-lg" id="v2_station_T{{ i }}_1" name="v2_station_T{{ i }}[]" min="0" step="1" value="0"></td>
+                                            <td><input type="number" class="form-control form-control-lg" id="v2_short_T{{ i }}_1" name="v2_short_T{{ i }}[]" min="0" step="0.1" value="0"></td>
+                                            <td><input type="number" class="form-control form-control-lg" id="v2_long_T{{ i }}_1" name="v2_long_T{{ i }}[]" min="0" step="0.1" value="0"></td>
+                                            <td><input type="number" class="form-control form-control-lg" id="v2_wait_T{{ i }}_1" name="v2_wait_T{{ i }}[]" min="0" step="1" value="0"></td>
+                                            <td><input type="text" class="form-control form-control-lg" id="v2_memo_T{{ i }}_1" name="v2_memo_T{{ i }}[]" placeholder="例：搬送A→B、充電、待機など"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
             </div>
-            <div class="col-auto">
-                <span>値引率: <span id="discount-rate-view">0.0</span>%</span>
+            <!-- Step3 -->
+            <div class="mb-3">
+                <span class="badge bg-primary">Step3 外部I/F</span>
+            </div>
+            <div id="v2_step3" data-v2-step="3" class="border rounded p-3 mb-3">
+                <h5 class="mb-3">Step3：外部設備I/F（連携規模）</h5>
+                <div class="alert alert-info py-2 mb-2">
+                  <b>ガイダンス:</b> 外部設備信号点数は、設備ごとに下記を目安に合計してください。<br>
+                  目安：単純設備 4–8点/台、状態監視 8–16点/台、複雑 16–32点/台。合計点数を入力してください。
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label" for="v2_equipmentCount">連携外部設備台数</label>
+                        <input type="number" class="form-control" id="v2_equipmentCount" name="v2_equipmentCount" min="0" step="1"
+                                     value="{{ values.v2_equipmentCount|default(0) }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="v2_signalPoints">外部設備信号点数合計</label>
+                        <input type="number" class="form-control" id="v2_signalPoints" name="v2_signalPoints" min="0" step="1"
+                                     value="{{ values.v2_signalPoints|default(0) }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="v2_chargerCount">充電器台数</label>
+                        <input type="number" class="form-control" id="v2_chargerCount" name="v2_chargerCount" min="0" step="1"
+                                     value="{{ values.v2_chargerCount|default(0) }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="v2_elevatorCount">エレベーター台数</label>
+                        <input type="number" class="form-control" id="v2_elevatorCount" name="v2_elevatorCount" min="0" step="1"
+                                     value="{{ values.v2_elevatorCount|default(0) }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label" for="v2_autoDoorCount">自動扉台数</label>
+                        <input type="number" class="form-control" id="v2_autoDoorCount" name="v2_autoDoorCount" min="0" step="1"
+                                     value="{{ values.v2_autoDoorCount|default(0) }}">
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end mb-2">
+                    <button type="button" class="btn btn-primary" id="v2_run">
+                        実行（設計費／現地セットアップ費を自動反映）
+                    </button>
+                </div>
+                <!-- V2結果カード -->
+<div class="card mt-3" id="v2_preview_card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>V2 結果（自動反映プレビュー）</span>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6 d-none">
+                <div class="small text-muted">入力要点</div>
+                <div>AGV台数: <span id="sum_vehicleCount">-</span></div>
+                <div>ステーション数: <span id="sum_stationCount">-</span></div>
+                <div>短辺[m]: <span id="sum_areaShort_m">-</span></div>
+                <div>長辺[m]: <span id="sum_areaLong_m">-</span></div>
+            </div>
+            <div class="col-md-6">
+                <div class="small text-muted">自動算出結果</div>
+                <div>設計工数(切上): <span id="sum_designHoursCeil">-</span></div>
+                <div>設計費(売): <span id="sum_designSell">-</span></div>
+                <div>現地工数(切上): <span id="sum_setupHoursCeil">-</span></div>
+                <div>現地費(売): <span id="sum_setupSell">-</span></div>
             </div>
         </div>
-        <div class="q-muted mt-1">値引きは下部の合計/最終表示に反映されます。</div>
-    </div>
 
-    <div class="q-section">
-        <h5 class="mb-2">合計・最終計算結果</h5>
-        <div><strong>合計売価（製品＋設計＋セットアップ）:</strong> <span id="preview-total-sell">0</span> 円</div>
-        <div><strong>合計原価:</strong> <span id="preview-total-cost">0</span> 円</div>
-        <div><strong>最終売価:</strong> <span id="preview-final-sell">0</span> 円</div>
-        <div><strong>最終利益率:</strong> <span id="preview-total-profit-rate">0.0%</span></div>
-        <div><strong>最終利益額:</strong> <span id="preview-profit-amount">0</span> 円</div>
-    </div>
+        <div class="mt-3 small text-muted d-none" id="v2_ng_reason_block">
+            NG理由: <span id="sum_missing">-</span>
+        </div>
 
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        <button type="submit" class="btn btn-primary">保存</button>
-        <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-link">一覧へ戻る</a>
+        <div class="mt-2">
+            <div id="sum_fixedRow1">-</div>
+            <div id="sum_fixedRow2">-</div>
+        </div>
+
+        <div class="d-none">
+            <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" id="v2_debug_toggle">
+                <label class="form-check-label" for="v2_debug_toggle">デバッグ表示</label>
+            </div>
+            <div id="v2_debug_detail" class="small mt-2" style="display:none">
+                <div>設備I/F: <span id="sum_equipmentCount">-</span></div>
+                <div>信号点: <span id="sum_signalPoints">-</span></div>
+                <div>交差点: <span id="sum_junctionCount">-</span></div>
+                <div>最小通路幅: <span id="sum_minAisleWidth_m">-</span></div>
+                <div>テープ停止: <span id="sum_tapeStops">-</span></div>
+                <div>LM: <span id="sum_lmSpots">-</span></div>
+            </div>
+        </div>
     </div>
-    </form>
+</div>
+        </div>
+    </div>
+</div>
+
+
+
+        <!-- 合計・値引き・利益率（過去UI：値引き前→値引き→値引き後） -->
+        <!-- Hidden: profit_summary.jsが読む値 -->
+        <span id="grand_total_sell" style="display:none">0</span>
+        <span id="grand_total_cost" style="display:none">0</span>
+        <div class="q-section" id="profit-summary-section">
+
+            <!-- 値引き前（上段） -->
+            <div class="mb-2">
+                <div class="fw-bold">合計（値引き前）</div>
+                <div>合計売価: <span id="sum_sell_before_discount">-</span></div>
+                <div>合計原価: <span id="sum_cost_total">-</span></div>
+                <div>利益率: <span id="sum_profit_rate_before_discount">-</span></div>
+            </div>
+
+            <hr>
+
+            <!-- 値引き入力（中段） -->
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">値引き額</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="discount_amount" name="discount_amount"
+                                 min="0" step="1" value="{{ values.discount_amount|default(0) }}">
+                        <button type="button" class="btn btn-outline-primary" id="discount_apply_btn">反映</button>
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <span class="form-label mb-0">値引率: <span id="discount_rate_preview">0%</span></span>
+                </div>
+            </div>
+            <input type="hidden" id="discount_rate" name="discount_rate" value="{{ values.discount_rate|default(0) }}">
+
+            <hr>
+
+            <!-- 値引き後（下段） -->
+            <div class="mt-2">
+                <div class="fw-bold">最終（値引き後）</div>
+                <div class="fs-5 fw-bold">最終合計売価: <span id="sum_sell_after_discount">-</span></div>
+                <div>合計原価: <span id="sum_cost_total_after_discount">-</span></div>
+                <div>最終利益率: <span id="sum_profit_rate_after_discount">-</span></div>
+            </div>
+
+        </div>
+
+        <!-- 操作ボタンエリア -->
+        <div class="q-section mt-3" id="quote-action-section">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="q-muted">
+                    入力内容と自動算出金額を確認後、見積情報を登録して印刷画面へ進みます。
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" id="quote_back_btn">
+                        戻る
+                    </button>
+                    <button type="submit" class="btn btn-outline-primary" name="action" value="save_draft">
+                        一時保存
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-lg" name="action" value="save_and_print">
+                        見積情報を登録して印刷画面へ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+</form>
 
     <!-- /#quotation-form : form ends here (do not move without updating JS bindings) -->
     {# --- JSONデータブロック（Jinjaで埋め込む） --- #}
     <script id="rates-json" type="application/json">{{ rates|default({})|tojson|safe }}</script>
     <script id="products-json" type="application/json">{{ products|tojson|safe }}</script>
+    <script src="{{ url_for('static', filename='js/quotation/update_profit_preview.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/quotation/profit_summary.js') }}"></script>
     <script id="customers-meta-json" type="application/json">{{ customers_meta|tojson|safe }}</script>
     <script id="customers-json" type="application/json">{{ customers|tojson|safe }}</script>
     {% if revise_source_id and details %}
@@ -217,7 +358,12 @@
 
 
     {# --- 外部JS（defer推奨） --- #}
-    <script src="{{ url_for('static', filename='js/quotation_form.js') }}" defer></script>
-</div>
+    <script defer src="{{ url_for('static', filename='js/quotation/common.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/quotation/details_table.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/quotation/v2_core.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/quotation/v2_sync.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/quotation/v2_live_summary.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/quotation/v2_step2_rows.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/quotation/quotation_form.js') }}"></script>
 </div>
 {% endblock %}

@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>顧客 承認待ち一覧</h2>
+
+  {% if customers %}
+  <table class="table table-bordered table-hover align-middle mt-3">
+    <thead class="table-light">
+      <tr>
+        <th>ID</th>
+        <th>会社名</th>
+        <th>担当者</th>
+        <th>売上(直近3年)</th>
+        <th>純利益(直近3年)</th>
+        <th>自己資本</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in customers %}
+      <tr>
+        <td>{{ c.id }}</td>
+        <td>{{ c.name }}</td>
+        <td>{{ c.contact_name or "" }}</td>
+        <td>{{ c.sales_3y or "" }}</td>
+        <td>{{ c.net_profit_3y or "" }}</td>
+        <td>{{ c.equity or "" }}</td>
+        <td style="min-width: 280px;">
+          <form method="post" action="{{ url_for('customer.customer_approve', customer_id=c.id) }}" style="display:inline;">
+            <button class="btn btn-success btn-sm" type="submit">承認</button>
+          </form>
+
+          <form method="post" action="{{ url_for('customer.customer_reject', customer_id=c.id) }}" style="display:inline;">
+            <input class="form-control form-control-sm d-inline-block" name="reason" placeholder="却下理由" style="width: 160px;" required>
+            <button class="btn btn-danger btn-sm" type="submit">却下</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="mt-3">承認待ちの顧客はありません。</p>
+  {% endif %}
+</div>
+{% endblock %}

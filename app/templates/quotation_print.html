@@ -1,0 +1,159 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container-fluid print-container mt-4" id="print-section">
+    <div class="print-header mb-5">
+        <h2 class="mb-3">見積書</h2>
+        
+        <!-- 基本情報 -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="mb-2">
+                    <span class="text-muted">宛先企業名:</span>
+                    <strong>{{ quotation.company_name }}</strong>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">担当者名:</span>
+                    <strong>{{ quotation.contact_name or "-" }}</strong>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-2">
+                    <span class="text-muted">案件名:</span>
+                    <strong>{{ quotation.project_name }}</strong>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">見積作成担当:</span>
+                    <strong>{{ quotation.estimator_name or "-" }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- 納期・条件 -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="mb-2">
+                    <span class="text-muted">納期:</span>
+                    <strong>{{ quotation.delivery_date or "-" }}</strong>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">引渡条件:</span>
+                    <strong>{{ quotation.delivery_terms or "-" }}</strong>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-2">
+                    <span class="text-muted">支払条件:</span>
+                    <strong>{{ quotation.payment_terms or "-" }}</strong>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">有効期限:</span>
+                    <strong>{{ quotation.valid_until or "-" }}</strong>
+                </div>
+            </div>
+        </div>
+
+        {% if quotation.remarks %}
+        <div class="mb-4">
+            <span class="text-muted">摘要:</span>
+            <div class="border-top pt-2">{{ quotation.remarks }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <hr class="my-4">
+
+    <!-- 明細テーブル -->
+    <div class="print-details mb-4">
+        <h5 class="mb-3">明細</h5>
+        <table class="table table-bordered table-sm">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 5%;">No.</th>
+                    <th style="width: 40%;">品名・説明</th>
+                    <th style="width: 15%;">数量</th>
+                    <th style="width: 15%;">単価</th>
+                    <th style="width: 15%; text-align: right;">小計</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in details %}
+                <tr>
+                    <td style="text-align: center;">{{ loop.index }}</td>
+                    <td>
+                        {% if detail.description %}
+                            {{ detail.description }}
+                        {% elif detail.product %}
+                            {{ detail.product.name }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">{{ detail.quantity|default(0)|int }}</td>
+                    <td style="text-align: right;">¥{{ "{:,}".format(detail.price|default(0)|int) }}</td>
+                    <td style="text-align: right;">¥{{ "{:,}".format(detail.subtotal|default(0)|int) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- 合計・値引き・最終合計 -->
+    <div class="print-totals">
+        <div class="row justify-content-end">
+            <div class="col-md-6">
+                <table class="table table-sm border-top border-bottom mb-3">
+                    <tbody>
+                        <tr>
+                            <td class="fw-bold">合計売価:</td>
+                            <td style="text-align: right;">
+                                <strong>¥{{ "{:,}".format(total_amount|int) }}</strong>
+                            </td>
+                        </tr>
+                        {% if discount_amount > 0 %}
+                        <tr>
+                            <td class="fw-bold">値引き額:</td>
+                            <td style="text-align: right;">
+                                <strong>-¥{{ "{:,}".format(discount_amount|int) }}</strong>
+                            </td>
+                        </tr>
+                        <tr class="table-light">
+                            <td class="fw-bold fs-5">最終合計売価:</td>
+                            <td style="text-align: right;">
+                                <strong class="fs-5">¥{{ "{:,}".format(total_after_discount|int) }}</strong>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 印刷ボタン -->
+<div class="print-button-area mt-5 mb-4 d-print-none">
+    <div class="d-flex gap-2 justify-content-center">
+        <button type="button" class="btn btn-primary" onclick="window.print()">
+            印刷
+        </button>
+        <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+            戻る
+        </button>
+    </div>
+</div>
+
+<style media="print">
+    .d-print-none {
+        display: none !important;
+    }
+    .print-container {
+        margin: 0;
+        padding: 20mm;
+    }
+    body {
+        background: white;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4" style="max-width: 720px;">
+  <h2>初回ログイン設定（必須）</h2>
+  <div class="alert alert-warning">
+    セキュリティのため、ユーザーIDとパスワードを変更してください。
+  </div>
+  <form method="post" class="card">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">新しいログインID</label>
+          <input type="text" name="login_id" class="form-control"
+                 value="{{ (form.login_id if form else '') }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">新しいパスワード</label>
+          <input type="password" name="password" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">新しいパスワード（確認）</label>
+          <input type="password" name="password2" class="form-control" required>
+        </div>
+      </div>
+      <div class="mt-4">
+        <button class="btn btn-primary" type="submit">変更して続行</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

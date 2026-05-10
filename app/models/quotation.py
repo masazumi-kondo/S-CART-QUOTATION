@@ -26,6 +26,9 @@ class Quotation(db.Model):
     original_id = db.Column(db.Integer, nullable=True, index=True)  # オリジナル見積ID（rev0は自分のid）
     revision_no = db.Column(db.Integer, nullable=False, default=0)  # 改定番号（rev0=0, 改定は1,2...）
 
+    # 見積No.管理（正式な採番番号）
+    quotation_no = db.Column(db.String(50), nullable=True, unique=True, index=True)  # Q-YYYYMMDD-001形式
+
     # --- new_v1 calculation columns (2025/12) ---
     calc_mode = db.Column(db.String, nullable=True)
     avg_entry_dirs = db.Column(db.Float, nullable=True)

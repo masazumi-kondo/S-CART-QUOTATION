@@ -162,7 +162,7 @@
         <div class="header-right">
             <div class="quote-info">
                 <div>見積日：{{ quotation.created_at.strftime('%Y年%m月%d日') if quotation.created_at else '' }}</div>
-                <div>見積No.：{{ quotation.original_id }}-R{{ quotation.revision_no }}</div>
+                <div>見積No.：{{ quotation.quotation_no or (quotation.original_id|string + '-R' + quotation.revision_no|string) }}</div>
                 <div>見積作成担当：{{ quotation.estimator_name or '' }}</div>
             </div>
             <div class="company-info">

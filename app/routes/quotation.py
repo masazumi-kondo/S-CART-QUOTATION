@@ -47,6 +47,37 @@ from sqlalchemy import func
 quotation_bp = Blueprint("quotation", __name__)
 
 
+# 見積No.の採番関数
+def generate_quotation_no():
+    """
+    見積No.を採番する: Q-YYYYMMDD-連番
+    例: Q-20260510-001
+    """
+    today = datetime.now().strftime("%Y%m%d")
+    prefix = f"Q-{today}-"
+
+    latest = (
+        Quotation.query
+        .filter(Quotation.quotation_no.like(f"{prefix}%"))
+        .order_by(Quotation.quotation_no.desc())
+        .first()
+    )
+
+    if not latest or not latest.quotation_no:
+        seq = 1
+    else:
+        try:
+            # 最後の - 以降を取得（RXなし前提）
+            parts = latest.quotation_no.split("-")
+            # Q-20260510-001 の場合、parts = ['Q', '20260510', '001']
+            base = parts[-1].split("R")[0]  # R付きなら除去
+            seq = int(base) + 1
+        except (ValueError, IndexError):
+            seq = 1
+
+    return f"{prefix}{seq:03d}"
+
+
 ## --- ここに quotation_revise を移動 ---
 
 @quotation_bp.route("/quotations/<int:quotation_id>/revise", methods=["GET"])
@@ -341,6 +372,7 @@ def quotation_list():
     quotations_data = []
     for q in quotations:
         quotations_data.append({
+            'quotation_no': q.quotation_no or f"{q.original_id or q.id}-R{q.revision_no}",
             'original_id': q.original_id,
             'revision_no': q.revision_no,
             'company_name': q.company_name,
@@ -729,6 +761,13 @@ def quotation_new():
                 original_id = src.original_id or src.id
                 max_rev = db.session.query(func.max(Quotation.revision_no)).filter(Quotation.original_id == original_id).scalar() or 0
                 revision_no = int(max_rev) + 1
+                
+                # 見積No.の生成（元見積をベースに -R{revision_no} を付与）
+                base_quotation_no = src.quotation_no or f"{src.original_id or src.id}-R0"
+                if "-R" in base_quotation_no:
+                    base_quotation_no = base_quotation_no.split("-R")[0]
+                revised_quotation_no = f"{base_quotation_no}-R{revision_no}"
+                
                 quotation = Quotation(
                     company_name=values["company_name"],
                     contact_name=values["contact_name"],
@@ -745,10 +784,34 @@ def quotation_new():
                     updated_at=datetime.utcnow(),
                     original_id=original_id,
                     revision_no=revision_no,
+                    quotation_no=revised_quotation_no,
                     customer_id=cust_id_int
                 )
             else:
                 # 新規保存
+                from datetime import datetime as dt
+                today = dt.now().strftime("%Y%m%d")
+                prefix = f"Q-{today}-"
+                
+                # 今日の最後の見積No.を取得
+                latest = (
+                    Quotation.query
+                    .filter(Quotation.quotation_no.like(f"{prefix}%"))
+                    .order_by(Quotation.quotation_no.desc())
+                    .first()
+                )
+                
+                if not latest or not latest.quotation_no:
+                    seq = 1
+                else:
+                    try:
+                        base = latest.quotation_no.split("-")[-1].split("R")[0]
+                        seq = int(base) + 1
+                    except:
+                        seq = 1
+                
+                quotation_no = f"{prefix}{seq:03d}"
+                current_app.logger.info(f"[quotation_new] Generating quotation_no: {quotation_no}")
                 quotation = Quotation(
                     company_name=values["company_name"],
                     contact_name=values["contact_name"],
@@ -763,6 +826,7 @@ def quotation_new():
                     discount_amount=values.get("discount_amount", 0),
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
+                    quotation_no=quotation_no,
                     customer_id=cust_id_int
                 )
 

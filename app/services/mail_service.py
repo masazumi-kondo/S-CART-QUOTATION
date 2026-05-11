@@ -8,9 +8,9 @@ def is_mail_enabled():
     return bool(current_app.config.get("MAIL_SERVER"))
 
 
-def send_email(to, subject, body):
+def send_smtp_email(to, subject, body):
     """
-    Send a single email
+    Send a single email using SMTP
     
     Args:
         to: Email address (str) or list of addresses
@@ -21,11 +21,11 @@ def send_email(to, subject, body):
         True if sent successfully, False otherwise
     """
     if not to:
-        current_app.logger.warning("[MAIL] recipient is empty. subject=%s", subject)
+        current_app.logger.warning("[SMTP MAIL] recipient is empty. subject=%s", subject)
         return False
 
     if not is_mail_enabled():
-        current_app.logger.warning("[MAIL] MAIL_SERVER is not configured. skip sending. to=%s subject=%s", to, subject)
+        current_app.logger.warning("[SMTP MAIL] MAIL_SERVER is not configured. skip sending. to=%s subject=%s", to, subject)
         return False
 
     msg = EmailMessage()
@@ -48,17 +48,17 @@ def send_email(to, subject, body):
                 smtp.login(username, password)
             smtp.send_message(msg)
 
-        current_app.logger.info("[MAIL] sent. to=%s subject=%s", to, subject)
+        current_app.logger.info("[SMTP MAIL] sent. to=%s subject=%s", to, subject)
         return True
 
     except Exception as e:
-        current_app.logger.exception("[MAIL] failed. to=%s subject=%s error=%s", to, subject, e)
+        current_app.logger.exception("[SMTP MAIL] failed. to=%s subject=%s error=%s", to, subject, e)
         return False
 
 
-def send_bulk_email(recipients, subject, body):
+def send_smtp_bulk_email(recipients, subject, body):
     """
-    Send email to multiple recipients
+    Send email to multiple recipients using SMTP
     
     Args:
         recipients: List of email addresses
@@ -69,12 +69,70 @@ def send_bulk_email(recipients, subject, body):
         True if all emails sent successfully, False otherwise
     """
     if not recipients:
-        current_app.logger.warning("[MAIL] recipients is empty. subject=%s", subject)
+        current_app.logger.warning("[SMTP MAIL] recipients is empty. subject=%s", subject)
         return False
 
     ok = True
     for recipient in recipients:
-        result = send_email(recipient, subject, body)
+        result = send_smtp_email(recipient, subject, body)
         ok = ok and result
 
     return ok
+
+
+def send_email(to, subject, body):
+    """
+    Send email using configured provider (Graph API or SMTP)
+    
+    Args:
+        to: Email address (str) or list of addresses
+        subject: Email subject
+        body: Email body
+    
+    Returns:
+        True if sent successfully, False otherwise
+    """
+    provider = current_app.config.get("MAIL_PROVIDER", "").lower()
+
+    if provider == "graph":
+        try:
+            from app.services.graph_mail_service import send_graph_email
+            return send_graph_email(to, subject, body)
+        except ImportError:
+            current_app.logger.error("[MAIL] graph_mail_service import failed. falling back to skip.")
+            return False
+
+    if provider == "smtp":
+        return send_smtp_email(to, subject, body)
+
+    current_app.logger.warning("[MAIL] MAIL_PROVIDER is not configured or unknown. skip. to=%s subject=%s", to, subject)
+    return False
+
+
+def send_bulk_email(recipients, subject, body):
+    """
+    Send email to multiple recipients using configured provider
+    
+    Args:
+        recipients: List of email addresses
+        subject: Email subject
+        body: Email body
+    
+    Returns:
+        True if all emails sent successfully, False otherwise
+    """
+    provider = current_app.config.get("MAIL_PROVIDER", "").lower()
+
+    if provider == "graph":
+        try:
+            from app.services.graph_mail_service import send_graph_bulk_email
+            return send_graph_bulk_email(recipients, subject, body)
+        except ImportError:
+            current_app.logger.error("[MAIL] graph_mail_service import failed. falling back to skip.")
+            return False
+
+    if provider == "smtp":
+        return send_smtp_bulk_email(recipients, subject, body)
+
+    current_app.logger.warning("[MAIL] MAIL_PROVIDER is not configured or unknown. skip. recipients=%s subject=%s", recipients, subject)
+    return False

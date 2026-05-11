@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2>メール送信テスト</h2>
+
+    <!-- Configuration Status Section -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <h5 class="mb-0">メール設定状態</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">MAIL_PROVIDER:</dt>
+                        <dd class="col-sm-7">
+                            {% if mail_provider %}
+                                <span class="badge bg-success">{{ mail_provider }}</span>
+                            {% else %}
+                                <span class="badge bg-danger">未設定</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">GRAPH_TENANT_ID:</dt>
+                        <dd class="col-sm-7">
+                            {% if graph_config_status.GRAPH_TENANT_ID %}
+                                <span class="badge bg-success">設定済み</span>
+                            {% else %}
+                                <span class="badge bg-secondary">未設定</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">GRAPH_CLIENT_ID:</dt>
+                        <dd class="col-sm-7">
+                            {% if graph_config_status.GRAPH_CLIENT_ID %}
+                                <span class="badge bg-success">設定済み</span>
+                            {% else %}
+                                <span class="badge bg-secondary">未設定</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">GRAPH_CLIENT_SECRET:</dt>
+                        <dd class="col-sm-7">
+                            {% if graph_config_status.GRAPH_CLIENT_SECRET %}
+                                <span class="badge bg-success">設定済み</span>
+                            {% else %}
+                                <span class="badge bg-secondary">未設定</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">GRAPH_SENDER_USER:</dt>
+                        <dd class="col-sm-7">
+                            {% if graph_config_status.GRAPH_SENDER_USER %}
+                                <span class="badge bg-success">設定済み</span>
+                            {% else %}
+                                <span class="badge bg-secondary">未設定</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">MAIL_SERVER:</dt>
+                        <dd class="col-sm-7">
+                            {% if smtp_server_configured %}
+                                <span class="badge bg-success">設定済み</span>
+                            {% else %}
+                                <span class="badge bg-secondary">未設定</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Form Section -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <p>見積アプリのメール送信設定を確認します。</p>
+
+                    <!-- Info Messages -->
+                    <div class="alert alert-info" role="alert">
+                        <strong>注意:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Outlook / Microsoft 365 で送信する場合は、<code>MAIL_PROVIDER=graph</code> と Microsoft Graph API の設定が必要です。</li>
+                            <li>送信先には<strong>実在する社内メールアドレス</strong>を入力してください。test@example.com では実送信確認に使えません。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" class="mt-4">
+                <div class="mb-3">
+                    <label for="to_email" class="form-label">送信先メールアドレス <span class="text-danger">*</span></label>
+                    <input type="email" id="to_email" name="to_email" class="form-control" required placeholder="your.name@example.co.jp">
+                    <small class="form-text text-muted">テストメール受信用のアドレスを入力してください。</small>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">
+                        テストメール送信
+                    </button>
+                    <a href="{{ url_for('admin_users.users_list') }}" class="btn btn-secondary">
+                        戻る
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

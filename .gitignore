@@ -2,6 +2,11 @@
 __pycache__/
 *.pyc
 
+# Environment variables
+.env
+*.env
+.env.local
+
 # Local DB / SQLite
 *.db
 *.db-shm

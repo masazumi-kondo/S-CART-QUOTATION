@@ -37,14 +37,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">基本工数</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="base_hours"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('基本工数をデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('base_hours', '基本工数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -66,14 +59,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">AGV台数係数</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="vehicle_hours"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('AGV台数係数をデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('vehicle_hours', 'AGV台数係数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -92,9 +78,11 @@
                 </div>
 
                 <!-- 推定走行パターン係数 -->
+                <!-- パターンスコア係数 -->
                 <div class="card mb-4">
-                    <div class="card-header">
-                        <h5>推定走行パターンスコア係数</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">推定走行パターンスコア係数</h5>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('pattern_hours', 'パターンスコア係数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -116,14 +104,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">走行エリア規模係数</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="layout_scale"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('走行エリア規模係数をデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('layout_scale', '走行エリア規模係数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -140,14 +121,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">搬送ルート複雑さ係数</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="route_factors"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('搬送ルート複雑さ係数をデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('route_factors', '搬送ルート複雑さ係数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -179,14 +153,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">すれ違い・合流係数</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="merge_factors"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('すれ違い・合流係数をデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('merge_factors', 'すれ違い・合流係数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -218,14 +185,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">AGV台数補正係数</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="vehicle_factors"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('AGV台数補正係数をデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('vehicle_factors', 'AGV台数補正係数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -257,14 +217,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">現地設置・補正係数</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="site_adjustment"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('現地設置・補正係数をデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('site_adjustment', '現地設置・補正係数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -296,14 +249,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">ランドマーク係数</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="landmark"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('ランドマーク係数をデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('landmark', 'ランドマーク係数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -361,14 +307,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">設備連携係数</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="integration"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('設備連携係数をデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('integration', '設備連携係数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -410,14 +349,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">PLC/設備連携規模レンジ</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="plc_ranges"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('PLC/設備連携規模レンジをデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('plc_ranges', 'PLC/設備連携規模レンジ')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -513,14 +445,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">上位システム連携係数</h5>
-                        <button type="submit"
-                                name="reset_section"
-                                value="host_system"
-                                class="btn btn-sm btn-light"
-                                formnovalidate
-                                onclick="return confirm('上位システム連携係数をデフォルト値に戻します。よろしいですか？');">
-                            この項目をデフォルトに戻す
-                        </button>
+                        <button type="button" class="btn btn-sm btn-light" onclick="confirmAndResetSection('host_system', '上位システム連携係数')">この項目をデフォルトに戻す</button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -610,4 +535,17 @@
         </div>
     </form>
 </div>
+
+<script>
+function confirmAndResetSection(sectionKey, sectionName) {
+    if (confirm(sectionName + 'をデフォルト値に戻します。よろしいですか？')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/v2-parameters/reset/' + sectionKey;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
 {% endblock %}

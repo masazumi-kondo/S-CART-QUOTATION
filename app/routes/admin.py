@@ -158,3 +158,39 @@ def v2_parameters():
     return render_template("admin/v2_parameters.html", setting=setting)
 
 
+@admin_bp.route("/admin/v2-parameters/reset/<section_key>", methods=["POST"])
+@login_required
+@roles_required("admin")
+def reset_v2_parameter_section(section_key):
+    """Reset a specific V2 parameter section to defaults (admin only)"""
+    setting = V2CalculationSetting.query.get(1)
+    if not setting:
+        setting = V2CalculationSetting(id=1)
+        db.session.add(setting)
+        db.session.commit()
+
+    section_names = {
+        "base_hours": "基本工数",
+        "vehicle_hours": "AGV台数係数",
+        "pattern_hours": "パターンスコア係数",
+        "layout_scale": "走行エリア規模係数",
+        "route_factors": "搬送ルート複雑さ係数",
+        "merge_factors": "すれ違い・合流係数",
+        "vehicle_factors": "AGV台数補正係数",
+        "site_adjustment": "現地設置・補正係数",
+        "landmark": "ランドマーク係数",
+        "integration": "設備連携係数",
+        "plc_ranges": "PLC/設備連携規模レンジ",
+        "host_system": "上位システム連携係数",
+    }
+
+    if setting.reset_section_to_defaults(section_key):
+        db.session.commit()
+        section_name = section_names.get(section_key, section_key)
+        flash(f"{section_name}をデフォルト値に戻しました。", "success")
+    else:
+        flash("対象セクションが見つかりませんでした。", "danger")
+
+    return redirect(url_for("admin.v2_parameters"))
+
+

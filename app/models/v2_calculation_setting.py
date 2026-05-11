@@ -101,6 +101,170 @@ class V2CalculationSetting(db.Model):
 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Default values for all parameters
+    DEFAULTS = {
+        "cost_hourly_rate": 17760,
+        "sell_hourly_rate": 29600,
+        "design_base_hours": 8,
+        "setup_base_hours": 8,
+        "design_vehicle_hours": 2,
+        "setup_vehicle_hours": 4,
+        "design_pattern_hours": 3,
+        "setup_pattern_hours": 4,
+        "setup_layout_scale_hours": 1.5,
+        "route_factor_simple": 1.0,
+        "route_factor_standard": 1.5,
+        "route_factor_complex": 2.3,
+        "route_factor_unknown": 1.6,
+        "merge_factor_low": 0.8,
+        "merge_factor_standard": 1.3,
+        "merge_factor_high": 2.0,
+        "merge_factor_unknown": 1.4,
+        "vehicle_factor_one": 1.0,
+        "vehicle_factor_two": 1.4,
+        "vehicle_factor_three": 1.8,
+        "vehicle_factor_four_or_more": 2.2,
+        "design_charger_hours": 1.0,
+        "setup_charger_hours": 2.0,
+        "design_magnetic_stop_hours": 0.5,
+        "setup_magnetic_stop_hours": 1.0,
+        "landmark_factor_small": 1.0,
+        "landmark_factor_medium": 1.8,
+        "landmark_factor_large": 2.8,
+        "landmark_factor_full": 4.0,
+        "landmark_factor_unknown": 2.2,
+        "design_landmark_hours": 1.0,
+        "setup_landmark_hours": 4.0,
+        "design_elevator_hours": 4.0,
+        "setup_elevator_hours": 5.0,
+        "design_auto_door_hours": 2.0,
+        "setup_auto_door_hours": 3.0,
+        "design_plc_signal_hours": 1.2,
+        "setup_plc_signal_hours": 1.5,
+        "plc_none_value": 0,
+        "plc_small_min": 1,
+        "plc_small_max": 5,
+        "plc_small_value": 3,
+        "plc_medium_min": 6,
+        "plc_medium_max": 15,
+        "plc_medium_value": 10,
+        "plc_large_min": 16,
+        "plc_large_max": 30,
+        "plc_large_value": 20,
+        "plc_unknown_value": 6,
+        "design_host_system_none_hours": 0.0,
+        "setup_host_system_none_hours": 0.0,
+        "design_host_system_small_hours": 4.0,
+        "setup_host_system_small_hours": 4.0,
+        "design_host_system_medium_hours": 8.0,
+        "setup_host_system_medium_hours": 8.0,
+        "design_host_system_large_hours": 16.0,
+        "setup_host_system_large_hours": 16.0,
+    }
+
+    # Section definitions for section-level reset
+    # Note: cost_hourly_rate and sell_hourly_rate are NOT included
+    DEFAULT_SECTIONS = {
+        "base_hours": [
+            "design_base_hours",
+            "setup_base_hours",
+        ],
+        "vehicle_hours": [
+            "design_vehicle_hours",
+            "setup_vehicle_hours",
+        ],
+        "pattern_hours": [
+            "design_pattern_hours",
+            "setup_pattern_hours",
+        ],
+        "layout_scale": [
+            "setup_layout_scale_hours",
+        ],
+        "route_factors": [
+            "route_factor_simple",
+            "route_factor_standard",
+            "route_factor_complex",
+            "route_factor_unknown",
+        ],
+        "merge_factors": [
+            "merge_factor_low",
+            "merge_factor_standard",
+            "merge_factor_high",
+            "merge_factor_unknown",
+        ],
+        "vehicle_factors": [
+            "vehicle_factor_one",
+            "vehicle_factor_two",
+            "vehicle_factor_three",
+            "vehicle_factor_four_or_more",
+        ],
+        "site_adjustment": [
+            "design_charger_hours",
+            "setup_charger_hours",
+            "design_magnetic_stop_hours",
+            "setup_magnetic_stop_hours",
+        ],
+        "landmark": [
+            "landmark_factor_small",
+            "landmark_factor_medium",
+            "landmark_factor_large",
+            "landmark_factor_full",
+            "landmark_factor_unknown",
+            "design_landmark_hours",
+            "setup_landmark_hours",
+        ],
+        "integration": [
+            "design_elevator_hours",
+            "setup_elevator_hours",
+            "design_auto_door_hours",
+            "setup_auto_door_hours",
+            "design_plc_signal_hours",
+            "setup_plc_signal_hours",
+        ],
+        "plc_ranges": [
+            "plc_none_value",
+            "plc_small_min",
+            "plc_small_max",
+            "plc_small_value",
+            "plc_medium_min",
+            "plc_medium_max",
+            "plc_medium_value",
+            "plc_large_min",
+            "plc_large_max",
+            "plc_large_value",
+            "plc_unknown_value",
+        ],
+        "host_system": [
+            "design_host_system_none_hours",
+            "setup_host_system_none_hours",
+            "design_host_system_small_hours",
+            "setup_host_system_small_hours",
+            "design_host_system_medium_hours",
+            "setup_host_system_medium_hours",
+            "design_host_system_large_hours",
+            "setup_host_system_large_hours",
+        ],
+    }
+
+    def reset_section_to_defaults(self, section_key):
+        """Reset a specific section to default values.
+        
+        Args:
+            section_key: Key from DEFAULT_SECTIONS
+            
+        Returns:
+            bool: True if reset was successful, False if section not found
+        """
+        fields = self.DEFAULT_SECTIONS.get(section_key)
+        if not fields:
+            return False
+
+        for field in fields:
+            if field in self.DEFAULTS:
+                setattr(self, field, self.DEFAULTS[field])
+
+        return True
+
     def to_v2_json(self):
         return {
             "costHourlyRate": self.cost_hourly_rate,

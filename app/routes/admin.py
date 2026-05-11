@@ -40,6 +40,32 @@ def v2_parameters():
         db.session.commit()
 
     if request.method == "POST":
+        # Check for section reset action
+        section_key = request.form.get("reset_section")
+        if section_key:
+            if setting.reset_section_to_defaults(section_key):
+                db.session.commit()
+                section_names = {
+                    "base_hours": "基本工数",
+                    "vehicle_hours": "AGV台数係数",
+                    "pattern_hours": "パターンスコア係数",
+                    "layout_scale": "走行エリア規模係数",
+                    "route_factors": "搬送ルート複雑さ係数",
+                    "merge_factors": "すれ違い・合流係数",
+                    "vehicle_factors": "AGV台数補正係数",
+                    "site_adjustment": "現地設置・補正係数",
+                    "landmark": "ランドマーク係数",
+                    "integration": "設備連携係数",
+                    "plc_ranges": "PLC/設備連携規模レンジ",
+                    "host_system": "上位システム連携係数",
+                }
+                section_name = section_names.get(section_key, section_key)
+                flash(f"{section_name}をデフォルト値に戻しました。", "success")
+            else:
+                flash("対象セクションが見つかりませんでした。", "danger")
+            return redirect(url_for("admin.v2_parameters"))
+
+        # Normal save action
         # 賃率
         setting.cost_hourly_rate = _to_float(request.form.get("cost_hourly_rate"), 17760)
         setting.sell_hourly_rate = _to_float(request.form.get("sell_hourly_rate"), 29600)

@@ -567,11 +567,11 @@
 
     <!-- Fixed Bottom Action Bar -->
     <div class="fixed-bottom bg-white border-top shadow-sm py-2 px-3 fixed-action-bar">
-        <div class="container-fluid d-flex justify-content-between align-items-center">
-            <div class="text-muted small">
+        <div class="container-fluid text-center">
+            <div class="text-muted small mb-2">
                 数値を変更した場合は、保存ボタンを押すまで反映されません。
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex justify-content-center gap-2">
                 <a href="{{ url_for('admin.v2_parameters') }}"
                    class="btn btn-secondary"
                    onclick="return confirm('未保存の変更を破棄します。よろしいですか？');">
@@ -589,7 +589,7 @@
     <!-- CSS for Fixed Action Bar -->
     <style>
         .v2-parameter-page {
-            padding-bottom: 90px;
+            padding-bottom: 100px;
         }
 
         .fixed-action-bar {

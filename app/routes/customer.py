@@ -14,6 +14,10 @@ from app.models.user import User
 from app.models.customer_credit import CustomerCredit
 from app.models.quotation import Quotation
 from app.services.notifications import notify_customer_status_changed
+from app.services.customer_email_notification_service import (
+    notify_customer_approval_request,
+    notify_customer_approval_result,
+)
 
 # Blueprint定義は必ず先
 customer_bp = Blueprint('customer', __name__)
@@ -187,9 +191,18 @@ def customer_new():
             # 与信3項目はupsert_customer_creditsで保存（空欄はNoneになる）
             duplicate_years = upsert_customer_credits(customer.id, request.form)
             db.session.commit()
+            
+            # Send approval request email to admins
+            mail_ok = notify_customer_approval_request(customer)
+            
             if duplicate_years:
                 flash(f'同じ年度が複数入力されています: {sorted(list(duplicate_years))}', 'warning')
-            flash('顧客を登録しました（承認待ち）', 'success')
+            
+            if mail_ok:
+                flash('顧客を登録しました（承認待ち）。管理者へ承認依頼メールを送信しました。', 'success')
+            else:
+                flash('顧客を登録しました（承認待ち）。承認依頼メールは送信されていない可能性があります。', 'warning')
+            
             return redirect(url_for('customer.customer_list'))
         except Exception as e:
             db.session.rollback()
@@ -376,7 +389,14 @@ def customer_approve(customer_id):
     except Exception:
         pass
 
-    flash(f'顧客を承認しました（企業名: {customer.name}）', 'success')
+    # Send approval result email to applicant
+    mail_ok = notify_customer_approval_result(customer, "承認", None)
+    
+    if mail_ok:
+        flash(f'顧客を承認しました（企業名: {customer.name}）。申請者へ承認結果メールを送信しました。', 'success')
+    else:
+        flash(f'顧客を承認しました（企業名: {customer.name}）。承認結果メールは送信されていない可能性があります。', 'warning')
+    
     return redirect(url_for('customer.customer_pending_list'))
 
 @customer_bp.route('/customers/<int:customer_id>/reject', methods=['POST'])
@@ -440,7 +460,14 @@ def customer_reject(customer_id):
     except Exception:
         pass
 
-    flash(f'顧客を却下しました（企業名: {customer.name}）', 'warning')
+    # Send rejection result email to applicant
+    mail_ok = notify_customer_approval_result(customer, "却下", comment)
+    
+    if mail_ok:
+        flash(f'顧客を却下しました（企業名: {customer.name}）。申請者へ却下結果メールを送信しました。', 'success')
+    else:
+        flash(f'顧客を却下しました（企業名: {customer.name}）。却下結果メールは送信されていない可能性があります。', 'warning')
+    
     return redirect(url_for('customer.customer_pending_list'))
 
 

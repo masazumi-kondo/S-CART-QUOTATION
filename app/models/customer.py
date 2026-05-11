@@ -1,6 +1,7 @@
 
 from app import db
 from datetime import datetime
+from sqlalchemy.orm import relationship
 from enum import Enum
 
 # 顧客ステータス列挙（テンプレ/Jinja互換のためstr継承）
@@ -8,12 +9,6 @@ class CustomerStatus(str, Enum):
     PENDING = 'pending'
     APPROVED = 'approved'
     REJECTED = 'rejected'
-
-    acted_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-
-from app import db
-from datetime import datetime
-from sqlalchemy.orm import relationship
 
 class TransactionType(db.Model):
     __tablename__ = 'transaction_types'
@@ -73,6 +68,11 @@ class Customer(db.Model):
     quotations = relationship("Quotation", back_populates="customer")
     transaction_type_ref = relationship('TransactionType', back_populates='customers')
     payment_term_ref = relationship('PaymentTerm', back_populates='customers')
+    created_by_user = relationship(
+        'User',
+        foreign_keys=[requested_by_user_id],
+        primaryjoin='Customer.requested_by_user_id == User.id'
+    )
 
     @property
     def is_pending(self):

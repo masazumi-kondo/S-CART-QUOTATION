@@ -113,7 +113,15 @@ def users_new():
         flash(f"ユーザー '{display_name}' を作成しました。", "success")
         return redirect(url_for("admin_users.users_list"))
 
-    return render_template("admin/user_form.html", user=None, is_new=True)
+    # GET: Display empty form with defaults
+    return render_template(
+        "admin/user_form.html",
+        user=None,
+        is_new=True,
+        role="user",
+        is_active=False,
+        receive_notifications=True,  # Default: notifications enabled
+    )
 
 
 @admin_users_bp.route("/admin/users/<int:user_id>/edit", methods=["GET", "POST"])
@@ -193,7 +201,15 @@ def users_edit(user_id):
         flash(f"ユーザー '{display_name}' を更新しました。", "success")
         return redirect(url_for("admin_users.users_list"))
 
-    return render_template("admin/user_form.html", user=user, is_new=False)
+    # GET: Display form with current values
+    return render_template(
+        "admin/user_form.html",
+        user=user,
+        is_new=False,
+        role=user.role,
+        is_active=user.is_active,
+        receive_notifications=user.receive_notifications,
+    )
 
 
 @admin_users_bp.route("/admin/users/<int:user_id>/reset-password", methods=["GET", "POST"])

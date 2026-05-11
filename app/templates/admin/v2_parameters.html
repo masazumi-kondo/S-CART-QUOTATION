@@ -1,20 +1,9 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- Sticky Save Bar -->
-    <div class="sticky-top bg-white border-bottom py-2 mb-3" style="z-index: 1020;">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <strong>見積パラメーター管理</strong>
-                <span class="text-muted small ms-2">変更後は保存ボタンを押してください</span>
-            </div>
-            <button type="submit" form="v2-parameters-form" class="btn btn-primary">
-                <i class="bi bi-check-circle"></i> 保存
-            </button>
-        </div>
-    </div>
-
+<div class="container-fluid mt-4 v2-parameter-page">
+    <h2>見積パラメーター管理</h2>
+    
     <div class="alert alert-info" role="alert">
         <strong>注意:</strong> この設定は新規見積作成時のV2概算算出に使用されます。過去に保存済みの見積明細金額は自動変更されません。
         <br>
@@ -559,17 +548,6 @@
             </div>
         </div>
 
-        <!-- 保存ボタン（スクロール用）-->
-        <div class="row mt-4 mb-4">
-            <div class="col-12">
-                <button type="submit" form="v2-parameters-form" class="btn btn-primary btn-lg">
-                    <i class="bi bi-check-circle"></i> 保存
-                </button>
-                <a href="{{ url_for('main.index') }}" class="btn btn-secondary btn-lg ms-2">
-                    <i class="bi bi-x-circle"></i> キャンセル
-                </a>
-            </div>
-        </div>
     </form>
 
     <!-- JavaScript for V2 Section Reset -->
@@ -586,6 +564,38 @@
         form.submit();
     }
     </script>
+
+    <!-- Fixed Bottom Action Bar -->
+    <div class="fixed-bottom bg-white border-top shadow-sm py-2 px-3 fixed-action-bar">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <div class="text-muted small">
+                数値を変更した場合は、保存ボタンを押すまで反映されません。
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('admin.v2_parameters') }}"
+                   class="btn btn-secondary"
+                   onclick="return confirm('未保存の変更を破棄します。よろしいですか？');">
+                    <i class="bi bi-x-circle"></i> キャンセル
+                </a>
+                <button type="submit"
+                        form="v2-parameters-form"
+                        class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSS for Fixed Action Bar -->
+    <style>
+        .v2-parameter-page {
+            padding-bottom: 90px;
+        }
+
+        .fixed-action-bar {
+            z-index: 1030;
+        }
+    </style>
 </div>
 
 </div>

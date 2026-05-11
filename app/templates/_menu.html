@@ -55,8 +55,8 @@
   {{ item_html(badge, 'customer.customer_pending_list') }}
 {% endif %}
 
-{% if current_user and current_user.role == 'admin' and 'admin.user_list' in view_functions %}
-  {{ item('ユーザー管理', 'admin.user_list') }}
+{% if current_user and current_user.role == 'admin' and 'admin_users.users_list' in view_functions %}
+  {{ item('ユーザー管理', 'admin_users.users_list') }}
 {% endif %}
 
 {% if current_user and current_user.role == 'admin' and 'admin.v2_parameters' in view_functions %}

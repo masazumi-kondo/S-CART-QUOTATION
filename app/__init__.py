@@ -190,6 +190,12 @@ def create_app():
         ensure_column_exists_sqlite(conn, "users", "password_changed_at", "TEXT")
         ensure_column_exists_sqlite(conn, "users", "password_reset_at", "TEXT")
 
+        # --- add: email and notification columns for user management ---
+        ensure_column_exists_sqlite(conn, "users", "email", "TEXT NOT NULL DEFAULT 'admin@example.com'")
+        ensure_column_exists_sqlite(conn, "users", "receive_notifications", "INTEGER NOT NULL DEFAULT 1")
+        ensure_column_exists_sqlite(conn, "users", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
+
+
     def ensure_table_exists_quotations(conn):
         cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='quotations'")
         if cur.fetchone():
@@ -776,6 +782,7 @@ def create_app():
     from app.routes.customer import customer_bp
     from app.routes.auth import auth_bp
     from app.routes.admin import admin_bp
+    from app.routes.admin_users import admin_users_bp
     from app.routes.notifications import notifications_bp
 
     app.register_blueprint(main_bp)
@@ -783,6 +790,7 @@ def create_app():
     app.register_blueprint(product_bp)
     app.register_blueprint(customer_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_users_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(notifications_bp)
 

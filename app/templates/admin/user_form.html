@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2>{% if is_new %}新規ユーザー登録{% else %}ユーザー編集{% endif %}</h2>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <form method="POST">
+                {% if is_new %}
+                <!-- 新規登録用フォーム -->
+                <div class="mb-3">
+                    <label for="login_id" class="form-label">ユーザーID <span class="text-danger">*</span></label>
+                    <input type="text" id="login_id" name="login_id" class="form-control" required
+                           value="{{ request.form.get('login_id', '') }}">
+                    <small class="form-text text-muted">英数字とアンダースコアのみ使用可</small>
+                </div>
+                {% else %}
+                <!-- 編集用フォーム：ユーザーID表示のみ -->
+                <div class="mb-3">
+                    <label for="login_id" class="form-label">ユーザーID</label>
+                    <input type="text" id="login_id" name="login_id" class="form-control" readonly
+                           value="{{ user.login_id }}">
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="display_name" class="form-label">表示名 <span class="text-danger">*</span></label>
+                    <input type="text" id="display_name" name="display_name" class="form-control" required
+                           value="{{ user.display_name if user else request.form.get('display_name', '') }}">
+                </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">メールアドレス <span class="text-danger">*</span></label>
+                    <input type="email" id="email" name="email" class="form-control" required
+                           value="{{ user.email if user else request.form.get('email', '') }}">
+                </div>
+
+                {% if is_new %}
+                <!-- 新規登録用パスワード -->
+                <div class="mb-3">
+                    <label for="password" class="form-label">パスワード <span class="text-danger">*</span></label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                    <small class="form-text text-muted">8文字以上</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password_confirm" class="form-label">パスワード確認 <span class="text-danger">*</span></label>
+                    <input type="password" id="password_confirm" name="password_confirm" class="form-control" required>
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="role" class="form-label">権限 <span class="text-danger">*</span></label>
+                    <select id="role" name="role" class="form-select" required>
+                        <option value="">-- 選択してください --</option>
+                        <option value="user" {% if role == 'user' %}selected{% endif %}>一般ユーザー</option>
+                        <option value="admin" {% if role == 'admin' %}selected{% endif %}>管理者</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox" id="is_active" name="is_active" class="form-check-input"
+                               {% if is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">
+                            有効
+                        </label>
+                    </div>
+                    <small class="form-text text-muted d-block mt-1">チェック = 有効、未チェック = 無効</small>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox" id="receive_notifications" name="receive_notifications" class="form-check-input"
+                               {% if receive_notifications %}checked{% endif %}>
+                        <label class="form-check-label" for="receive_notifications">
+                            通知を受け取る
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <a href="{{ url_for('admin_users.users_list') }}" class="btn btn-secondary">
+                        キャンセル
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        {% if is_new %}登録{% else %}保存{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

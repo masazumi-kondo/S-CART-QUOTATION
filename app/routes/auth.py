@@ -28,7 +28,7 @@ def login():
             return render_template("login.html", next=next_url)
 
         if not user.is_active:
-            flash("このアカウントは承認待ちです。管理者に連絡してください。", "warning")
+            flash("このユーザーは無効化されています。管理者に確認してください。", "danger")
             result = "inactive"
             user_id_val = user.id
             _insert_login_log(login_id, user_id_val, result)
@@ -174,35 +174,3 @@ def force_change_password():
             flash("更新に失敗しました。ログを確認してください。", "danger")
 
     return render_template("account_force_change.html", form={"login_id": user.login_id})
-
-
-@auth_bp.route("/admin/users", methods=["GET"])
-@login_required
-@roles_required("admin")
-def admin_user_list():
-    users = User.query.order_by(User.id.desc()).all()
-    return render_template("admin_user_list.html", users=users)
-
-
-@auth_bp.route("/admin/users/<int:user_id>/reset", methods=["POST"])
-@login_required
-@roles_required("admin")
-def admin_reset_user(user_id):
-    user = User.query.get_or_404(user_id)
-
-    # 事故防止：admin自身はリセット不可
-    if user.login_id == "admin":
-        flash("admin はリセットできません。", "danger")
-        return redirect(url_for("auth.admin_user_list"))
-
-    initial_password = "Temp1234!"
-    try:
-        user.password_hash = generate_password_hash(initial_password)
-        user.must_change_password = 1
-        user.password_reset_at = datetime.utcnow().isoformat()
-        db.session.commit()
-        flash("初期パスワードにリセットしました（ユーザーへ初期PWを連絡してください）", "warning")
-    except Exception:
-        db.session.rollback()
-        flash("リセットに失敗しました。ログを確認してください。", "danger")
-    return redirect(url_for("auth.admin_user_list"))

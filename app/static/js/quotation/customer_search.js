@@ -54,11 +54,12 @@
 
       const m = meta[String(c.id)] || {};
       if (paymentTerms) {
-        paymentTerms.value =
+        const term =
           m.payment_term_name ||
           m.payment_terms_legacy ||
-          paymentTerms.value ||
           "";
+        paymentTerms.value = term;
+        paymentTerms.setAttribute("value", term);
       }
 
       showSelected(c.name || "");

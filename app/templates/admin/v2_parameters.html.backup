@@ -1,0 +1,637 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2>見積パラメーター管理</h2>
+    
+    <div class="alert alert-info" role="alert">
+        <strong>注意:</strong> この設定は新規見積作成時のV2概算算出に使用されます。過去に保存済みの見積明細金額は自動変更されません。
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.v2_parameters') }}">
+        <div class="row">
+            <div class="col-lg-8">
+                
+                <!-- 賃率設定 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>賃率設定</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="cost_hourly_rate">原価賃率（¥/h）</label>
+                                <input type="number" class="form-control" id="cost_hourly_rate" name="cost_hourly_rate" 
+                                    value="{{ setting.cost_hourly_rate }}" step="1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="sell_hourly_rate">売価賃率（¥/h）</label>
+                                <input type="number" class="form-control" id="sell_hourly_rate" name="sell_hourly_rate" 
+                                    value="{{ setting.sell_hourly_rate }}" step="1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 基本工数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">基本工数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='base_hours') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('基本工数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="design_base_hours">設計基本工数（h）</label>
+                                <input type="number" class="form-control" id="design_base_hours" name="design_base_hours" 
+                                    value="{{ setting.design_base_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="setup_base_hours">現地セットアップ基本工数（h）</label>
+                                <input type="number" class="form-control" id="setup_base_hours" name="setup_base_hours" 
+                                    value="{{ setting.setup_base_hours }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AGV台数係数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">AGV台数係数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='vehicle_hours') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('AGV台数係数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="design_vehicle_hours">設計：AGV1台あたり工数（h）</label>
+                                <input type="number" class="form-control" id="design_vehicle_hours" name="design_vehicle_hours" 
+                                    value="{{ setting.design_vehicle_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="setup_vehicle_hours">現地：AGV1台あたり工数（h）</label>
+                                <input type="number" class="form-control" id="setup_vehicle_hours" name="setup_vehicle_hours" 
+                                    value="{{ setting.setup_vehicle_hours }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 推定走行パターン係数 -->
+                <!-- パターンスコア係数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">推定走行パターンスコア係数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='pattern_hours') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('パターンスコア係数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="design_pattern_hours">設計：パターンスコア1あたり工数（h）</label>
+                                <input type="number" class="form-control" id="design_pattern_hours" name="design_pattern_hours" 
+                                    value="{{ setting.design_pattern_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="setup_pattern_hours">現地：パターンスコア1あたり工数（h）</label>
+                                <input type="number" class="form-control" id="setup_pattern_hours" name="setup_pattern_hours" 
+                                    value="{{ setting.setup_pattern_hours }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 走行エリア規模係数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">走行エリア規模係数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='layout_scale') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('走行エリア規模係数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="setup_layout_scale_hours">現地：走行エリア規模スコア1あたり工数（h）</label>
+                                <input type="number" class="form-control" id="setup_layout_scale_hours" name="setup_layout_scale_hours" 
+                                    value="{{ setting.setup_layout_scale_hours }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 搬送ルート複雑さ係数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">搬送ルート複雑さ係数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='route_factors') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('搬送ルート複雑さ係数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="route_factor_simple">単純（simple）</label>
+                                <input type="number" class="form-control" id="route_factor_simple" name="route_factor_simple" 
+                                    value="{{ setting.route_factor_simple }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="route_factor_standard">標準（standard）</label>
+                                <input type="number" class="form-control" id="route_factor_standard" name="route_factor_standard" 
+                                    value="{{ setting.route_factor_standard }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="route_factor_complex">複雑（complex）</label>
+                                <input type="number" class="form-control" id="route_factor_complex" name="route_factor_complex" 
+                                    value="{{ setting.route_factor_complex }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="route_factor_unknown">未定（unknown）</label>
+                                <input type="number" class="form-control" id="route_factor_unknown" name="route_factor_unknown" 
+                                    value="{{ setting.route_factor_unknown }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- すれ違い・合流係数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">すれ違い・合流係数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='merge_factors') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('すれ違い・合流係数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="merge_factor_low">少ない（low）</label>
+                                <input type="number" class="form-control" id="merge_factor_low" name="merge_factor_low" 
+                                    value="{{ setting.merge_factor_low }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="merge_factor_standard">標準（standard）</label>
+                                <input type="number" class="form-control" id="merge_factor_standard" name="merge_factor_standard" 
+                                    value="{{ setting.merge_factor_standard }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="merge_factor_high">多い（high）</label>
+                                <input type="number" class="form-control" id="merge_factor_high" name="merge_factor_high" 
+                                    value="{{ setting.merge_factor_high }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="merge_factor_unknown">未定（unknown）</label>
+                                <input type="number" class="form-control" id="merge_factor_unknown" name="merge_factor_unknown" 
+                                    value="{{ setting.merge_factor_unknown }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AGV台数補正係数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">AGV台数補正係数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='vehicle_factors') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('AGV台数補正係数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="vehicle_factor_one">1台（one）</label>
+                                <input type="number" class="form-control" id="vehicle_factor_one" name="vehicle_factor_one" 
+                                    value="{{ setting.vehicle_factor_one }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="vehicle_factor_two">2台（two）</label>
+                                <input type="number" class="form-control" id="vehicle_factor_two" name="vehicle_factor_two" 
+                                    value="{{ setting.vehicle_factor_two }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="vehicle_factor_three">3台（three）</label>
+                                <input type="number" class="form-control" id="vehicle_factor_three" name="vehicle_factor_three" 
+                                    value="{{ setting.vehicle_factor_three }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="vehicle_factor_four_or_more">4台以上（fourOrMore）</label>
+                                <input type="number" class="form-control" id="vehicle_factor_four_or_more" name="vehicle_factor_four_or_more" 
+                                    value="{{ setting.vehicle_factor_four_or_more }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 現地設置・補正係数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">現地設置・補正係数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='site_adjustment') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('現地設置・補正係数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="design_charger_hours">設計：充電器1台あたり工数（h）</label>
+                                <input type="number" class="form-control" id="design_charger_hours" name="design_charger_hours" 
+                                    value="{{ setting.design_charger_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="setup_charger_hours">現地：充電器1台あたり工数（h）</label>
+                                <input type="number" class="form-control" id="setup_charger_hours" name="setup_charger_hours" 
+                                    value="{{ setting.setup_charger_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="design_magnetic_stop_hours">設計：磁気テープ停止1か所あたり工数（h）</label>
+                                <input type="number" class="form-control" id="design_magnetic_stop_hours" name="design_magnetic_stop_hours" 
+                                    value="{{ setting.design_magnetic_stop_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="setup_magnetic_stop_hours">現地：磁気テープ停止1か所あたり工数（h）</label>
+                                <input type="number" class="form-control" id="setup_magnetic_stop_hours" name="setup_magnetic_stop_hours" 
+                                    value="{{ setting.setup_magnetic_stop_hours }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ランドマーク係数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">ランドマーク係数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='landmark') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('ランドマーク係数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="landmark_factor_small">小（small）</label>
+                                <input type="number" class="form-control" id="landmark_factor_small" name="landmark_factor_small" 
+                                    value="{{ setting.landmark_factor_small }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="landmark_factor_medium">中（medium）</label>
+                                <input type="number" class="form-control" id="landmark_factor_medium" name="landmark_factor_medium" 
+                                    value="{{ setting.landmark_factor_medium }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="landmark_factor_large">大（large）</label>
+                                <input type="number" class="form-control" id="landmark_factor_large" name="landmark_factor_large" 
+                                    value="{{ setting.landmark_factor_large }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="landmark_factor_full">全域（full）</label>
+                                <input type="number" class="form-control" id="landmark_factor_full" name="landmark_factor_full" 
+                                    value="{{ setting.landmark_factor_full }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="landmark_factor_unknown">未定（unknown）</label>
+                                <input type="number" class="form-control" id="landmark_factor_unknown" name="landmark_factor_unknown" 
+                                    value="{{ setting.landmark_factor_unknown }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ランドマーク工数換算 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>ランドマーク工数換算</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="design_landmark_hours">設計：ランドマーク係数1あたり工数（h）</label>
+                                <input type="number" class="form-control" id="design_landmark_hours" name="design_landmark_hours" 
+                                    value="{{ setting.design_landmark_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="setup_landmark_hours">現地：ランドマーク係数1あたり工数（h）</label>
+                                <input type="number" class="form-control" id="setup_landmark_hours" name="setup_landmark_hours" 
+                                    value="{{ setting.setup_landmark_hours }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 設備連携係数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">設備連携係数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='integration') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('設備連携係数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="design_elevator_hours">設計：エレベーター1台あたり工数（h）</label>
+                                <input type="number" class="form-control" id="design_elevator_hours" name="design_elevator_hours" 
+                                    value="{{ setting.design_elevator_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="setup_elevator_hours">現地：エレベーター1台あたり工数（h）</label>
+                                <input type="number" class="form-control" id="setup_elevator_hours" name="setup_elevator_hours" 
+                                    value="{{ setting.setup_elevator_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="design_auto_door_hours">設計：自動扉1か所あたり工数（h）</label>
+                                <input type="number" class="form-control" id="design_auto_door_hours" name="design_auto_door_hours" 
+                                    value="{{ setting.design_auto_door_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="setup_auto_door_hours">現地：自動扉1か所あたり工数（h）</label>
+                                <input type="number" class="form-control" id="setup_auto_door_hours" name="setup_auto_door_hours" 
+                                    value="{{ setting.setup_auto_door_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="design_plc_signal_hours">設計：PLC信号1点あたり工数（h）</label>
+                                <input type="number" class="form-control" id="design_plc_signal_hours" name="design_plc_signal_hours" 
+                                    value="{{ setting.design_plc_signal_hours }}" step="0.1" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label" for="setup_plc_signal_hours">現地：PLC信号1点あたり工数（h）</label>
+                                <input type="number" class="form-control" id="setup_plc_signal_hours" name="setup_plc_signal_hours" 
+                                    value="{{ setting.setup_plc_signal_hours }}" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PLC/設備連携規模レンジ -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">PLC/設備連携規模レンジ</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='plc_ranges') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('PLC/設備連携規模レンジをデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6>なし（none）</h6>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="plc_none_value">代表値</label>
+                                    <input type="number" class="form-control" id="plc_none_value" name="plc_none_value" 
+                                        value="{{ setting.plc_none_value }}" step="1" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6>小（small）</h6>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label" for="plc_small_min">最小</label>
+                                        <input type="number" class="form-control" id="plc_small_min" name="plc_small_min" 
+                                            value="{{ setting.plc_small_min }}" step="1" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label" for="plc_small_max">最大</label>
+                                        <input type="number" class="form-control" id="plc_small_max" name="plc_small_max" 
+                                            value="{{ setting.plc_small_max }}" step="1" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label" for="plc_small_value">代表値</label>
+                                        <input type="number" class="form-control" id="plc_small_value" name="plc_small_value" 
+                                            value="{{ setting.plc_small_value }}" step="1" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6>中（medium）</h6>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label" for="plc_medium_min">最小</label>
+                                        <input type="number" class="form-control" id="plc_medium_min" name="plc_medium_min" 
+                                            value="{{ setting.plc_medium_min }}" step="1" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label" for="plc_medium_max">最大</label>
+                                        <input type="number" class="form-control" id="plc_medium_max" name="plc_medium_max" 
+                                            value="{{ setting.plc_medium_max }}" step="1" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label" for="plc_medium_value">代表値</label>
+                                        <input type="number" class="form-control" id="plc_medium_value" name="plc_medium_value" 
+                                            value="{{ setting.plc_medium_value }}" step="1" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6>大（large）</h6>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label" for="plc_large_min">最小</label>
+                                        <input type="number" class="form-control" id="plc_large_min" name="plc_large_min" 
+                                            value="{{ setting.plc_large_min }}" step="1" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label" for="plc_large_max">最大</label>
+                                        <input type="number" class="form-control" id="plc_large_max" name="plc_large_max" 
+                                            value="{{ setting.plc_large_max }}" step="1" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label" for="plc_large_value">代表値</label>
+                                        <input type="number" class="form-control" id="plc_large_value" name="plc_large_value" 
+                                            value="{{ setting.plc_large_value }}" step="1" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6>未定（unknown）</h6>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="plc_unknown_value">代表値</label>
+                                    <input type="number" class="form-control" id="plc_unknown_value" name="plc_unknown_value" 
+                                        value="{{ setting.plc_unknown_value }}" step="1" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 上位システム連携係数 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">上位システム連携係数</h5>
+                    </div>
+                    <!-- リセットフォーム -->
+                    <form method="POST"
+                          action="{{ url_for('admin.reset_v2_parameter_section', section_key='host_system') }}"
+                          style="padding: 0.75rem 1rem; border-bottom: 1px solid #dee2e6;"
+                          onsubmit="return confirm('上位システム連携係数をデフォルト値に戻します。よろしいですか？');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            この項目をデフォルトに戻す
+                        </button>
+                    </form>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6>なし（none）</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label" for="design_host_system_none_hours">設計：工数（h）</label>
+                                        <input type="number" class="form-control" id="design_host_system_none_hours" name="design_host_system_none_hours" 
+                                            value="{{ setting.design_host_system_none_hours }}" step="0.1" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label" for="setup_host_system_none_hours">現地：工数（h）</label>
+                                        <input type="number" class="form-control" id="setup_host_system_none_hours" name="setup_host_system_none_hours" 
+                                            value="{{ setting.setup_host_system_none_hours }}" step="0.1" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6>小（small）</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label" for="design_host_system_small_hours">設計：工数（h）</label>
+                                        <input type="number" class="form-control" id="design_host_system_small_hours" name="design_host_system_small_hours" 
+                                            value="{{ setting.design_host_system_small_hours }}" step="0.1" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label" for="setup_host_system_small_hours">現地：工数（h）</label>
+                                        <input type="number" class="form-control" id="setup_host_system_small_hours" name="setup_host_system_small_hours" 
+                                            value="{{ setting.setup_host_system_small_hours }}" step="0.1" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6>中（medium）</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label" for="design_host_system_medium_hours">設計：工数（h）</label>
+                                        <input type="number" class="form-control" id="design_host_system_medium_hours" name="design_host_system_medium_hours" 
+                                            value="{{ setting.design_host_system_medium_hours }}" step="0.1" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label" for="setup_host_system_medium_hours">現地：工数（h）</label>
+                                        <input type="number" class="form-control" id="setup_host_system_medium_hours" name="setup_host_system_medium_hours" 
+                                            value="{{ setting.setup_host_system_medium_hours }}" step="0.1" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h6>大（large）</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label" for="design_host_system_large_hours">設計：工数（h）</label>
+                                        <input type="number" class="form-control" id="design_host_system_large_hours" name="design_host_system_large_hours" 
+                                            value="{{ setting.design_host_system_large_hours }}" step="0.1" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label" for="setup_host_system_large_hours">現地：工数（h）</label>
+                                        <input type="number" class="form-control" id="setup_host_system_large_hours" name="setup_host_system_large_hours" 
+                                            value="{{ setting.setup_host_system_large_hours }}" step="0.1" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 保存ボタン -->
+        <div class="row mt-4 mb-4">
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-check-circle"></i> 保存
+                </button>
+                <a href="{{ url_for('main.index') }}" class="btn btn-secondary btn-lg ms-2">
+                    <i class="bi bi-x-circle"></i> キャンセル
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+</div>
+
+{% endblock %}

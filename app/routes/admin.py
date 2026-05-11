@@ -6,6 +6,61 @@ from app.auth_utils import login_required, roles_required
 
 admin_bp = Blueprint("admin", __name__)
 
+# Watch fields for debugging V2 reset issues
+WATCH_FIELDS = [
+    "cost_hourly_rate",
+    "sell_hourly_rate",
+    "design_base_hours",
+    "setup_base_hours",
+    "design_vehicle_hours",
+    "setup_vehicle_hours",
+    "design_pattern_hours",
+    "setup_pattern_hours",
+    "setup_layout_scale_hours",
+    "route_factor_simple",
+    "route_factor_standard",
+    "route_factor_complex",
+    "route_factor_unknown",
+    "merge_factor_low",
+    "merge_factor_standard",
+    "merge_factor_high",
+    "merge_factor_unknown",
+    "vehicle_factor_one",
+    "vehicle_factor_two",
+    "vehicle_factor_three",
+    "vehicle_factor_four_or_more",
+    "design_charger_hours",
+    "setup_charger_hours",
+    "design_magnetic_stop_hours",
+    "setup_magnetic_stop_hours",
+    "landmark_factor_small",
+    "landmark_factor_medium",
+    "landmark_factor_large",
+    "landmark_factor_full",
+    "landmark_factor_unknown",
+    "design_landmark_hours",
+    "setup_landmark_hours",
+    "design_elevator_hours",
+    "setup_elevator_hours",
+    "design_auto_door_hours",
+    "setup_auto_door_hours",
+    "design_plc_signal_hours",
+    "setup_plc_signal_hours",
+    "plc_small_value",
+    "plc_medium_value",
+    "plc_large_value",
+    "design_host_system_medium_hours",
+    "setup_host_system_medium_hours",
+]
+
+def snapshot(setting):
+    """Create a snapshot of watched fields for comparison"""
+    return {f: getattr(setting, f, None) for f in WATCH_FIELDS}
+
+def diff(before, after):
+    """Find differences between two snapshots"""
+    return {k: (before[k], after[k]) for k in before if before[k] != after[k]}
+
 
 def _to_float(value, default):
     """Convert value to float safely"""
@@ -39,33 +94,11 @@ def v2_parameters():
         db.session.add(setting)
         db.session.commit()
 
-    if request.method == "POST":
-        # Check for section reset action
-        section_key = request.form.get("reset_section")
-        if section_key:
-            if setting.reset_section_to_defaults(section_key):
-                db.session.commit()
-                section_names = {
-                    "base_hours": "基本工数",
-                    "vehicle_hours": "AGV台数係数",
-                    "pattern_hours": "パターンスコア係数",
-                    "layout_scale": "走行エリア規模係数",
-                    "route_factors": "搬送ルート複雑さ係数",
-                    "merge_factors": "すれ違い・合流係数",
-                    "vehicle_factors": "AGV台数補正係数",
-                    "site_adjustment": "現地設置・補正係数",
-                    "landmark": "ランドマーク係数",
-                    "integration": "設備連携係数",
-                    "plc_ranges": "PLC/設備連携規模レンジ",
-                    "host_system": "上位システム連携係数",
-                }
-                section_name = section_names.get(section_key, section_key)
-                flash(f"{section_name}をデフォルト値に戻しました。", "success")
-            else:
-                flash("対象セクションが見つかりませんでした。", "danger")
-            return redirect(url_for("admin.v2_parameters"))
+    # Debug logging: Show initial state
+    print("[V2 PARAM GET START]", snapshot(setting))
 
-        # Normal save action
+    if request.method == "POST":
+        # Normal save action only - reset is handled by dedicated route
         # 賃率
         setting.cost_hourly_rate = _to_float(request.form.get("cost_hourly_rate"), 17760)
         setting.sell_hourly_rate = _to_float(request.form.get("sell_hourly_rate"), 29600)
@@ -184,8 +217,20 @@ def reset_v2_parameter_section(section_key):
         "host_system": "上位システム連携係数",
     }
 
+    # Debug logging: Before reset
+    before = snapshot(setting)
+    print(f"[V2 RESET] section_key = {section_key}")
+    print(f"[V2 RESET] before = {before}")
+
     if setting.reset_section_to_defaults(section_key):
         db.session.commit()
+        
+        # Debug logging: After reset and commit
+        after = snapshot(setting)
+        diff_result = diff(before, after)
+        print(f"[V2 RESET] after_commit = {after}")
+        print(f"[V2 RESET] diff = {diff_result}")
+        
         section_name = section_names.get(section_key, section_key)
         flash(f"{section_name}をデフォルト値に戻しました。", "success")
     else:

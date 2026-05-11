@@ -25,26 +25,42 @@
             </style>
             <div class="q-section">
                 <h5>案件・顧客情報</h5>
-                <div class="mb-3 position-relative">
-                    <label for="customer_search" class="form-label">顧客名（宛先） <span class="text-danger">*</span></label>
-                    <input type="hidden" id="customer_id" name="customer_id" value="{{ values.customer_id|default('') }}">
-                    <input type="text"
-                           class="form-control"
-                           id="customer_search"
-                           name="company_name"
-                           autocomplete="off"
-                           value="{{ values.company_name|default('') }}"
-                           placeholder="顧客名・カナで検索して選択、または直接入力">
-                    <div id="customer_candidates"
-                         class="list-group position-absolute w-100 shadow-sm d-none"
-                         style="z-index: 1000; max-height: 280px; overflow-y: auto;">
+                <div class="mb-3">
+                    <label for="customer_search" class="form-label">
+                        顧客名（宛先） <span class="text-danger">*</span>
+                    </label>
+
+                    <input type="hidden"
+                           id="customer_id"
+                           name="customer_id"
+                           value="{{ values.customer_id|default('') }}">
+
+                    <div class="input-group">
+                        <input type="text"
+                               class="form-control"
+                               id="customer_search"
+                               name="company_name"
+                               autocomplete="off"
+                               value="{{ values.company_name|default('') }}"
+                               placeholder="顧客名を直接入力、または顧客検索から選択">
+
+                        <a class="btn btn-outline-secondary"
+                           id="customer_search_btn"
+                           href="{{ url_for('customer.customer_select') }}"
+                           style="cursor: pointer;">
+                            顧客検索
+                        </a>
                     </div>
-                    <div class="q-muted mt-1">
-                      顧客名またはカナを入力すると、顧客マスタ候補が表示されます。
+
+                    <div class="form-text mt-1">
+                        顧客マスタから選択する場合は「顧客検索」を押してください。直接入力も可能です。
                     </div>
-                    <div class="small mt-1 d-none" id="customer_selected_label">
-                      選択済み：<span id="customer_selected_name"></span>
-                    </div>
+
+                    {% if values.customer_id %}
+                        <div class="small mt-2 text-success">
+                            ✓ 顧客マスタ選択済み
+                        </div>
+                    {% endif %}
                 </div>
                 <div class="mb-3">
                     <label for="contact_name" class="form-label">宛先担当者名</label>
@@ -395,9 +411,59 @@
     <script id="products-json" type="application/json">{{ products|tojson|safe }}</script>
     <script src="{{ url_for('static', filename='js/quotation/update_profit_preview.js') }}"></script>
     <script src="{{ url_for('static', filename='js/quotation/profit_summary.js') }}"></script>
-    <script id="customers-meta-json" type="application/json">{{ customers_meta|tojson|safe }}</script>
-    <script id="customers-json" type="application/json">{{ customers|tojson|safe }}</script>
-    <script src="{{ url_for('static', filename='js/quotation/customer_search.js') }}"></script>
+    
+    {# --- 顧客検索画面遷移時にフォーム状態を保持するスクリプト --- #}
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const btn = document.getElementById("customer_search_btn");
+        if (btn) {
+          btn.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            const params = new URLSearchParams();
+
+            // 保持する基本項目
+            const fields = [
+              "company_name",
+              "contact_name",
+              "project_name",
+              "payment_terms",
+              "delivery_date",
+              "delivery_terms",
+              "valid_days",
+              "remarks"
+            ];
+
+            fields.forEach(name => {
+              const el = document.querySelector(`[name="${name}"]`);
+              if (el && el.value) {
+                params.set(name, el.value);
+              }
+            });
+
+            const url = btn.getAttribute("href") + "?" + params.toString();
+            window.location.href = url;
+          });
+        }
+
+        // 顧客名欄を手動編集したときに customer_id をクリア
+        const customerInput = document.getElementById("customer_search");
+        const customerId = document.getElementById("customer_id");
+
+        if (customerInput && customerId) {
+          // ページロード時の初期値を記録
+          const initialName = customerInput.value;
+
+          customerInput.addEventListener("input", function () {
+            // 値が変更されたら customer_id をクリア
+            if (this.value !== initialName) {
+              customerId.value = "";
+            }
+          });
+        }
+      });
+    </script>
+
     {% if revise_source_id and details %}
     <script id="initial-values-json" type="application/json">{{ values|tojson|safe }}</script>
     <script id="initial-details-json" type="application/json">{{ details|tojson|safe }}</script>

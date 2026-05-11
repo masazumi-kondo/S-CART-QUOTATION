@@ -444,3 +444,43 @@ def customer_reject(customer_id):
     return redirect(url_for('customer.customer_pending_list'))
 
 
+# 顧客マスタ検索・選択画面（見積作成時に使用）
+@customer_bp.route('/customers/select', methods=['GET'])
+def customer_select():
+    """
+    顧客マスタ検索・選択画面
+    - キーワード検索で承認済み顧客をフィルタリング
+    - 選択時に見積作成画面に戻り、customer_id・company_name・payment_terms を渡す
+    """
+    keyword = request.args.get('q', '').strip()
+
+    # ベースクエリ: 承認済み顧客のみ
+    query = Customer.query.filter(Customer.status == CustomerStatus.APPROVED.value)
+
+    # キーワード検索
+    if keyword:
+        like = f"%{keyword}%"
+        query = query.filter(
+            or_(
+                Customer.name.ilike(like),
+                Customer.name_kana.ilike(like)
+            )
+        )
+
+    # 顧客マスタの支払条件関連をロード
+    from sqlalchemy.orm import joinedload
+    query = query.options(joinedload(Customer.payment_term_ref))
+    
+    customers = query.order_by(Customer.name.asc()).limit(50).all()
+
+    # 見積作成画面から持ってきた値を保持（選択時に引き継ぐ）
+    carry_params = dict(request.args)
+    carry_params.pop('q', None)
+
+    return render_template(
+        'customer_select.html',
+        customers=customers,
+        keyword=keyword,
+        carry_params=carry_params
+    )
+

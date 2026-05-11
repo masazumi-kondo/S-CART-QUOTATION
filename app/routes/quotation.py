@@ -102,17 +102,6 @@ def quotation_revise(quotation_id):
 
     # 顧客リスト（approvedのみ、未承認顧客は選択不可）
     customers_query = Customer.query.options(joinedload(Customer.payment_term_ref)).filter(Customer.status == CustomerStatus.APPROVED.value).order_by(Customer.name).all()
-    customers_json = [
-        {"id": c.id, "name": c.name, "name_kana": c.name_kana} for c in customers_query
-    ]
-    customers_meta = {
-        str(c.id): {
-            "name": c.name or "",
-            "payment_term_name": (c.payment_term_ref.name if c.payment_term_ref else "") or "",
-            "payment_terms_legacy": c.payment_terms or ""
-        }
-        for c in customers_query
-    }
     # details: id, quotation_id, created_at, updated_at を除外
     detail_dicts = []
     for d in details:
@@ -143,8 +132,6 @@ def quotation_revise(quotation_id):
         values=values,
         details=detail_dicts,
         revise_source_id=orig.id,
-        customers=customers_json,
-        customers_meta=customers_meta,
         rates=rates
     )
 
@@ -390,7 +377,7 @@ def quotation_new():
     import logging
     logging.info("[quotation_new] method=%s path=%s url=%s referrer=%s revise_source_id=%s", request.method, request.path, request.url, request.referrer, request.form.get("revise_source_id"))
     error = None
-    # Productモデルのリストを取得し、JSONシリアライズ可能な辞書リストに変換
+    # Product モデルのリストを取得し、JSONシリアライズ可能な辞書リストに変換
     products_query = Product.query.order_by(Product.name).all()
     product_list = [
         {
@@ -403,19 +390,6 @@ def quotation_new():
         for p in products_query
     ]
 
-    # Customerリスト: approvedのみ（admin/一般共通、未承認顧客は選択不可）
-    customers_query = Customer.query.options(joinedload(Customer.payment_term_ref)).filter(Customer.status == CustomerStatus.APPROVED.value).order_by(Customer.name).all()
-    customers_json = [
-        {"id": c.id, "name": c.name, "name_kana": c.name_kana} for c in customers_query
-    ]
-    customers_meta = {
-        str(c.id): {
-            "name": c.name or "",
-            "payment_term_name": (c.payment_term_ref.name if c.payment_term_ref else "") or "",
-            "payment_terms_legacy": c.payment_terms or ""
-        }
-        for c in customers_query
-    }
     # ヘッダ入力値保持用
     values = {
         "company_name": "",
@@ -439,6 +413,26 @@ def quotation_new():
         "discount_rate": 0.0,
         "discount_amount": 0
     }
+
+    # GET時: クエリパラメータから値を反映（顧客選択画面から戻ってきた場合）
+    if request.method == "GET":
+        values["customer_id"] = request.args.get("customer_id", "").strip()
+        values["company_name"] = request.args.get("company_name", "").strip()
+        values["contact_name"] = request.args.get("contact_name", "").strip()
+        values["project_name"] = request.args.get("project_name", "").strip()
+        values["delivery_date"] = request.args.get("delivery_date", "").strip()
+        values["delivery_terms"] = request.args.get("delivery_terms", "").strip()
+        values["payment_terms"] = request.args.get("payment_terms", "").strip()
+        values["valid_days"] = request.args.get("valid_days", "30").strip()
+        values["remarks"] = request.args.get("remarks", "").strip()
+        
+        # valid_days の型変換
+        try:
+            n = int(values["valid_days"]) if values["valid_days"] else 30
+            values["valid_days"] = n if n > 0 else 30
+        except ValueError:
+            values["valid_days"] = 30
+
 
 
     if request.method == "POST":
@@ -733,8 +727,6 @@ def quotation_new():
                         error=error,
                         products=product_list,
                         values=values,
-                        customers=customers_json,
-                        customers_meta=customers_meta,
                         rates=rates
                     )
 
@@ -751,8 +743,6 @@ def quotation_new():
                         error=error,
                         products=product_list,
                         values=values,
-                        customers=customers_json,
-                        customers_meta=customers_meta,
                         rates=rates
                     )
 
@@ -898,8 +888,6 @@ def quotation_new():
             error=error,
             products=product_list,
             values=values,
-            customers=customers_json,
-            customers_meta=customers_meta,
             rates=rates
         )
 
@@ -915,8 +903,6 @@ def quotation_new():
         error=error,
         products=product_list,
         values=values,
-        customers=customers_json,
-        customers_meta=customers_meta,
         rates=rates
     )
 

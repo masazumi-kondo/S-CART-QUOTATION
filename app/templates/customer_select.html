@@ -1,0 +1,98 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10">
+            <h2>顧客マスタ検索・選択</h2>
+            <hr>
+
+            <!-- 検索フォーム -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('customer.customer_select') }}" class="d-flex gap-2">
+                        <input type="text"
+                               class="form-control"
+                               name="q"
+                               value="{{ keyword|default('') }}"
+                               placeholder="顧客名またはカナで検索...">
+                        <button type="submit" class="btn btn-primary">
+                            検索
+                        </button>
+                        <a href="{{ url_for('quotation.quotation_new') }}" class="btn btn-outline-secondary">
+                            キャンセル
+                        </a>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 検索結果テーブル -->
+            {% if customers %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>顧客名</th>
+                            <th>カナ</th>
+                            <th>支払条件</th>
+                            <th style="width: 120px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in customers %}
+                        <tr>
+                            <td>
+                                <strong>{{ c.name }}</strong>
+                            </td>
+                            <td>{{ c.name_kana|default('') }}</td>
+                            <td>
+                                {% set payment_text = c.payment_term_ref.name if c.payment_term_ref else c.payment_terms %}
+                                {{ payment_text|default('-') }}
+                            </td>
+                            <td>
+                                {% set payment_text = c.payment_term_ref.name if c.payment_term_ref else c.payment_terms %}
+                                <a class="btn btn-sm btn-primary"
+                                   href="{{ url_for('quotation.quotation_new',
+                                                   customer_id=c.id,
+                                                   company_name=c.name,
+                                                   payment_terms=payment_text|default(''),
+                                                   project_name=carry_params.get('project_name', ''),
+                                                   contact_name=carry_params.get('contact_name', ''),
+                                                   delivery_date=carry_params.get('delivery_date', ''),
+                                                   delivery_terms=carry_params.get('delivery_terms', ''),
+                                                   valid_days=carry_params.get('valid_days', ''),
+                                                   remarks=carry_params.get('remarks', '')) }}">
+                                    選択
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="alert alert-info mt-3">
+                {{ customers|length }}件の顧客が見つかりました。
+                <a href="{{ url_for('quotation.quotation_new',
+                                    project_name=carry_params.get('project_name', ''),
+                                    contact_name=carry_params.get('contact_name', ''),
+                                    delivery_date=carry_params.get('delivery_date', ''),
+                                    delivery_terms=carry_params.get('delivery_terms', ''),
+                                    valid_days=carry_params.get('valid_days', ''),
+                                    remarks=carry_params.get('remarks', '')) }}"
+                   class="alert-link">見積作成画面に戻る</a>
+            </div>
+
+            {% else %}
+            <div class="alert alert-warning mt-3">
+                {% if keyword %}
+                    「{{ keyword }}」に一致する顧客が見つかりません。
+                    <a href="{{ url_for('customer.customer_select') }}" class="alert-link">検索条件をリセット</a>
+                {% else %}
+                    キーワードを入力して検索してください。
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -33,7 +33,7 @@ def _norm_difficulty(v: str):
     s = (v or "").strip().lower()
     return s if s in ("medium", "high") else None
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app
 from app import db
 from app.models.quotation import Quotation
 from app.models.quotation_detail import QuotationDetail
@@ -180,7 +180,6 @@ def quotation_view(quotation_id):
     # --- 新ロジックで設計/セットアップ費用計算 ---
 
     import json
-    from flask import current_app
     logger = current_app.logger
     DEFAULT_DESIGN_SETUP = {
         "design_hours": 0,
@@ -426,6 +425,7 @@ def quotation_new():
         "delivery_terms": "",
         "payment_terms": "",
         "valid_until": "",
+        "valid_days": 30,  # 見積期限（日数）
         "remarks": "",
         "estimator_name": "",  # 作成担当
         # 走行条件パラメーター入力保持用
@@ -442,15 +442,6 @@ def quotation_new():
 
 
     if request.method == "POST":
-        # 保存前ログ
-        from flask import current_app
-        current_app.logger.info("quotation_new action=%s company_name=%s customer_id=%s project=%s",
-            request.form.get("action"),
-            request.form.get("company_name"),
-            request.form.get("customer_id"),
-            request.form.get("project_name")
-        )
-
         # ヘッダ項目取得
         values["company_name"] = request.form.get("company_name", "").strip()
         values["contact_name"] = request.form.get("contact_name", "").strip()
@@ -459,6 +450,18 @@ def quotation_new():
         values["delivery_terms"] = request.form.get("delivery_terms", "").strip()
         values["payment_terms"] = request.form.get("payment_terms", "").strip()
         values["valid_until"] = request.form.get("valid_until", "").strip()
+        
+        # 見積期限（日数）取得
+        valid_days_raw = request.form.get("valid_days", "").strip()
+        if valid_days_raw == "":
+            values["valid_days"] = None
+        else:
+            try:
+                n = int(valid_days_raw)
+                values["valid_days"] = n if n > 0 else None
+            except ValueError:
+                values["valid_days"] = None
+        
         values["remarks"] = request.form.get("remarks", "").strip()
         values["estimator_name"] = request.form.get("estimator_name", "").strip()
         values["customer_id"] = request.form.get("customer_id", "").strip()
@@ -486,7 +489,6 @@ def quotation_new():
             values["discount_amount"] = 0
 
         # --- デバッグログ追加 ---
-        from flask import current_app
         current_app.logger.info("quotation_new POST: product_id=%s", request.form.getlist("product_id[]"))
         current_app.logger.info("quotation_new POST: code=%s", request.form.getlist("code[]"))
         current_app.logger.info("quotation_new POST: description=%s", request.form.getlist("description[]"))
@@ -588,7 +590,6 @@ def quotation_new():
 
 
         # --- 明細件数と内容をログ出力 ---
-        from flask import current_app, flash
         current_app.logger.info("quotation_new: details count = %s", len(details))
         for d in details:
             current_app.logger.info(
@@ -776,6 +777,7 @@ def quotation_new():
                     delivery_terms=values["delivery_terms"],
                     payment_terms=values["payment_terms"],
                     valid_until=values["valid_until"],
+                    valid_days=values.get("valid_days"),  # 見積期限（日数）
                     remarks=values["remarks"],
                     estimator_name=values.get("estimator_name", ""),
                     discount_rate=values.get("discount_rate", 0.0),
@@ -820,6 +822,7 @@ def quotation_new():
                     delivery_terms=values["delivery_terms"],
                     payment_terms=values["payment_terms"],
                     valid_until=values["valid_until"],
+                    valid_days=values.get("valid_days"),  # 見積期限（日数）
                     remarks=values["remarks"],
                     estimator_name=values.get("estimator_name", ""),
                     discount_rate=values.get("discount_rate", 0.0),

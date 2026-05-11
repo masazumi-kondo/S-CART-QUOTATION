@@ -696,6 +696,7 @@ def create_app():
             ensure_column_exists(conn, "quotation_details", "profit_rate", "REAL")
             ensure_column_exists(conn, "quotation_details", "cost", "REAL DEFAULT 0")
             ensure_column_exists(conn, "quotations", "quotation_no", "VARCHAR(50)")
+            ensure_column_exists(conn, "quotations", "valid_days", "INTEGER")  # 見積期限（日数）
             # v1判定は冒頭で済ませたのでここは削除
             logging.info("[MIG] done user_version=%s", get_user_version(conn))
         except Exception as e:

@@ -13,7 +13,8 @@ class Quotation(db.Model):
     delivery_date = db.Column(db.String(50), nullable=True)
     delivery_terms = db.Column(db.String(100), nullable=True)
     payment_terms = db.Column(db.String(100), nullable=True)
-    valid_until = db.Column(db.String(50), nullable=True)
+    valid_until = db.Column(db.String(50), nullable=True)  # 旧日付型項目（互換性維持のため残す）
+    valid_days = db.Column(db.Integer, nullable=True)  # 見積期限（日数）
     remarks = db.Column(db.Text, nullable=True)
     estimator_name = db.Column(db.String(100), nullable=True)  # 見積作成担当者名を追加
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

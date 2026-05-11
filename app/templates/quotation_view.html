@@ -188,7 +188,7 @@
             <th>御支払条件</th>
             <td>{{ quotation.payment_terms }}</td>
             <th>見積有効期限</th>
-            <td>{{ quotation.valid_until }}</td>
+            <td>{% if quotation.valid_days %}{{ quotation.valid_days }}日{% else %}-{% endif %}</td>
         </tr>
     </table>
 

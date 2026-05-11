@@ -73,12 +73,19 @@
                         placeholder="（顧客選択で自動反映。必要に応じて編集可）">
                 </div>
                 <div class="mb-3">
-                    <label for="valid_until" class="form-label">見積期限</label>
-                    <input type="date"
-                           class="form-control"
-                           id="valid_until"
-                           name="valid_until"
-                           value="{{ values.valid_until|default('') }}">
+                    <label for="valid_days" class="form-label">見積期限</label>
+                    <div class="input-group">
+                        <input type="number"
+                               class="form-control"
+                               id="valid_days"
+                               name="valid_days"
+                               min="1"
+                               step="1"
+                               value="{{ values.valid_days|default(30) }}"
+                               placeholder="30">
+                        <span class="input-group-text">日</span>
+                    </div>
+                    <div class="form-text">例：30日</div>
                 </div>
             </div>
             <div class="q-section">

@@ -131,6 +131,10 @@
 		console.log("[v2_sync] runEstimateV2 started");
 		
 		try {
+			// ---- Read V2 settings from HTML JSON ----
+			const settings = typeof readV2Settings === "function" ? readV2Settings() : window.V2_DEFAULT_SETTINGS;
+			console.log("[v2_sync] V2 settings:", settings);
+			
 			// ---- 計算エンジン確認 ----
 			if (typeof readParamsV2FromWizard !== "function") {
 				console.error("[v2_sync] readParamsV2FromWizard not found");
@@ -155,19 +159,19 @@
 
 			// ---- Step 3-5: メトリクス・工数・金額計算 ----
 			console.log("[v2_sync] Step 3: Calculating metrics");
-			const metrics = deriveComplexityMetricsV2(params);
+			const metrics = deriveComplexityMetricsV2(params, settings);
 			console.log("[v2_sync] metrics:", metrics);
 			
 			console.log("[v2_sync] Step 4: Calculating design hours");
-			const designHours = calcDesignHoursV2(params, metrics);
+			const designHours = calcDesignHoursV2(params, metrics, settings);
 			console.log("[v2_sync] designHours:", designHours);
 			
 			console.log("[v2_sync] Step 5: Calculating setup hours");
-			const setupHours = calcSetupHoursV2(params, metrics);
+			const setupHours = calcSetupHoursV2(params, metrics, settings);
 			console.log("[v2_sync] setupHours:", setupHours);
 			
 			console.log("[v2_sync] Step 6: Converting to amounts");
-			const amounts = convertAmountsV2(designHours, setupHours);
+			const amounts = convertAmountsV2(designHours, setupHours, settings);
 			console.log("[v2_sync] amounts:", amounts);
 
 			// ---- Step 6: Result オブジェクト作成 ----

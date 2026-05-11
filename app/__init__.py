@@ -713,8 +713,16 @@ def create_app():
             from app.models.quotation_detail import QuotationDetail
             from app.models.product import Product
             from app.models.logic_config import LogicConfig
+            from app.models.v2_calculation_setting import V2CalculationSetting
             # Customer is already imported above
             db.create_all()
+            
+            # Initialize V2CalculationSetting with default values
+            if not V2CalculationSetting.query.get(1):
+                v2_setting = V2CalculationSetting(id=1)
+                db.session.add(v2_setting)
+                db.session.commit()
+                logging.info("[DB] V2CalculationSetting initialized with defaults")
 
         conn = sqlite3.connect(db_path, timeout=30)
         safe_set_pragma(conn, "PRAGMA foreign_keys=ON")
@@ -727,6 +735,15 @@ def create_app():
         # 新規DBでも products を必ず確保（1回だけ）
         with app.app_context():
             ensure_products_table()
+            # Ensure V2CalculationSetting exists
+            from app.models.v2_calculation_setting import V2CalculationSetting
+            db.create_all()  # Make sure new models are created
+            
+            if not V2CalculationSetting.query.get(1):
+                v2_setting = V2CalculationSetting(id=1)
+                db.session.add(v2_setting)
+                db.session.commit()
+                logging.info("[DB] V2CalculationSetting initialized with defaults")
 
     else:
         conn = sqlite3.connect(db_path, timeout=30)
@@ -739,7 +756,17 @@ def create_app():
 
         # 既存DBでも products を必ず確保（1回だけ）
         with app.app_context():
+            # Ensure new models are created (db.create_all() will not drop existing tables)
+            from app.models.v2_calculation_setting import V2CalculationSetting
+            db.create_all()
+            
             ensure_products_table()
+            # Ensure V2CalculationSetting exists
+            if not V2CalculationSetting.query.get(1):
+                v2_setting = V2CalculationSetting(id=1)
+                db.session.add(v2_setting)
+                db.session.commit()
+                logging.info("[DB] V2CalculationSetting initialized with defaults")
 
     # Blueprints
 

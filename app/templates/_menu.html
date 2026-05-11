@@ -58,3 +58,7 @@
 {% if current_user and current_user.role == 'admin' and 'admin.user_list' in view_functions %}
   {{ item('ユーザー管理', 'admin.user_list') }}
 {% endif %}
+
+{% if current_user and current_user.role == 'admin' and 'admin.v2_parameters' in view_functions %}
+  {{ item('見積パラメーター管理', 'admin.v2_parameters') }}
+{% endif %}

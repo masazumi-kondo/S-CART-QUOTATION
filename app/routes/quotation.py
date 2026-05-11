@@ -120,11 +120,20 @@ def quotation_revise(quotation_id):
         for p in products_query
     ]
     from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE
+    from app.models.v2_calculation_setting import V2CalculationSetting
     rates = {
         "LABOR_RATE": LABOR_RATE,
         "DESIGN_SELL_RATE": DESIGN_SELL_RATE,
         "SETUP_SELL_RATE": SETUP_SELL_RATE,
     }
+    # Get V2 calculation settings
+    v2_setting = V2CalculationSetting.query.get(1)
+    if not v2_setting:
+        v2_setting = V2CalculationSetting(id=1)
+        db.session.add(v2_setting)
+        db.session.commit()
+    v2_settings = v2_setting.to_v2_json()
+    
     return render_template(
         "quotation_form.html",
         error=None,
@@ -132,7 +141,8 @@ def quotation_revise(quotation_id):
         values=values,
         details=detail_dicts,
         revise_source_id=orig.id,
-        rates=rates
+        rates=rates,
+        v2_settings=v2_settings
     )
 
 # 印刷用見積書の明細並び順ヘルパー
@@ -377,6 +387,22 @@ def quotation_new():
     import logging
     logging.info("[quotation_new] method=%s path=%s url=%s referrer=%s revise_source_id=%s", request.method, request.path, request.url, request.referrer, request.form.get("revise_source_id"))
     error = None
+    
+    # Initialize rates and v2_settings upfront for both GET and POST
+    from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE
+    from app.models.v2_calculation_setting import V2CalculationSetting
+    rates = {
+        "LABOR_RATE": LABOR_RATE,
+        "DESIGN_SELL_RATE": DESIGN_SELL_RATE,
+        "SETUP_SELL_RATE": SETUP_SELL_RATE,
+    }
+    v2_setting = V2CalculationSetting.query.get(1)
+    if not v2_setting:
+        v2_setting = V2CalculationSetting(id=1)
+        db.session.add(v2_setting)
+        db.session.commit()
+    v2_settings = v2_setting.to_v2_json()
+    
     # Product モデルのリストを取得し、JSONシリアライズ可能な辞書リストに変換
     products_query = Product.query.order_by(Product.name).all()
     product_list = [
@@ -727,7 +753,8 @@ def quotation_new():
                         error=error,
                         products=product_list,
                         values=values,
-                        rates=rates
+                        rates=rates,
+                        v2_settings=v2_settings
                     )
 
                 # 顧客IDがある場合のみマスタ名で上書き
@@ -743,7 +770,8 @@ def quotation_new():
                         error=error,
                         products=product_list,
                         values=values,
-                        rates=rates
+                        rates=rates,
+                        v2_settings=v2_settings
                     )
 
             if revise_source_id:
@@ -877,33 +905,23 @@ def quotation_new():
                 return redirect(url_for("quotation.quotation_view", quotation_id=quotation.id))
 
         # エラー時：ヘッダ入力値をテンプレートに渡す
-        from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE
-        rates = {
-            "LABOR_RATE": LABOR_RATE,
-            "DESIGN_SELL_RATE": DESIGN_SELL_RATE,
-            "SETUP_SELL_RATE": SETUP_SELL_RATE,
-        }
         return render_template(
             "quotation_form.html",
             error=error,
             products=product_list,
             values=values,
-            rates=rates
+            rates=rates,
+            v2_settings=v2_settings
         )
 
     # GET 時：ヘッダ初期値と products, customers を渡す
-    from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE
-    rates = {
-        "LABOR_RATE": LABOR_RATE,
-        "DESIGN_SELL_RATE": DESIGN_SELL_RATE,
-        "SETUP_SELL_RATE": SETUP_SELL_RATE,
-    }
     return render_template(
         "quotation_form.html",
         error=error,
         products=product_list,
         values=values,
-        rates=rates
+        rates=rates,
+        v2_settings=v2_settings
     )
 
 # 見積削除（例: /quotation/<int:quotation_id>/delete）

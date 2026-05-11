@@ -54,11 +54,28 @@ const V2_DEFAULT_SETTINGS = {
   designPlcSignalHours: 1.2,
   setupPlcSignalHours: 1.5,
 
-  // 上位システム
-  designHostSystemYesHours: 8.0,
-  setupHostSystemYesHours: 8.0,
-  designHostSystemUnknownHours: 4.0,
-  setupHostSystemUnknownHours: 4.0,
+  // 上位システム連携：なし/小/中/大
+  hostSystemDesignHours: {
+    none: 0.0,
+    small: 4.0,
+    medium: 8.0,
+    large: 16.0
+  },
+  hostSystemSetupHours: {
+    none: 0.0,
+    small: 4.0,
+    medium: 8.0,
+    large: 16.0
+  },
+
+  // PLC/設備連携規模の代表信号点数
+  plcSignalValues: {
+    none: 0,
+    small: 3,
+    medium: 10,
+    large: 20,
+    unknown: 6
+  },
 
   // 搬送ルート複雑さ係数
   routeComplexityFactors: {
@@ -114,6 +131,53 @@ const V2_DEFAULT_SETTINGS = {
 function roundHalfHour(x) {
   if (x < 0) return 0;
   return Math.ceil(x * 2) / 2;
+}
+
+/**
+ * HTMLのv2-settings-jsonから設定を読み込み、デフォルト設定とマージする
+ */
+function readV2Settings() {
+  const el = document.getElementById("v2-settings-json");
+  if (!el) return V2_DEFAULT_SETTINGS;
+  
+  try {
+    const parsed = JSON.parse(el.textContent || "{}");
+    // デフォルト設定とDBから読み込んだ設定をマージ
+    // DBから読み込んだ値が存在する場合はそれを優先
+    return mergeDeep(V2_DEFAULT_SETTINGS, parsed);
+  } catch (e) {
+    console.error("[v2_core] v2-settings-json parse failed", e);
+    return V2_DEFAULT_SETTINGS;
+  }
+}
+
+/**
+ * 階層的なオブジェクトを深くマージする
+ * target にsource のプロパティを再帰的にマージ
+ */
+function mergeDeep(target, source) {
+  const output = Object.assign({}, target);
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      if (isObject(source[key])) {
+        if (!(key in target)) {
+          output[key] = source[key];
+        } else {
+          output[key] = mergeDeep(target[key], source[key]);
+        }
+      } else {
+        output[key] = source[key];
+      }
+    });
+  }
+  return output;
+}
+
+/**
+ * 値がオブジェクトであるかチェック
+ */
+function isObject(item) {
+  return item && typeof item === 'object' && !Array.isArray(item);
 }
 
 /**
@@ -211,18 +275,14 @@ function deriveComplexityMetricsV2(params, settings = V2_DEFAULT_SETTINGS) {
 
   // 上位システム連携時間（設計）
   let host_system_design_hours = 0;
-  if (params.host_system === 'yes') {
-    host_system_design_hours = settings.designHostSystemYesHours;
-  } else if (params.host_system === 'unknown') {
-    host_system_design_hours = settings.designHostSystemUnknownHours;
+  if (params.host_system && settings.hostSystemDesignHours) {
+    host_system_design_hours = settings.hostSystemDesignHours[params.host_system] || 0;
   }
 
   // 上位システム連携時間（現地）
   let host_system_setup_hours = 0;
-  if (params.host_system === 'yes') {
-    host_system_setup_hours = settings.setupHostSystemYesHours;
-  } else if (params.host_system === 'unknown') {
-    host_system_setup_hours = settings.setupHostSystemUnknownHours;
+  if (params.host_system && settings.hostSystemSetupHours) {
+    host_system_setup_hours = settings.hostSystemSetupHours[params.host_system] || 0;
   }
 
   // 統合スコア（連携の複雑さ）

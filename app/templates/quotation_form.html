@@ -72,6 +72,14 @@
                     <input type="text" class="form-control" id="payment_terms" name="payment_terms" value="{{ values.payment_terms|default('') }}"
                         placeholder="（顧客選択で自動反映。必要に応じて編集可）">
                 </div>
+                <div class="mb-3">
+                    <label for="valid_until" class="form-label">見積期限</label>
+                    <input type="date"
+                           class="form-control"
+                           id="valid_until"
+                           name="valid_until"
+                           value="{{ values.valid_until|default('') }}">
+                </div>
             </div>
             <div class="q-section">
                 <h5 class="mb-2">明細（製品）</h5>

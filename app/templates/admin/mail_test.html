@@ -2,9 +2,9 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <h2>メール送信テスト</h2>
+    <h2>メール作成テスト</h2>
 
-    <!-- Configuration Status Section -->
+    <!-- Current Mail Provider Info -->
     <div class="row mt-4">
         <div class="col-md-6">
             <div class="card bg-light">
@@ -13,80 +13,119 @@
                 </div>
                 <div class="card-body">
                     <dl class="row">
-                        <dt class="col-sm-5">MAIL_PROVIDER:</dt>
+                        <dt class="col-sm-5">現在の方式:</dt>
                         <dd class="col-sm-7">
-                            {% if mail_provider %}
-                                <span class="badge bg-success">{{ mail_provider }}</span>
+                            {% if mail_provider == "mailto" %}
+                                <span class="badge bg-info">Outlookメール作成</span>
+                                <small class="text-muted d-block mt-1">自動送信ではなく、利用者がOutlook画面で確認して手動送信します。</small>
+                            {% elif mail_provider == "graph" %}
+                                <span class="badge bg-success">Graph API</span>
+                            {% elif mail_provider == "smtp" %}
+                                <span class="badge bg-success">SMTP</span>
                             {% else %}
                                 <span class="badge bg-danger">未設定</span>
                             {% endif %}
                         </dd>
-
-                        <dt class="col-sm-5">GRAPH_TENANT_ID:</dt>
+                        <dt class="col-sm-5">MAIL_PROVIDER:</dt>
                         <dd class="col-sm-7">
-                            {% if graph_config_status.GRAPH_TENANT_ID %}
-                                <span class="badge bg-success">設定済み</span>
+                            {% if mail_provider %}
+                                <code>{{ mail_provider }}</code>
                             {% else %}
-                                <span class="badge bg-secondary">未設定</span>
-                            {% endif %}
-                        </dd>
-
-                        <dt class="col-sm-5">GRAPH_CLIENT_ID:</dt>
-                        <dd class="col-sm-7">
-                            {% if graph_config_status.GRAPH_CLIENT_ID %}
-                                <span class="badge bg-success">設定済み</span>
-                            {% else %}
-                                <span class="badge bg-secondary">未設定</span>
-                            {% endif %}
-                        </dd>
-
-                        <dt class="col-sm-5">GRAPH_CLIENT_SECRET:</dt>
-                        <dd class="col-sm-7">
-                            {% if graph_config_status.GRAPH_CLIENT_SECRET %}
-                                <span class="badge bg-success">設定済み</span>
-                            {% else %}
-                                <span class="badge bg-secondary">未設定</span>
-                            {% endif %}
-                        </dd>
-
-                        <dt class="col-sm-5">GRAPH_SENDER_USER:</dt>
-                        <dd class="col-sm-7">
-                            {% if graph_config_status.GRAPH_SENDER_USER %}
-                                <span class="badge bg-success">設定済み</span>
-                            {% else %}
-                                <span class="badge bg-secondary">未設定</span>
-                            {% endif %}
-                        </dd>
-
-                        <dt class="col-sm-5">MAIL_SERVER:</dt>
-                        <dd class="col-sm-7">
-                            {% if smtp_server_configured %}
-                                <span class="badge bg-success">設定済み</span>
-                            {% else %}
-                                <span class="badge bg-secondary">未設定</span>
+                                <span class="text-muted">(未設定)</span>
                             {% endif %}
                         </dd>
                     </dl>
+
+                    <!-- Graph Settings Status -->
+                    {% if mail_provider == "graph" %}
+                    <div class="mt-3 pt-3 border-top">
+                        <h6>Graph API設定状態:</h6>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">GRAPH_TENANT_ID:</dt>
+                            <dd class="col-sm-6">
+                                {% if graph_config_status.GRAPH_TENANT_ID %}
+                                    <span class="badge bg-success">設定済み</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">未設定</span>
+                                {% endif %}
+                            </dd>
+
+                            <dt class="col-sm-6">GRAPH_CLIENT_ID:</dt>
+                            <dd class="col-sm-6">
+                                {% if graph_config_status.GRAPH_CLIENT_ID %}
+                                    <span class="badge bg-success">設定済み</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">未設定</span>
+                                {% endif %}
+                            </dd>
+
+                            <dt class="col-sm-6">GRAPH_CLIENT_SECRET:</dt>
+                            <dd class="col-sm-6">
+                                {% if graph_config_status.GRAPH_CLIENT_SECRET %}
+                                    <span class="badge bg-success">設定済み</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">未設定</span>
+                                {% endif %}
+                            </dd>
+
+                            <dt class="col-sm-6">GRAPH_SENDER_USER:</dt>
+                            <dd class="col-sm-6">
+                                {% if graph_config_status.GRAPH_SENDER_USER %}
+                                    <span class="badge bg-success">設定済み</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">未設定</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                    {% endif %}
+
+                    <!-- SMTP Settings Status -->
+                    {% if mail_provider == "smtp" %}
+                    <div class="mt-3 pt-3 border-top">
+                        <h6>SMTP設定状態:</h6>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">MAIL_SERVER:</dt>
+                            <dd class="col-sm-6">
+                                {% if smtp_server_configured %}
+                                    <span class="badge bg-success">設定済み</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">未設定</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Test Form Section -->
+    <!-- Test Form -->
     <div class="row mt-4">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
                     <p>見積アプリのメール送信設定を確認します。</p>
 
-                    <!-- Info Messages -->
+                    <!-- Mailto Mode Info -->
+                    {% if mail_provider == "mailto" %}
+                    <div class="alert alert-info" role="alert">
+                        <strong>Outlookメール作成方式について:</strong><br>
+                        このモードでは、メールは自動送信されません。
+                        テストを実行すると、Outlookの新規メール作成画面を開くリンクが表示されます。
+                        内容を確認してから、Outlook画面で手動送信してください。
+                    </div>
+                    {% else %}
                     <div class="alert alert-info" role="alert">
                         <strong>注意:</strong>
                         <ul class="mb-0 mt-2">
                             <li>Outlook / Microsoft 365 で送信する場合は、<code>MAIL_PROVIDER=graph</code> と Microsoft Graph API の設定が必要です。</li>
+                            <li>Outlook メール作成方式を使う場合は、<code>MAIL_PROVIDER=mailto</code> に設定してください。</li>
                             <li>送信先には<strong>実在する社内メールアドレス</strong>を入力してください。test@example.com では実送信確認に使えません。</li>
                         </ul>
                     </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -99,13 +138,36 @@
 
                 <div class="mb-3">
                     <button type="submit" class="btn btn-primary">
-                        テストメール送信
+                        {% if mail_provider == "mailto" %}
+                            Outlookリンクを作成
+                        {% else %}
+                            テストメール送信
+                        {% endif %}
                     </button>
                     <a href="{{ url_for('admin_users.users_list') }}" class="btn btn-secondary">
                         戻る
                     </a>
                 </div>
             </form>
+
+            <!-- Mailto Test Result -->
+            {% if test_mailto_url %}
+            <div class="card mt-4 border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Outlookリンク作成完了</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>宛先:</strong> {{ test_to_email }}</p>
+                    <p>以下のボタンをクリックするとOutlookの新規メール作成画面が開きます。</p>
+                    <p>メールの内容を確認してから、手動で送信してください。</p>
+                    
+                    <a href="{{ test_mailto_url }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-envelope"></i>
+                        Outlookでテストメールを作成
+                    </a>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

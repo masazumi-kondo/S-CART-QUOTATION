@@ -1,0 +1,90 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">顧客マスタ登録完了</h2>
+                    
+                    <div class="alert alert-success" role="alert">
+                        <strong>✓ 登録完了</strong><br>
+                        顧客マスタが正常に登録されました。
+                    </div>
+
+                    <div class="alert alert-info" role="alert">
+                        <strong>確認：</strong> この顧客は管理者の承認が必要です。
+                        下のボタンで管理者へ承認依頼メールを作成してください。
+                    </div>
+
+                    <!-- Registration Details -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">登録内容</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row">
+                                <dt class="col-sm-3">顧客名:</dt>
+                                <dd class="col-sm-9">{{ customer.name }}</dd>
+
+                                <dt class="col-sm-3">顧客コード:</dt>
+                                <dd class="col-sm-9">{{ customer.customer_code or "未設定" }}</dd>
+
+                                <dt class="col-sm-3">ステータス:</dt>
+                                <dd class="col-sm-9">
+                                    <span class="badge bg-warning">審査待ち</span>
+                                </dd>
+
+                                <dt class="col-sm-3">住所:</dt>
+                                <dd class="col-sm-9">
+                                    〒{{ customer.postal_code or "---" }}<br>
+                                    {{ customer.address or "未設定" }}
+                                </dd>
+
+                                <dt class="col-sm-3">電話:</dt>
+                                <dd class="col-sm-9">{{ customer.phone or "未設定" }}</dd>
+
+                                <dt class="col-sm-3">備考:</dt>
+                                <dd class="col-sm-9">{{ customer.note or "なし" }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Mailto Actions -->
+                    {% if approval_request_mailto_url %}
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">次のステップ</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>以下のボタンをクリックしてOutlookで承認依頼メールを作成してください。</p>
+                            <p>メールの内容を確認してから、手動で送信してください。</p>
+                            
+                            <a href="{{ approval_request_mailto_url }}" 
+                               class="btn btn-primary btn-lg">
+                                <i class="fas fa-envelope"></i>
+                                Outlookで承認依頼メールを作成
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning" role="alert">
+                        <strong>注意:</strong> メール設定がmailto方式に設定されていません。
+                        管理者へ承認依頼を行う別の方法を確認してください。
+                    </div>
+                    {% endif %}
+
+                    <!-- Navigation -->
+                    <div class="mt-4">
+                        <a href="{{ url_for('customer.customer_list') }}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-list"></i>
+                            顧客マスタ一覧へ戻る
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

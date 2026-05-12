@@ -285,12 +285,13 @@ def users_toggle_active(user_id):
 @login_required
 @roles_required("admin")
 def mail_test():
-    """Send test mail"""
+    """Send test mail or create Outlook mailto for testing"""
     from app.services.mail_service import send_email
     from app.services.graph_mail_service import (
         get_graph_mail_config_status,
         get_graph_mail_missing_settings,
     )
+    from app.services.mailto_service import build_mailto_url
     
     mail_provider = current_app.config.get("MAIL_PROVIDER", "").lower()
     graph_config_status = get_graph_mail_config_status()
@@ -300,6 +301,7 @@ def mail_test():
         "mail_provider": mail_provider,
         "graph_config_status": graph_config_status,
         "smtp_server_configured": bool(smtp_server),
+        "test_mailto_url": None,
     }
     
     if request.method == "POST":
@@ -317,12 +319,24 @@ def mail_test():
         # Check mail provider configuration
         if not mail_provider:
             flash(
-                "MAIL_PROVIDER が未設定です。Outlook送信を使う場合は MAIL_PROVIDER=graph を設定してください。",
+                "MAIL_PROVIDER が未設定です。Outlook送信を使う場合は MAIL_PROVIDER=graph または mailto を設定してください。",
                 "warning"
             )
             return render_template("admin/mail_test.html", **context)
         
-        # Check provider-specific settings
+        # Handle mailto provider (create Outlook link instead of sending)
+        if mail_provider == "mailto":
+            subject = "【見積アプリ】メール作成テスト"
+            body = """見積アプリから作成したOutlookメールのテストです。
+このメールは自動送信ではなく、Outlook画面から手動送信します。"""
+            
+            test_mailto_url = build_mailto_url(to_email, subject, body)
+            context["test_mailto_url"] = test_mailto_url
+            context["test_to_email"] = to_email
+            flash(f"テストメール用のOutlookリンクを作成しました。下のボタンをクリックしてください。", "info")
+            return render_template("admin/mail_test.html", **context)
+        
+        # Check provider-specific settings for other providers
         if mail_provider == "graph":
             missing = get_graph_mail_missing_settings()
             if missing:
@@ -339,7 +353,7 @@ def mail_test():
                 )
                 return render_template("admin/mail_test.html", **context)
         
-        # Send test email
+        # Send test email via configured provider
         subject = "【見積アプリ】メール送信テスト"
         body = """見積アプリからのメール送信テストです。
 このメールが届いていれば、メール送信設定は有効です。"""

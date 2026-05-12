@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">顧客承認処理完了</h2>
+                    
+                    <!-- Result Alert -->
+                    {% if result_label == "承認" %}
+                    <div class="alert alert-success" role="alert">
+                        <strong>✓ 承認完了</strong><br>
+                        顧客マスタが正常に承認されました。
+                    </div>
+                    {% elif result_label == "却下" %}
+                    <div class="alert alert-danger" role="alert">
+                        <strong>✗ 却下完了</strong><br>
+                        顧客マスタが却下されました。
+                    </div>
+                    {% endif %}
+
+                    <div class="alert alert-info" role="alert">
+                        <strong>確認：</strong> 申請者へ結果通知メールを作成してください。
+                        下のボタンを押してOutlookで通知メールを作成できます。
+                    </div>
+
+                    <!-- Customer Details -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">処理内容</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row">
+                                <dt class="col-sm-3">顧客名:</dt>
+                                <dd class="col-sm-9">{{ customer.name }}</dd>
+
+                                <dt class="col-sm-3">結果:</dt>
+                                <dd class="col-sm-9">
+                                    {% if result_label == "承認" %}
+                                    <span class="badge bg-success">{{ result_label }}</span>
+                                    {% elif result_label == "却下" %}
+                                    <span class="badge bg-danger">{{ result_label }}</span>
+                                    {% endif %}
+                                </dd>
+
+                                {% if result_comment %}
+                                <dt class="col-sm-3">コメント:</dt>
+                                <dd class="col-sm-9">{{ result_comment }}</dd>
+                                {% endif %}
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Mailto Actions -->
+                    {% if result_mailto_url %}
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">次のステップ</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>以下のボタンをクリックしてOutlookで結果通知メールを作成してください。</p>
+                            <p>メールの内容を確認してから、手動で送信してください。</p>
+                            
+                            <a href="{{ result_mailto_url }}" 
+                               class="btn btn-primary btn-lg">
+                                <i class="fas fa-envelope"></i>
+                                Outlookで結果通知メールを作成
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning" role="alert">
+                        <strong>注意:</strong> メール設定がmailto方式に設定されていません。
+                        申請者へ結果を通知する別の方法を確認してください。
+                    </div>
+                    {% endif %}
+
+                    <!-- Navigation -->
+                    <div class="mt-4">
+                        <a href="{{ url_for('customer.customer_pending_list') }}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-list"></i>
+                            顧客承認一覧へ戻る
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

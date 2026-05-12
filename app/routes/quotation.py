@@ -134,6 +134,19 @@ def quotation_revise(quotation_id):
         db.session.commit()
     v2_settings = v2_setting.to_v2_json()
     
+    # V2結果と合計値を復元
+    import json
+    def load_json_or_empty(value):
+        if not value:
+            return {}
+        try:
+            return json.loads(value)
+        except Exception:
+            return {}
+    
+    v2_result = load_json_or_empty(orig.v2_result_json)
+    summary = load_json_or_empty(orig.summary_json)
+    
     return render_template(
         "quotation_form.html",
         error=None,
@@ -142,7 +155,9 @@ def quotation_revise(quotation_id):
         details=detail_dicts,
         revise_source_id=orig.id,
         rates=rates,
-        v2_settings=v2_settings
+        v2_settings=v2_settings,
+        v2_result=v2_result,  # V2結果復元
+        summary=summary  # 合計値復元
     )
 
 
@@ -209,6 +224,19 @@ def quotation_edit(quotation_id):
         db.session.commit()
     v2_settings = v2_setting.to_v2_json()
     
+    # V2結果と合計値を復元
+    import json
+    def load_json_or_empty(value):
+        if not value:
+            return {}
+        try:
+            return json.loads(value)
+        except Exception:
+            return {}
+    
+    v2_result = load_json_or_empty(quotation.v2_result_json)
+    summary = load_json_or_empty(quotation.summary_json)
+    
     return render_template(
         "quotation_form.html",
         error=None,
@@ -217,7 +245,9 @@ def quotation_edit(quotation_id):
         details=detail_dicts,
         edit_quotation_id=quotation.id,  # 編集モード用パラメータ
         rates=rates,
-        v2_settings=v2_settings
+        v2_settings=v2_settings,
+        v2_result=v2_result,  # V2結果復元
+        summary=summary  # 合計値復元
     )
 
 # 印刷用見積書の明細並び順ヘルパー
@@ -761,14 +791,18 @@ def quotation_new():
                 continue
 
             # 型変換
+
+            def parse_quantity(val):
+                try:
+                    return int(float(val or 1))
+                except (ValueError, TypeError):
+                    return 1
+
             try:
                 unit_price_val = float(unit_price_raw) if unit_price_raw else 0
             except (ValueError, TypeError):
                 unit_price_val = 0
-            try:
-                quantity_val = int(quantity_raw) if quantity_raw else 0
-            except (ValueError, TypeError):
-                quantity_val = 0
+            quantity_val = parse_quantity(quantity_raw)
             try:
                 cost_val = float(cost_raw) if cost_raw else 0
             except (ValueError, TypeError):
@@ -1124,23 +1158,58 @@ def quotation_new():
             if hasattr(quotation, 'total_amount'):
                 quotation.total_amount = total
 
+            # V2結果をJSON保存
+            import json
+            v2_result = {
+                "design_hours": request.form.get("v2_design_hours", ""),
+                "setup_hours": request.form.get("v2_setup_hours", ""),
+                "pattern_score": request.form.get("v2_pattern_score", ""),
+                "area_score": request.form.get("v2_area_score", ""),
+                "landmark_factor": request.form.get("v2_landmark_factor", ""),
+                "plc_signal_count": request.form.get("v2_plc_signal_count", ""),
+                "design_price": request.form.get("v2_design_price", ""),
+                "setup_price": request.form.get("v2_setup_price", "")
+            }
+            quotation.v2_result_json = json.dumps(v2_result, ensure_ascii=False)
+
+            # 合計・利益率等をJSON保存
+            summary = {
+                "subtotal_price": request.form.get("subtotal_price", ""),
+                "subtotal_cost": request.form.get("subtotal_cost", ""),
+                "profit_margin": request.form.get("profit_margin", ""),
+                "final_total_price": request.form.get("final_total_price", ""),
+                "final_total_cost": request.form.get("final_total_cost", ""),
+                "final_profit_margin": request.form.get("final_profit_margin", "")
+            }
+            quotation.summary_json = json.dumps(summary, ensure_ascii=False)
+
             db.session.commit()
+
             current_app.logger.info(
-                "[quotation_new] saved quotation_id=%s action=%s",
+                "[quotation_new] saved quotation_id=%s save_action=%s",
                 quotation.id,
-                request.form.get("action")
+                request.form.get("save_action")
             )
-            
-            # 新規か編集か改定かで flash メッセージを分ける
-            if request.form.get("edit_quotation_id"):
-                flash("見積を更新しました。", "success")
-            elif revise_source_id:
-                flash("見積を保存しました。", "success")
+
+            save_action = request.form.get("save_action", "list")
+            is_edit = bool(request.form.get("edit_quotation_id"))
+            is_new = not is_edit and not revise_source_id
+
+            if save_action == "stay":
+                # 保存後も編集画面に残る
+                if is_edit:
+                    flash("見積を更新しました。引き続き編集できます。", "success")
+                    return redirect(url_for("quotation.quotation_edit", quotation_id=quotation.id))
+                else:
+                    flash("見積を保存しました。引き続き編集できます。", "success")
+                    return redirect(url_for("quotation.quotation_edit", quotation_id=quotation.id))
             else:
-                flash("見積を保存しました。", "success")
-            
-            # すべての保存後は見積一覧へ遷移
-            return redirect(url_for("quotation.quotation_list"))
+                # 一覧へ
+                if is_edit:
+                    flash("見積を更新しました。", "success")
+                else:
+                    flash("見積を保存しました。", "success")
+                return redirect(url_for("quotation.quotation_list"))
 
         # エラー時：ヘッダ入力値をテンプレートに渡す
         return render_template(
@@ -1149,7 +1218,9 @@ def quotation_new():
             products=product_list,
             values=values,
             rates=rates,
-            v2_settings=v2_settings
+            v2_settings=v2_settings,
+            v2_result={},  # 新規作成時は空
+            summary={}  # 新規作成時は空
         )
 
     # GET 時：ヘッダ初期値と products, customers を渡す
@@ -1159,7 +1230,9 @@ def quotation_new():
         products=product_list,
         values=values,
         rates=rates,
-        v2_settings=v2_settings
+        v2_settings=v2_settings,
+        v2_result={},  # 新規作成時は空
+        summary={}  # 新規作成時は空
     )
 
 # 見積削除（例: /quotation/<int:quotation_id>/delete）

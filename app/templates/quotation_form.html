@@ -21,6 +21,23 @@
                 <input type="hidden" name="edit_quotation_id" value="{{ edit_quotation_id }}">
             {% endif %}
 
+            {# V2結果と合計値を保存・復元用 #}
+            <input type="hidden" name="v2_design_hours" id="v2_design_hours_hidden" value="{{ v2_result.get('design_hours', '') }}">
+            <input type="hidden" name="v2_setup_hours" id="v2_setup_hours_hidden" value="{{ v2_result.get('setup_hours', '') }}">
+            <input type="hidden" name="v2_pattern_score" id="v2_pattern_score_hidden" value="{{ v2_result.get('pattern_score', '') }}">
+            <input type="hidden" name="v2_area_score" id="v2_area_score_hidden" value="{{ v2_result.get('area_score', '') }}">
+            <input type="hidden" name="v2_landmark_factor" id="v2_landmark_factor_hidden" value="{{ v2_result.get('landmark_factor', '') }}">
+            <input type="hidden" name="v2_plc_signal_count" id="v2_plc_signal_count_hidden" value="{{ v2_result.get('plc_signal_count', '') }}">
+            <input type="hidden" name="v2_design_price" id="v2_design_price_hidden" value="{{ v2_result.get('design_price', '') }}">
+            <input type="hidden" name="v2_setup_price" id="v2_setup_price_hidden" value="{{ v2_result.get('setup_price', '') }}">
+
+            <input type="hidden" name="subtotal_price" id="subtotal_price_hidden" value="{{ summary.get('subtotal_price', '') }}">
+            <input type="hidden" name="subtotal_cost" id="subtotal_cost_hidden" value="{{ summary.get('subtotal_cost', '') }}">
+            <input type="hidden" name="profit_margin" id="profit_margin_hidden" value="{{ summary.get('profit_margin', '') }}">
+            <input type="hidden" name="final_total_price" id="final_total_price_hidden" value="{{ summary.get('final_total_price', '') }}">
+            <input type="hidden" name="final_total_cost" id="final_total_cost_hidden" value="{{ summary.get('final_total_cost', '') }}">
+            <input type="hidden" name="final_profit_margin" id="final_profit_margin_hidden" value="{{ summary.get('final_profit_margin', '') }}">
+
             <style>
               .q-section { border: 1px solid #e5e5e5; border-radius: 10px; padding: 14px; margin-bottom: 14px; background: #fff; }
               .q-section h5 { font-weight: 700; margin: 0 0 10px 0; }
@@ -127,7 +144,40 @@
                             </tr>
                         </thead>
                         <tbody id="detail-body">
-                            <!-- 初期1行（revise時はJSが initial-details-json で復元する想定） -->
+                            <!-- 既存明細を復元（改定または編集時） -->
+                            {% if (revise_source_id or edit_quotation_id) and details %}
+                                {% for detail in details %}
+                                <tr class="detail-row">
+                                    <td>
+                                        <select class="form-select product-select-custom" name="product_id[]">
+                                            <option value="">-- 選択 --</option>
+                                            {% for p in products %}
+                                                <option value="{{ p.id }}" {% if p.id == detail.product_id %}selected{% endif %}>{{ p.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control description-input" name="description[]" value="{{ detail.description|default('') }}">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control text-end unit-price-input" name="unit_price[]" value="{{ detail.price|default('') }}" min="0" step="1">
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control text-end quantity-input" name="quantity[]" value="{{ (detail.quantity or 1)|int }}" min="0" step="1">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control text-end subtotal-input" name="subtotal[]" value="{{ detail.subtotal|default('') }}" readonly>
+                                        <input type="hidden" class="cost-input" name="cost[]" value="{{ detail.cost|default('') }}">
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm add-row">＋</button>
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-row">－</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                            
+                            <!-- 初期1行（新規作成時） -->
                             <tr class="detail-row">
                                 <td>
                                     <select class="form-select product-select-custom" name="product_id[]">
@@ -302,19 +352,19 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <div class="small text-muted">自動算出結果</div>
-                <div>設計工数: <span id="sum_designHoursCeil">-</span> h</div>
-                <div>現地セットアップ工数: <span id="sum_setupHoursCeil">-</span> h</div>
+                <div>設計工数: <span id="sum_designHoursCeil">{{ v2_result.get('design_hours', '-') }}</span> h</div>
+                <div>現地セットアップ工数: <span id="sum_setupHoursCeil">{{ v2_result.get('setup_hours', '-') }}</span> h</div>
                 <div class="mt-2">
-                  <div>推定走行パターンスコア: <span id="sum_estimatedPatternScore">-</span></div>
-                  <div>走行エリア規模スコア: <span id="sum_layoutScaleScore">-</span></div>
-                  <div>ランドマーク係数: <span id="sum_landmarkFactor">-</span></div>
-                  <div>PLC相当信号点数: <span id="sum_plcSignalCount">-</span></div>
+                  <div>推定走行パターンスコア: <span id="sum_estimatedPatternScore">{{ v2_result.get('pattern_score', '-') }}</span></div>
+                  <div>走行エリア規模スコア: <span id="sum_layoutScaleScore">{{ v2_result.get('area_score', '-') }}</span></div>
+                  <div>ランドマーク係数: <span id="sum_landmarkFactor">{{ v2_result.get('landmark_factor', '-') }}</span></div>
+                  <div>PLC相当信号点数: <span id="sum_plcSignalCount">{{ v2_result.get('plc_signal_count', '-') }}</span></div>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="small text-muted">V2固定行の金額</div>
-                <div>設計費（売価）: <span id="sum_designSell">-</span> ¥</div>
-                <div>現地セットアップ費（売価）: <span id="sum_setupSell">-</span> ¥</div>
+                <div>設計費（売価）: <span id="sum_designSell">{{ (v2_result.get('design_price', 0)|int)|default('-') }}</span> ¥</div>
+                <div>現地セットアップ費（売価）: <span id="sum_setupSell">{{ (v2_result.get('setup_price', 0)|int)|default('-') }}</span> ¥</div>
             </div>
         </div>
 
@@ -353,9 +403,9 @@
             <!-- 値引き前（上段） -->
             <div class="mb-2">
                 <div class="fw-bold">合計（値引き前）</div>
-                <div>合計売価: <span id="sum_sell_before_discount">-</span></div>
-                <div>合計原価: <span id="sum_cost_total">-</span></div>
-                <div>利益率: <span id="sum_profit_rate_before_discount">-</span></div>
+                <div>合計売価: <span id="sum_sell_before_discount">{{ summary.get('subtotal_price', '-') }}</span></div>
+                <div>合計原価: <span id="sum_cost_total">{{ summary.get('subtotal_cost', '-') }}</span></div>
+                <div>利益率: <span id="sum_profit_rate_before_discount">{{ summary.get('profit_margin', '-') }}</span></div>
             </div>
 
             <hr>
@@ -381,9 +431,9 @@
             <!-- 値引き後（下段） -->
             <div class="mt-2">
                 <div class="fw-bold">最終（値引き後）</div>
-                <div class="fs-5 fw-bold">最終合計売価: <span id="sum_sell_after_discount">-</span></div>
-                <div>合計原価: <span id="sum_cost_total_after_discount">-</span></div>
-                <div>最終利益率: <span id="sum_profit_rate_after_discount">-</span></div>
+                <div class="fs-5 fw-bold">最終合計売価: <span id="sum_sell_after_discount">{{ summary.get('final_total_price', '-') }}</span></div>
+                <div>合計原価: <span id="sum_cost_total_after_discount">{{ summary.get('final_total_cost', '-') }}</span></div>
+                <div>最終利益率: <span id="sum_profit_rate_after_discount">{{ summary.get('final_profit_margin', '-') }}</span></div>
             </div>
 
         </div>
@@ -413,12 +463,15 @@
                     入力内容を確認後、保存ボタンを押してください。
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-outline-secondary">
-                        キャンセル
-                    </a>
-                    <button type="submit" class="btn btn-primary btn-lg" name="action" value="save">
-                        保存して見積一覧へ
-                    </button>
+                                        <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-outline-secondary">
+                                                キャンセル
+                                        </a>
+                                        <button type="submit" name="save_action" value="stay" class="btn btn-primary">
+                                            保存
+                                        </button>
+                                        <button type="submit" name="save_action" value="list" class="btn btn-success">
+                                            保存して見積一覧へ
+                                        </button>
                 </div>
             </div>
         </div>
@@ -432,6 +485,97 @@
     <script id="v2-settings-json" type="application/json">{{ v2_settings|default({})|tojson|safe }}</script>
     <script src="{{ url_for('static', filename='js/quotation/update_profit_preview.js') }}"></script>
     <script src="{{ url_for('static', filename='js/quotation/profit_summary.js') }}"></script>
+    
+    {# --- V2結果と合計値をhidden inputに同期するスクリプト --- #}
+    <script>
+    (function() {
+        "use strict";
+        
+        // V2結果をhiddenに同期させる
+        function syncV2ResultToHidden(designHours, setupHours, patternScore, areaScore, landmarkFactor, plcSignalCount, designPrice, setupPrice) {
+            const mapping = {
+                "v2_design_hours_hidden": designHours,
+                "v2_setup_hours_hidden": setupHours,
+                "v2_pattern_score_hidden": patternScore,
+                "v2_area_score_hidden": areaScore,
+                "v2_landmark_factor_hidden": landmarkFactor,
+                "v2_plc_signal_count_hidden": plcSignalCount,
+                "v2_design_price_hidden": designPrice,
+                "v2_setup_price_hidden": setupPrice
+            };
+            
+            Object.keys(mapping).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const val = mapping[id];
+                    el.value = (val == null || val === "-") ? "" : val;
+                }
+            });
+        }
+        
+        // 合計・利益率をhiddenに同期させる
+        function syncSummaryToHidden(sellBefore, costTotal, profitBefore, sellAfter, costAfter, profitAfter) {
+            const mapping = {
+                "subtotal_price_hidden": sellBefore,
+                "subtotal_cost_hidden": costTotal,
+                "profit_margin_hidden": profitBefore,
+                "final_total_price_hidden": sellAfter,
+                "final_total_cost_hidden": costAfter,
+                "final_profit_margin_hidden": profitAfter
+            };
+            
+            Object.keys(mapping).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const val = mapping[id];
+                    el.value = (val == null || val === "-" || val === "") ? "" : val;
+                }
+            });
+        }
+        
+        // renderV2Result をオーバーライド（v2_sync.js が読み込まれた後に実行）
+        window.addEventListener("load", function() {
+            // 既存のrenderV2Resultをラップ
+            const origRenderV2Result = window.renderV2Result;
+            if (origRenderV2Result) {
+                window.renderV2Result = function(result) {
+                    origRenderV2Result.call(this, result);
+                    if (result) {
+                        const { designHours, setupHours, amounts, metrics } = result;
+                        syncV2ResultToHidden(
+                            designHours,
+                            setupHours,
+                            metrics?.estimated_pattern_score,
+                            metrics?.layout_scale_score,
+                            metrics?.landmark_factor,
+                            metrics?.plc_signal_count,
+                            amounts?.designSellAmount,
+                            amounts?.setupSellAmount
+                        );
+                    }
+                };
+            }
+            
+            // 既存のupdateProfitSummaryをラップ
+            const origUpdateProfitSummary = window.updateProfitSummary;
+            if (origUpdateProfitSummary) {
+                window.updateProfitSummary = function() {
+                    origUpdateProfitSummary.call(this);
+                    
+                    // 表示されている値を取得して hidden に入れる
+                    const sellBefore = document.getElementById("sum_sell_before_discount")?.textContent?.replace(/,/g, "") || "";
+                    const costTotal = document.getElementById("sum_cost_total")?.textContent?.replace(/,/g, "") || "";
+                    const profitBefore = document.getElementById("sum_profit_rate_before_discount")?.textContent?.replace("%", "") || "";
+                    const sellAfter = document.getElementById("sum_sell_after_discount")?.textContent?.replace(/,/g, "") || "";
+                    const costAfter = document.getElementById("sum_cost_total_after_discount")?.textContent?.replace(/,/g, "") || "";
+                    const profitAfter = document.getElementById("sum_profit_rate_after_discount")?.textContent?.replace("%", "") || "";
+                    
+                    syncSummaryToHidden(sellBefore, costTotal, profitBefore, sellAfter, costAfter, profitAfter);
+                };
+            }
+        });
+    })();
+    </script>
     
     {# --- 顧客検索画面遷移時にフォーム状態を保持するスクリプト --- #}
     <script>
@@ -485,7 +629,7 @@
       });
     </script>
 
-    {% if revise_source_id and details %}
+    {% if (revise_source_id or edit_quotation_id) and details %}
     <script id="initial-values-json" type="application/json">{{ values|tojson|safe }}</script>
     <script id="initial-details-json" type="application/json">{{ details|tojson|safe }}</script>
     {% endif %}

@@ -238,7 +238,15 @@
                                     {% if is_design or is_setup %}1{% else %}{{ d.quantity|int if d.quantity else '' }}{% endif %}
                                 </td>
                                 <td>
-                                    {{ d.unit_display if d.unit_display is defined else '式' }}
+                                    {% if is_design or is_setup %}
+                                        式
+                                    {% elif d.product_id %}
+                                        台
+                                    {% elif '設計費' in (d.description or '') or '現地セットアップ' in (d.description or '') %}
+                                        式
+                                    {% else %}
+                                        {{ d.unit or '式' }}
+                                    {% endif %}
                                 </td>
                                 <td class="col-unitprice">
                                     {% if is_design or is_setup %}-{% else %}{{ '{:,.0f}'.format(d.price) if d.price else '' }}{% endif %}

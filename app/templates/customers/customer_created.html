@@ -52,26 +52,32 @@
                     </div>
 
                     <!-- Mailto Actions -->
-                    {% if approval_request_mailto_url %}
+                    {% if mailto_data and mailto_data.mailto_url %}
                     <div class="card mb-4 border-primary">
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0">次のステップ</h5>
                         </div>
                         <div class="card-body">
-                            <p>以下のボタンをクリックしてOutlookで承認依頼メールを作成してください。</p>
-                            <p>メールの内容を確認してから、手動で送信してください。</p>
+                            <p class="mb-2">以下のボタンをクリックするとOutlookで承認依頼メールが作成されます。</p>
+                            <p class="mb-3">内容を確認してから、Outlook画面で手動送信してください。</p>
                             
-                            <a href="{{ approval_request_mailto_url }}" 
+                            <div class="mb-3 text-muted small">
+                                <strong>送信先:</strong> {{ mailto_data.recipients | join(', ') }}
+                            </div>
+                            
+                            <a href="{{ mailto_data.mailto_url }}" 
                                class="btn btn-primary btn-lg">
                                 <i class="fas fa-envelope"></i>
-                                Outlookで承認依頼メールを作成
+                                管理者へ承認依頼メールをOutlookで作成
                             </a>
                         </div>
                     </div>
                     {% else %}
                     <div class="alert alert-warning" role="alert">
-                        <strong>注意:</strong> メール設定がmailto方式に設定されていません。
-                        管理者へ承認依頼を行う別の方法を確認してください。
+                        <strong>注意:</strong> 
+                        通知対象の管理者メールアドレスが見つからないため、
+                        承認依頼メール作成ボタンを表示できません。
+                        管理者に直接連絡してください。
                     </div>
                     {% endif %}
 

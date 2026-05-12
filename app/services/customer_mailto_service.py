@@ -98,3 +98,112 @@ def build_customer_approval_result_mailto(customer, result_label, comment=None):
 ※このメールは見積アプリから作成されています。"""
 
     return build_mailto_url(recipient, subject, body)
+
+
+def build_customer_approval_request_mailto_data(customer):
+    """
+    Generate mailto URL and recipients data for customer approval request.
+    
+    Returns data suitable for template rendering with both URL and recipients list.
+    
+    Args:
+        customer: Customer object
+    
+    Returns:
+        dict with 'mailto_url' and 'recipients' keys, or None if no recipients
+    """
+    recipients = get_customer_approval_admin_recipients()
+    
+    if not recipients:
+        current_app.logger.warning("[CUSTOMER MAILTO] no admin recipients for approval request. customer_id=%s", getattr(customer, "id", None))
+        return None
+    
+    customer_name = getattr(customer, "name", "") or ""
+    
+    # Get applicant info
+    applicant = None
+    applicant_id = getattr(customer, "requested_by_user_id", None)
+    if applicant_id:
+        from app.models.user import User
+        applicant = User.query.get(applicant_id)
+    
+    applicant_name = getattr(applicant, "display_name", None) or getattr(applicant, "login_id", "") or "不明"
+
+    try:
+        approval_url = url_for("customer.customer_pending_list", _external=True)
+    except Exception:
+        approval_url = "(アプリのメニュー > 顧客承認)"
+
+    subject = "【見積アプリ】顧客マスタ承認依頼"
+
+    body = f"""顧客マスタの承認依頼があります。
+
+申請者: {applicant_name}
+顧客名: {customer_name}
+
+以下の画面から内容を確認してください。
+{approval_url}
+
+※このメールは見積アプリから作成されています。"""
+
+    mailto_url = build_mailto_url(recipients, subject, body)
+    
+    if not mailto_url:
+        return None
+    
+    return {
+        "mailto_url": mailto_url,
+        "recipients": recipients,
+    }
+
+
+def build_customer_approval_result_mailto_data(customer, result_label, comment=None):
+    """
+    Generate mailto URL and recipient data for customer approval result.
+    
+    Returns data suitable for template rendering with both URL and recipient list.
+    
+    Args:
+        customer: Customer object
+        result_label: Approval result label (e.g., "承認", "却下")
+        comment: Optional comment from admin
+    
+    Returns:
+        dict with 'mailto_url' and 'recipients' keys, or None if no recipient
+    """
+    recipient = get_customer_approval_result_recipient(customer)
+    
+    if not recipient:
+        current_app.logger.warning("[CUSTOMER MAILTO] applicant cannot receive notification. customer_id=%s", getattr(customer, "id", None))
+        return None
+    
+    customer_name = getattr(customer, "name", "") or ""
+    subject = f"【見積アプリ】顧客マスタ申請結果：{result_label}"
+
+    comment_text = comment or "なし"
+
+    try:
+        customer_url = url_for("customer.customer_list", _external=True)
+    except Exception:
+        customer_url = "(アプリのメニュー > 顧客マスタ)"
+
+    body = f"""顧客マスタ申請の結果をお知らせします。
+
+顧客名: {customer_name}
+結果: {result_label}
+コメント: {comment_text}
+
+以下の画面から内容を確認してください。
+{customer_url}
+
+※このメールは見積アプリから作成されています。"""
+
+    mailto_url = build_mailto_url(recipient, subject, body)
+    
+    if not mailto_url:
+        return None
+    
+    return {
+        "mailto_url": mailto_url,
+        "recipients": [recipient] if isinstance(recipient, str) else recipient,
+    }

@@ -203,14 +203,14 @@ def customer_new():
             else:
                 flash('顧客を登録しました（承認待ち）。承認依頼メールは送信されていない可能性があります。', 'warning')
             
-            # For mailto provider, show completion screen with mailto URL
-            if current_app.config.get("MAIL_PROVIDER") == "mailto":
-                from app.services.customer_mailto_service import build_customer_approval_request_mailto
-                mailto_url = build_customer_approval_request_mailto(customer)
+            # For mailto provider, show completion screen with mailto data
+            if current_app.config.get("MAIL_PROVIDER", "").lower() == "mailto":
+                from app.services.customer_mailto_service import build_customer_approval_request_mailto_data
+                mailto_data = build_customer_approval_request_mailto_data(customer)
                 return render_template(
                     "customers/customer_created.html",
                     customer=customer,
-                    approval_request_mailto_url=mailto_url
+                    mailto_data=mailto_data
                 )
             
             return redirect(url_for('customer.customer_list'))
@@ -407,24 +407,18 @@ def customer_approve(customer_id):
     else:
         flash(f'顧客を承認しました（企業名: {customer.name}）。承認結果メールは送信されていない可能性があります。', 'warning')
     
-    # For mailto provider, show completion screen with mailto URL
-    mail_provider = current_app.config.get("MAIL_PROVIDER")
-    current_app.logger.info(f"[APPROVE] MAIL_PROVIDER={mail_provider}, checking for mailto rendering")
-    
-    if mail_provider == "mailto":
-        current_app.logger.info(f"[APPROVE] Using mailto provider, rendering completion screen")
-        from app.services.customer_mailto_service import build_customer_approval_result_mailto
-        mailto_url = build_customer_approval_result_mailto(customer, "承認", None)
-        current_app.logger.info(f"[APPROVE] mailto_url={mailto_url}")
+    # For mailto provider, show completion screen with mailto data
+    if current_app.config.get("MAIL_PROVIDER", "").lower() == "mailto":
+        from app.services.customer_mailto_service import build_customer_approval_result_mailto_data
+        mailto_data = build_customer_approval_result_mailto_data(customer, "承認", None)
         return render_template(
             "customers/customer_approval_completed.html",
             customer=customer,
             result_label="承認",
             result_comment=None,
-            result_mailto_url=mailto_url
+            mailto_data=mailto_data
         )
     
-    current_app.logger.info(f"[APPROVE] Not using mailto provider, redirecting to pending list")
     return redirect(url_for('customer.customer_pending_list'))
 
 @customer_bp.route('/customers/<int:customer_id>/reject', methods=['POST'])
@@ -496,16 +490,16 @@ def customer_reject(customer_id):
     else:
         flash(f'顧客を却下しました（企業名: {customer.name}）。却下結果メールは送信されていない可能性があります。', 'warning')
     
-    # For mailto provider, show completion screen with mailto URL
-    if current_app.config.get("MAIL_PROVIDER") == "mailto":
-        from app.services.customer_mailto_service import build_customer_approval_result_mailto
-        mailto_url = build_customer_approval_result_mailto(customer, "却下", comment)
+    # For mailto provider, show completion screen with mailto data
+    if current_app.config.get("MAIL_PROVIDER", "").lower() == "mailto":
+        from app.services.customer_mailto_service import build_customer_approval_result_mailto_data
+        mailto_data = build_customer_approval_result_mailto_data(customer, "却下", comment)
         return render_template(
             "customers/customer_approval_completed.html",
             customer=customer,
             result_label="却下",
             result_comment=comment,
-            result_mailto_url=mailto_url
+            mailto_data=mailto_data
         )
     
     return redirect(url_for('customer.customer_pending_list'))

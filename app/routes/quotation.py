@@ -146,30 +146,71 @@ def quotation_revise(quotation_id):
     )
 
 # 印刷用見積書の明細並び順ヘルパー
+
+def get_detail_name(detail):
+    """
+    明細行の名称を複数候補から取得する。
+    """
+    candidates = [
+        getattr(detail, "label", None),
+        getattr(detail, "description", None),
+    ]
+    
+    for value in candidates:
+        if value:
+            return str(value).strip()
+    
+    # productリレーションから取得を試みる
+    product = getattr(detail, "product", None)
+    if product:
+        for attr in ["name", "product_name", "model_name"]:
+            value = getattr(product, attr, None)
+            if value:
+                return str(value).strip()
+    
+    return ""
+
+
+def is_design_fee_line(detail):
+    """
+    設計費行か判定する。
+    """
+    name = get_detail_name(detail)
+    return "設計費" in name
+
+
+def is_setup_fee_line(detail):
+    """
+    現地セットアップ費行か判定する。
+    """
+    name = get_detail_name(detail)
+    return "現地セットアップ" in name or "セットアップ費" in name
+
+
+def is_v2_line(detail):
+    """
+    V2関連行か判定する。
+    """
+    name = get_detail_name(detail)
+    return "V2" in name or is_design_fee_line(detail) or is_setup_fee_line(detail)
+
+
 def sort_details_for_display(details):
     """
     見積書表示用に明細を並び替える。
     優先順位：
     1. V2自動算出行ではない通常製品（保存順を維持）
-    2. V2自動算出行（設計費 → 現地セットアップ費）
+    2. 設計費（V2自動算出）
+    3. 現地セットアップ費（V2自動算出）
     """
-    design_labels = ("設計費", "設計費（パラメータ）")
-    setup_labels = ("現地セットアップ", "現地セットアップ（パラメータ）")
-
-    normal = [
-        d for d in details
-        if getattr(d, "label", None) not in design_labels + setup_labels
-    ]
-    design = [
-        d for d in details
-        if getattr(d, "label", None) in design_labels
-    ]
-    setup = [
-        d for d in details
-        if getattr(d, "label", None) in setup_labels
-    ]
-    # 通常製品を先に、V2行を後に
-    return normal + design + setup
+    def sort_key(detail):
+        if is_design_fee_line(detail):
+            return (2, 1, getattr(detail, "id", 0))
+        if is_setup_fee_line(detail):
+            return (2, 2, getattr(detail, "id", 0))
+        return (1, 0, getattr(detail, "id", 0))
+    
+    return sorted(details, key=sort_key)
 
 
 def get_customer_display_name(quotation):
@@ -212,17 +253,32 @@ def get_unit_display(detail):
     ルール：
     - V2自動算出行（設計費、現地セットアップ費）：「式」
     - それ以外で product_id がある明細：「台」
-    - それ以外：detail.unit または「式」
+    - それ以外で detail.unit が設定されている場合：detail.unit
+    - 製品名から自動補正（S-CART, SmooV, AGV等）：「台」
+    - デフォルト：「式」
     """
-    label = getattr(detail, "label", None)
-    if label and ("設計費" in label or "現地セットアップ" in label):
+    name = get_detail_name(detail)
+    
+    # V2費用行は式
+    if is_design_fee_line(detail) or is_setup_fee_line(detail):
         return "式"
     
+    # 製品本体の判定
+    # 1. product_id がある行は製品本体扱いで台
     if getattr(detail, "product_id", None):
         return "台"
     
+    # 2. 製品名から補正
+    if "S-CART" in name or "SmooV" in name or "AGV" in name or "AMR" in name:
+        return "台"
+    
+    # 3. 明細に明示単位があり、かつ空でなければ優先
     unit = getattr(detail, "unit", None)
-    return unit if unit else "式"
+    if unit and str(unit).strip():
+        return str(unit).strip()
+    
+    # デフォルト
+    return "式"
 
 @quotation_bp.route("/quotation/<int:quotation_id>/view")
 

@@ -210,8 +210,8 @@
         </thead>
         <tbody>
                         {% for d in details %}
-                        {% set is_design = d.label == '設計費（パラメータ）' %}
-                        {% set is_setup = d.label == '現地セットアップ（パラメータ）' %}
+                        {% set is_design = '設計費' in (d.description or '') %}
+                        {% set is_setup = ('現地セットアップ' in (d.description or '') or 'セットアップ費' in (d.description or '')) %}
                         {% set is_free = (d.product_id is none or d.product_id|string in ['', '0']) and not is_design and not is_setup %}
                         <tr>
                                 <td>{{ loop.index }}</td>

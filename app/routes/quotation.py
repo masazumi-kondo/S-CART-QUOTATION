@@ -33,7 +33,7 @@ def _norm_difficulty(v: str):
     s = (v or "").strip().lower()
     return s if s in ("medium", "high") else None
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, g
 from app import db
 from app.models.quotation import Quotation
 from app.models.quotation_detail import QuotationDetail

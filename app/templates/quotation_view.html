@@ -73,6 +73,16 @@
             margin-top: 8px;
             line-height: 1.4;
         }
+        .customer-company-name {
+            font-size: 1.35em;
+            font-weight: bold;
+            line-height: 1.6;
+        }
+        .customer-contact-name {
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-top: 4px;
+        }
         .subject {
             font-size: 1.1em;
             font-weight: bold;
@@ -159,9 +169,9 @@
 
     <div class="header-row">
         <div class="header-left">
-            <div>{{ customer_display_name or "お客様" }} 御中</div>
+            <div class="customer-company-name">{{ customer_display_name or "お客様" }} 御中</div>
             {% if quotation.contact_name %}
-                <div class="contact">ご担当：{{ quotation.contact_name }} 様</div>
+                <div class="customer-contact-name">ご担当：{{ quotation.contact_name }} 様</div>
             {% endif %}
         </div>
         <div class="header-right">
@@ -296,21 +306,12 @@
 
     <div class="note">※消費税は別途申し受けます。</div>
 
+    {% if quotation.remarks %}
     <div style="margin-top:28px; page-break-inside: avoid;">
         <div style="font-weight: bold; margin-bottom: 6px;">【備考】</div>
-        <ol style="font-size: 0.95em; line-height: 1.6; margin-left: 20px;">
-            <li>本見積は概算見積です。正式仕様確定後、金額が変更となる場合があります。</li>
-            <li>現地工事、搬入、荷下ろし、電源工事、通信工事は別途とします。</li>
-            <li>お客様設備との通信・連携仕様は、別途協議のうえ決定します。</li>
-            <li>消費税は別途申し受けます。</li>
-        </ol>
-        {% if quotation.remarks %}
-        <div style="margin-top:12px; border-top: 1px solid #ddd; padding-top: 8px;">
-            <div style="font-weight: bold; margin-bottom: 4px;">追加備考</div>
-            <div style="white-space:pre-line; font-size: 0.95em;">{{ quotation.remarks }}</div>
-        </div>
-        {% endif %}
+        <div style="white-space:pre-line; font-size: 0.95em; line-height: 1.6;">{{ quotation.remarks }}</div>
     </div>
+    {% endif %}
 
         {# 画面下部の削除フォームはprint-btnsに統一したため削除 #}
 </body>

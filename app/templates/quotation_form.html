@@ -384,6 +384,24 @@
 
         </div>
 
+        <!-- 備考欄 -->
+        <div class="card mb-3">
+            <div class="card-header">
+                備考
+            </div>
+            <div class="card-body">
+                <textarea
+                    class="form-control"
+                    id="remarks"
+                    name="remarks"
+                    rows="4"
+                    placeholder="例：搬入・据付範囲、別途費用、仕様確定後の金額変更条件などを記載してください。">{{ values.remarks if values else "" }}</textarea>
+                <div class="form-text mt-2">
+                    見積書の【備考】欄に表示されます。
+                </div>
+            </div>
+        </div>
+
         <!-- 操作ボタンエリア -->
         <div class="q-section mt-3" id="quote-action-section">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">

@@ -147,6 +147,12 @@ def quotation_revise(quotation_id):
 
 # 印刷用見積書の明細並び順ヘルパー
 def sort_details_for_display(details):
+    """
+    見積書表示用に明細を並び替える。
+    優先順位：
+    1. V2自動算出行ではない通常製品（保存順を維持）
+    2. V2自動算出行（設計費 → 現地セットアップ費）
+    """
     design_labels = ("設計費", "設計費（パラメータ）")
     setup_labels = ("現地セットアップ", "現地セットアップ（パラメータ）")
 
@@ -162,9 +168,64 @@ def sort_details_for_display(details):
         d for d in details
         if getattr(d, "label", None) in setup_labels
     ]
+    # 通常製品を先に、V2行を後に
     return normal + design + setup
 
+
+def get_customer_display_name(quotation):
+    """
+    見積書の宛名表示用に顧客名を取得する。
+    優先順位：
+    1. quotation.company_name
+    2. quotation.customer.name
+    3. "お客様"
+    """
+    if quotation.company_name:
+        return quotation.company_name
+    if quotation.customer and quotation.customer.name:
+        return quotation.customer.name
+    return "お客様"
+
+
+def get_estimator_info(quotation, current_user=None):
+    """
+    見積作成担当者情報を取得する。
+    優先順位：
+    1. quotation.estimator_name
+    2. current_user.display_name
+    3. current_user.login_id
+    4. "-"
+    """
+    if quotation.estimator_name:
+        return quotation.estimator_name
+    if current_user:
+        if hasattr(current_user, 'display_name') and current_user.display_name:
+            return current_user.display_name
+        if hasattr(current_user, 'login_id') and current_user.login_id:
+            return current_user.login_id
+    return "-"
+
+
+def get_unit_display(detail):
+    """
+    明細行の単位を取得する。
+    ルール：
+    - V2自動算出行（設計費、現地セットアップ費）：「式」
+    - それ以外で product_id がある明細：「台」
+    - それ以外：detail.unit または「式」
+    """
+    label = getattr(detail, "label", None)
+    if label and ("設計費" in label or "現地セットアップ" in label):
+        return "式"
+    
+    if getattr(detail, "product_id", None):
+        return "台"
+    
+    unit = getattr(detail, "unit", None)
+    return unit if unit else "式"
+
 @quotation_bp.route("/quotation/<int:quotation_id>/view")
+
 def quotation_view(quotation_id):
     quotation = Quotation.query.get_or_404(quotation_id)
     details = sort_details_for_display(quotation.details)
@@ -284,6 +345,14 @@ def quotation_view(quotation_id):
     # 値引き額と値引き後合計を計算
     discount_amount = getattr(quotation, "discount_amount", 0) or 0
     total_after_discount = max(0, total - discount_amount)
+    
+    # 各明細に単位情報を追加
+    for detail in details:
+        detail.unit_display = get_unit_display(detail)
+    
+    # 見積書用の表示情報を準備
+    customer_display_name = get_customer_display_name(quotation)
+    estimator_info = get_estimator_info(quotation, g.get('current_user'))
 
     return render_template(
         "quotation_view.html",
@@ -293,6 +362,8 @@ def quotation_view(quotation_id):
         discount_amount=discount_amount,
         total_after_discount=total_after_discount,
         design_setup=design_setup,
+        customer_display_name=customer_display_name,
+        estimator_info=estimator_info,
     )
 
 
@@ -301,9 +372,17 @@ def print_view(quotation_id):
     quotation = Quotation.query.get_or_404(quotation_id)
     details = sort_details_for_display(quotation.details)
     
+    # 各明細に単位情報を追加
+    for detail in details:
+        detail.unit_display = get_unit_display(detail)
+    
     total_amount = sum((getattr(d, "subtotal", 0) or 0) for d in details)
     discount_amount = getattr(quotation, "discount_amount", 0) or 0
     total_after_discount = max(0, total_amount - discount_amount)
+    
+    # 見積書用の表示情報を準備
+    customer_display_name = get_customer_display_name(quotation)
+    estimator_info = get_estimator_info(quotation, g.get('current_user'))
     
     return render_template(
         "quotation_view.html",
@@ -312,6 +391,8 @@ def print_view(quotation_id):
         total_amount=total_amount,
         discount_amount=discount_amount,
         total_after_discount=total_after_discount,
+        customer_display_name=customer_display_name,
+        estimator_info=estimator_info,
         print_mode=True
     )
 

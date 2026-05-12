@@ -156,8 +156,12 @@
     root.addEventListener("input", onInput);
     root.addEventListener("change", onInput);
 
-    // 初回描画
-    v2UpdateLiveSummary();
+    // 初回描画：編集モードでは、既にテンプレートから復元された値があるため、recalc しない
+    // 新規モードで初回描画が必要な場合は、ユーザー入力後の input イベントで自動的に実行される
+    const isEditMode = document.getElementById("edit_quotation_id")?.value;
+    if (!isEditMode) {
+      v2UpdateLiveSummary();
+    }
 
     // __v2が遅延ロードされるケースの保険（最大1秒）
     if (!window.__v2LiveKickOnceStarted) {
@@ -167,7 +171,11 @@
         tries++;
         if (window.__v2 && typeof window.__v2.readParamsV2FromWizard === "function") {
           clearInterval(timer);
-          v2UpdateLiveSummary();
+          // 編集モードでなければ、初回描画実行
+          const isEdit = document.getElementById("edit_quotation_id")?.value;
+          if (!isEdit) {
+            v2UpdateLiveSummary();
+          }
         }
         if (tries >= 10) clearInterval(timer);
       }, 100);

@@ -134,18 +134,9 @@ def quotation_revise(quotation_id):
         db.session.commit()
     v2_settings = v2_setting.to_v2_json()
     
-    # V2結果と合計値を復元
-    import json
-    def load_json_or_empty(value):
-        if not value:
-            return {}
-        try:
-            return json.loads(value)
-        except Exception:
-            return {}
-    
-    v2_result = load_json_or_empty(orig.v2_result_json)
-    summary = load_json_or_empty(orig.summary_json)
+    # V2結果と合計値を復元（明細から再計算）
+    v2_result = build_v2_result_from_details(details)
+    summary = build_summary_from_details(orig)
     
     return render_template(
         "quotation_form.html",
@@ -159,6 +150,159 @@ def quotation_revise(quotation_id):
         v2_result=v2_result,  # V2結果復元
         summary=summary  # 合計値復元
     )
+
+
+# --- Helper functions for detail processing ---
+
+def get_detail_name(detail):
+    """
+    明細行の名称を複数候補から取得する。
+    """
+    candidates = [
+        getattr(detail, "label", None),
+        getattr(detail, "description", None),
+    ]
+    
+    for value in candidates:
+        if value:
+            return str(value).strip()
+    
+    # productリレーションから取得を試みる
+    product = getattr(detail, "product", None)
+    if product:
+        for attr in ["name", "product_name", "model_name"]:
+            value = getattr(product, attr, None)
+            if value:
+                return str(value).strip()
+    
+    return ""
+
+
+def is_design_fee_line(detail):
+    """
+    設計費行か判定する。
+    """
+    name = get_detail_name(detail)
+    return "設計費" in name
+
+
+def is_setup_fee_line(detail):
+    """
+    現地セットアップ費行か判定する。
+    """
+    name = get_detail_name(detail)
+    return "現地セットアップ" in name or "セットアップ費" in name
+
+
+def is_v2_line(detail):
+    """
+    V2関連行か判定する。
+    """
+    name = get_detail_name(detail)
+    return "V2" in name or is_design_fee_line(detail) or is_setup_fee_line(detail)
+
+
+def build_v2_result_from_details(details):
+    """
+    明細データから V2 結果値を復元する
+    """
+    result = {
+        "design_hours": "",
+        "setup_hours": "",
+        "pattern_score": "",
+        "area_score": "",
+        "landmark_factor": "",
+        "plc_signal_count": "",
+        "design_price": 0,
+        "setup_price": 0,
+        "design_cost": 0,
+        "setup_cost": 0,
+    }
+
+    for detail in details:
+        amount = (
+            getattr(detail, "amount", None)
+            or getattr(detail, "subtotal", None)
+            or getattr(detail, "total_price", None)
+            or 0
+        )
+
+        cost = (
+            getattr(detail, "cost", None)
+            or getattr(detail, "unit_cost", None)
+            or getattr(detail, "total_cost", None)
+            or 0
+        )
+
+        if is_design_fee_line(detail):
+            result["design_price"] = float(amount or 0)
+            result["design_cost"] = float(cost or 0)
+
+        if is_setup_fee_line(detail):
+            result["setup_price"] = float(amount or 0)
+            result["setup_cost"] = float(cost or 0)
+
+    return result
+
+
+def build_summary_from_details(quotation):
+    """
+    明細データから合計値を再計算する
+    """
+    details = quotation.details
+    
+    subtotal_price = 0
+    subtotal_cost = 0
+
+    for detail in details:
+        amount = (
+            getattr(detail, "amount", None)
+            or getattr(detail, "subtotal", None)
+            or getattr(detail, "total_price", None)
+            or 0
+        )
+
+        cost = (
+            getattr(detail, "cost", None)
+            or getattr(detail, "unit_cost", None)
+            or getattr(detail, "total_cost", None)
+            or 0
+        )
+
+        quantity = getattr(detail, "quantity", 1) or 1
+
+        # unit_costしかない場合は数量を掛ける
+        if getattr(detail, "total_cost", None) is None and getattr(detail, "unit_cost", None) is not None:
+            cost = float(cost) * float(quantity)
+
+        subtotal_price += float(amount or 0)
+        subtotal_cost += float(cost or 0)
+
+    discount_amount = getattr(quotation, "discount_amount", 0) or 0
+    final_total_price = subtotal_price - float(discount_amount or 0)
+
+    profit_margin = 0
+    if subtotal_price:
+        profit_margin = (subtotal_price - subtotal_cost) / subtotal_price * 100
+
+    final_profit_margin = 0
+    if final_total_price:
+        final_profit_margin = (final_total_price - subtotal_cost) / final_total_price * 100
+
+    discount_rate = 0
+    if subtotal_price:
+        discount_rate = float(discount_amount or 0) / subtotal_price * 100
+
+    return {
+        "subtotal_price": subtotal_price,
+        "subtotal_cost": subtotal_cost,
+        "profit_margin": profit_margin,
+        "discount_amount": discount_amount,
+        "discount_rate": discount_rate,
+        "final_total_price": final_total_price,
+        "final_total_cost": subtotal_cost,
+        "final_profit_margin": final_profit_margin,
+    }
 
 
 @quotation_bp.route("/quotation/<int:quotation_id>/edit", methods=["GET"])
@@ -224,18 +368,9 @@ def quotation_edit(quotation_id):
         db.session.commit()
     v2_settings = v2_setting.to_v2_json()
     
-    # V2結果と合計値を復元
-    import json
-    def load_json_or_empty(value):
-        if not value:
-            return {}
-        try:
-            return json.loads(value)
-        except Exception:
-            return {}
-    
-    v2_result = load_json_or_empty(quotation.v2_result_json)
-    summary = load_json_or_empty(quotation.summary_json)
+    # V2結果と合計値を復元（明細から再計算）
+    v2_result = build_v2_result_from_details(details)
+    summary = build_summary_from_details(quotation)
     
     return render_template(
         "quotation_form.html",
@@ -251,54 +386,6 @@ def quotation_edit(quotation_id):
     )
 
 # 印刷用見積書の明細並び順ヘルパー
-
-def get_detail_name(detail):
-    """
-    明細行の名称を複数候補から取得する。
-    """
-    candidates = [
-        getattr(detail, "label", None),
-        getattr(detail, "description", None),
-    ]
-    
-    for value in candidates:
-        if value:
-            return str(value).strip()
-    
-    # productリレーションから取得を試みる
-    product = getattr(detail, "product", None)
-    if product:
-        for attr in ["name", "product_name", "model_name"]:
-            value = getattr(product, attr, None)
-            if value:
-                return str(value).strip()
-    
-    return ""
-
-
-def is_design_fee_line(detail):
-    """
-    設計費行か判定する。
-    """
-    name = get_detail_name(detail)
-    return "設計費" in name
-
-
-def is_setup_fee_line(detail):
-    """
-    現地セットアップ費行か判定する。
-    """
-    name = get_detail_name(detail)
-    return "現地セットアップ" in name or "セットアップ費" in name
-
-
-def is_v2_line(detail):
-    """
-    V2関連行か判定する。
-    """
-    name = get_detail_name(detail)
-    return "V2" in name or is_design_fee_line(detail) or is_setup_fee_line(detail)
-
 
 def sort_details_for_display(details):
     """
@@ -1000,7 +1087,9 @@ def quotation_new():
                         products=product_list,
                         values=values,
                         rates=rates,
-                        v2_settings=v2_settings
+                        v2_settings=v2_settings,
+                        v2_result={},
+                        summary={}
                     )
 
                 # 顧客IDがある場合のみマスタ名で上書き
@@ -1017,7 +1106,9 @@ def quotation_new():
                         products=product_list,
                         values=values,
                         rates=rates,
-                        v2_settings=v2_settings
+                        v2_settings=v2_settings,
+                        v2_result={},
+                        summary={}
                     )
 
             if revise_source_id:

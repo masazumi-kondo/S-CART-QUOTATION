@@ -363,8 +363,8 @@
             </div>
             <div class="col-md-6">
                 <div class="small text-muted">V2固定行の金額</div>
-                <div>設計費（売価）: <span id="sum_designSell">{{ (v2_result.get('design_price', 0)|int)|default('-') }}</span> ¥</div>
-                <div>現地セットアップ費（売価）: <span id="sum_setupSell">{{ (v2_result.get('setup_price', 0)|int)|default('-') }}</span> ¥</div>
+                <div>設計費（売価）: <span id="sum_designSell">{{ "%.0f"|format(v2_result.get('design_price', 0)|float) }} ¥</span></div>
+                <div>現地セットアップ費（売価）: <span id="sum_setupSell">{{ "%.0f"|format(v2_result.get('setup_price', 0)|float) }} ¥</span></div>
             </div>
         </div>
 
@@ -403,9 +403,9 @@
             <!-- 値引き前（上段） -->
             <div class="mb-2">
                 <div class="fw-bold">合計（値引き前）</div>
-                <div>合計売価: <span id="sum_sell_before_discount">{{ summary.get('subtotal_price', '-') }}</span></div>
-                <div>合計原価: <span id="sum_cost_total">{{ summary.get('subtotal_cost', '-') }}</span></div>
-                <div>利益率: <span id="sum_profit_rate_before_discount">{{ summary.get('profit_margin', '-') }}</span></div>
+                <div>合計売価: <span id="sum_sell_before_discount">{{ "%.0f"|format(summary.get('subtotal_price', 0)|float) }}</span></div>
+                <div>合計原価: <span id="sum_cost_total">{{ "%.0f"|format(summary.get('subtotal_cost', 0)|float) }}</span></div>
+                <div>利益率: <span id="sum_profit_rate_before_discount">{{ "%.1f"|format(summary.get('profit_margin', 0)|float) }}%</span></div>
             </div>
 
             <hr>
@@ -431,9 +431,9 @@
             <!-- 値引き後（下段） -->
             <div class="mt-2">
                 <div class="fw-bold">最終（値引き後）</div>
-                <div class="fs-5 fw-bold">最終合計売価: <span id="sum_sell_after_discount">{{ summary.get('final_total_price', '-') }}</span></div>
-                <div>合計原価: <span id="sum_cost_total_after_discount">{{ summary.get('final_total_cost', '-') }}</span></div>
-                <div>最終利益率: <span id="sum_profit_rate_after_discount">{{ summary.get('final_profit_margin', '-') }}</span></div>
+                <div class="fs-5 fw-bold">最終合計売価: <span id="sum_sell_after_discount">{{ "%.0f"|format(summary.get('final_total_price', 0)|float) }}</span></div>
+                <div>合計原価: <span id="sum_cost_total_after_discount">{{ "%.0f"|format(summary.get('final_total_cost', 0)|float) }}</span></div>
+                <div>最終利益率: <span id="sum_profit_rate_after_discount">{{ "%.1f"|format(summary.get('final_profit_margin', 0)|float) }}%</span></div>
             </div>
 
         </div>
@@ -483,6 +483,30 @@
     <script id="rates-json" type="application/json">{{ rates|default({})|tojson|safe }}</script>
     <script id="products-json" type="application/json">{{ products|tojson|safe }}</script>
     <script id="v2-settings-json" type="application/json">{{ v2_settings|default({})|tojson|safe }}</script>
+
+    {# Initialize window.QUOTE_TOTALS from restored summary values #}
+    <script>
+      (function() {
+        const summaryData = {
+          subtotal_price: {{ summary.get('subtotal_price', 0)|float|int }},
+          subtotal_cost: {{ summary.get('subtotal_cost', 0)|float|int }},
+          final_total_price: {{ summary.get('final_total_price', 0)|float|int }},
+          final_total_cost: {{ summary.get('final_total_cost', 0)|float|int }}
+        };
+        // Initialize window.QUOTE_TOTALS with restored summary values
+        // This ensures discount calculation has the correct baseline
+        if (!window.QUOTE_TOTALS && summaryData.subtotal_price > 0) {
+          window.QUOTE_TOTALS = {
+            sellBeforeDiscount: summaryData.subtotal_price,
+            costTotal: summaryData.subtotal_cost
+          };
+          window.LAST_PROFIT_TOTALS = {
+            sellBeforeDiscount: summaryData.subtotal_price,
+            costTotal: summaryData.subtotal_cost
+          };
+        }
+      })();
+    </script>
     <script src="{{ url_for('static', filename='js/quotation/update_profit_preview.js') }}"></script>
     <script src="{{ url_for('static', filename='js/quotation/profit_summary.js') }}"></script>
     

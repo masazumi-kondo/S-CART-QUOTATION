@@ -493,7 +493,9 @@ def customer_reject(customer_id):
     # For mailto provider, show completion screen with mailto data
     if current_app.config.get("MAIL_PROVIDER", "").lower() == "mailto":
         from app.services.customer_mailto_service import build_customer_approval_result_mailto_data
+        
         mailto_data = build_customer_approval_result_mailto_data(customer, "却下", comment)
+        
         return render_template(
             "customers/customer_approval_completed.html",
             customer=customer,

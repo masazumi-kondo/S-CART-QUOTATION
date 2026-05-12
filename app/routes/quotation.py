@@ -285,6 +285,14 @@ def get_unit_display(detail):
 def quotation_view(quotation_id):
     quotation = Quotation.query.get_or_404(quotation_id)
     details = sort_details_for_display(quotation.details)
+    
+    # デバッグログ: ソート前後の明細順序を確認
+    logger = current_app.logger
+    before_names = [get_detail_name(d) for d in quotation.details]
+    after_names = [get_detail_name(d) for d in details]
+    logger.info("[SORT DEBUG] Before: %s", before_names)
+    logger.info("[SORT DEBUG] After: %s", after_names)
+    
     # 合計金額
     if hasattr(quotation, 'total_amount') and quotation.total_amount is not None:
         total = quotation.total_amount
@@ -294,7 +302,6 @@ def quotation_view(quotation_id):
     # --- 新ロジックで設計/セットアップ費用計算 ---
 
     import json
-    logger = current_app.logger
     DEFAULT_DESIGN_SETUP = {
         "design_hours": 0,
         "design_cost": 0,
@@ -427,6 +434,13 @@ def quotation_view(quotation_id):
 def print_view(quotation_id):
     quotation = Quotation.query.get_or_404(quotation_id)
     details = sort_details_for_display(quotation.details)
+    
+    # デバッグログ: ソート前後の明細順序を確認
+    logger = current_app.logger
+    before_names = [get_detail_name(d) for d in quotation.details]
+    after_names = [get_detail_name(d) for d in details]
+    logger.info("[SORT DEBUG PRINT] Before: %s", before_names)
+    logger.info("[SORT DEBUG PRINT] After: %s", after_names)
     
     # 各明細に単位情報を追加
     for detail in details:

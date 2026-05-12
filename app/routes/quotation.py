@@ -145,6 +145,81 @@ def quotation_revise(quotation_id):
         v2_settings=v2_settings
     )
 
+
+@quotation_bp.route("/quotation/<int:quotation_id>/edit", methods=["GET"])
+def quotation_edit(quotation_id):
+    """
+    見積編集画面
+    既存見積データを読み込んで、見積作成フォームを表示する。
+    編集時に明細を修正して、保存時は同じ quotation.id で更新する。
+    """
+    quotation = Quotation.query.get_or_404(quotation_id)
+    details = QuotationDetail.query.filter_by(quotation_id=quotation.id).all()
+    
+    # values: id, created_at, updated_at を除外
+    values = {c.name: getattr(quotation, c.name) for c in Quotation.__table__.columns if c.name not in ("id", "created_at", "updated_at")}
+    # customer_idをvaluesに追加（テンプレ互換のため str に揃える）
+    cust_id = getattr(quotation, "customer_id", None)
+    values["customer_id"] = str(cust_id) if cust_id else ""
+    # customer_idがあればcompany_nameをCustomer.nameで上書き
+    cust_id_int = None
+    try:
+        cust_id_int = int(values["customer_id"]) if values["customer_id"] else None
+    except Exception:
+        cust_id_int = None
+    if cust_id_int:
+        cust = Customer.query.get(cust_id_int)
+        if cust:
+            values["company_name"] = cust.name
+
+    # 顧客リスト
+    customers_query = Customer.query.options(joinedload(Customer.payment_term_ref)).filter(Customer.status == CustomerStatus.APPROVED.value).order_by(Customer.name).all()
+    
+    # details: id, quotation_id, created_at, updated_at を除外
+    detail_dicts = []
+    for d in details:
+        dct = {c.name: getattr(d, c.name) for c in QuotationDetail.__table__.columns if c.name not in ("id", "quotation_id", "created_at", "updated_at")}
+        detail_dicts.append(dct)
+    
+    # product_list
+    products_query = Product.query.order_by(Product.name).all()
+    product_list = [
+        {
+            "id": p.id,
+            "name": p.name,
+            "unit_price": p.unit_price,
+            "cost": p.cost,
+            "note": p.note,
+        }
+        for p in products_query
+    ]
+    
+    from app.cost_utils import LABOR_RATE, DESIGN_SELL_RATE, SETUP_SELL_RATE
+    from app.models.v2_calculation_setting import V2CalculationSetting
+    rates = {
+        "LABOR_RATE": LABOR_RATE,
+        "DESIGN_SELL_RATE": DESIGN_SELL_RATE,
+        "SETUP_SELL_RATE": SETUP_SELL_RATE,
+    }
+    # Get V2 calculation settings
+    v2_setting = V2CalculationSetting.query.get(1)
+    if not v2_setting:
+        v2_setting = V2CalculationSetting(id=1)
+        db.session.add(v2_setting)
+        db.session.commit()
+    v2_settings = v2_setting.to_v2_json()
+    
+    return render_template(
+        "quotation_form.html",
+        error=None,
+        products=product_list,
+        values=values,
+        details=detail_dicts,
+        edit_quotation_id=quotation.id,  # 編集モード用パラメータ
+        rates=rates,
+        v2_settings=v2_settings
+    )
+
 # 印刷用見積書の明細並び順ヘルパー
 
 def get_detail_name(detail):
@@ -522,7 +597,7 @@ def quotation_list():
 
 def quotation_new():
     import logging
-    logging.info("[quotation_new] method=%s path=%s url=%s referrer=%s revise_source_id=%s", request.method, request.path, request.url, request.referrer, request.form.get("revise_source_id"))
+    logging.info("[quotation_new] method=%s path=%s url=%s referrer=%s revise_source_id=%s edit_quotation_id=%s", request.method, request.path, request.url, request.referrer, request.form.get("revise_source_id"), request.form.get("edit_quotation_id"))
     error = None
     
     # Initialize rates and v2_settings upfront for both GET and POST
@@ -932,7 +1007,7 @@ def quotation_new():
                     delivery_terms=values["delivery_terms"],
                     payment_terms=values["payment_terms"],
                     valid_until=values["valid_until"],
-                    valid_days=values.get("valid_days"),  # 見積期限（日数）
+                    valid_days=values.get("valid_days"),
                     remarks=values["remarks"],
                     estimator_name=values.get("estimator_name", ""),
                     discount_rate=values.get("discount_rate", 0.0),
@@ -944,6 +1019,29 @@ def quotation_new():
                     quotation_no=revised_quotation_no,
                     customer_id=cust_id_int
                 )
+            elif request.form.get("edit_quotation_id"):
+                # 編集保存: 既存quotationを取得して基本項目を更新
+                edit_id = int(request.form.get("edit_quotation_id"))
+                quotation = Quotation.query.get_or_404(edit_id)
+                
+                # 基本項目を更新
+                quotation.company_name = values["company_name"]
+                quotation.contact_name = values["contact_name"]
+                quotation.project_name = values["project_name"]
+                quotation.delivery_date = values["delivery_date"]
+                quotation.delivery_terms = values["delivery_terms"]
+                quotation.payment_terms = values["payment_terms"]
+                quotation.valid_until = values["valid_until"]
+                quotation.valid_days = values.get("valid_days")
+                quotation.remarks = values["remarks"]
+                quotation.estimator_name = values.get("estimator_name", "")
+                quotation.discount_rate = values.get("discount_rate", 0.0)
+                quotation.discount_amount = values.get("discount_amount", 0)
+                quotation.updated_at = datetime.utcnow()
+                quotation.customer_id = cust_id_int
+                
+                # 既存明細を削除
+                QuotationDetail.query.filter_by(quotation_id=quotation.id).delete(synchronize_session=False)
             else:
                 # 新規保存
                 from datetime import datetime as dt
@@ -1032,14 +1130,17 @@ def quotation_new():
                 quotation.id,
                 request.form.get("action")
             )
-            flash("見積を登録しました。", "success")
             
-            # action値に応じた遷移先を分岐
-            action = request.form.get("action", "")
-            if action == "save_and_print":
-                return redirect(url_for("quotation.print_view", quotation_id=quotation.id))
+            # 新規か編集か改定かで flash メッセージを分ける
+            if request.form.get("edit_quotation_id"):
+                flash("見積を更新しました。", "success")
+            elif revise_source_id:
+                flash("見積を保存しました。", "success")
             else:
-                return redirect(url_for("quotation.quotation_view", quotation_id=quotation.id))
+                flash("見積を保存しました。", "success")
+            
+            # すべての保存後は見積一覧へ遷移
+            return redirect(url_for("quotation.quotation_list"))
 
         # エラー時：ヘッダ入力値をテンプレートに渡す
         return render_template(

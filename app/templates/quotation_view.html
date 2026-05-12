@@ -152,16 +152,15 @@
 <body>
     {% if not print_mode|default(false) %}
     <div class="print-btns">
+        <a href="{{ url_for('quotation.quotation_edit', quotation_id=quotation.id) }}" class="btn btn-sm btn-outline-primary me-2">編集</a>
         <button onclick="window.print()" class="btn btn-sm btn-outline-secondary me-2">印刷</button>
-        <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-sm btn-outline-primary me-2">一覧へ戻る</a>
-        <form method="post" action="{{ url_for('quotation.quotation_delete', quotation_id=quotation.id) }}" style="display:inline;" onsubmit="return confirm('この見積を削除します。よろしいですか？（改定履歴も削除されます）');">
-            <button type="submit" class="btn btn-sm btn-outline-danger">見積削除</button>
-        </form>
+        <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-sm btn-outline-secondary">一覧へ戻る</a>
     </div>
     {% else %}
     <div class="print-btns">
-        <button onclick="window.print()" class="btn btn-sm btn-primary me-2">印刷</button>
-        <a href="{{ url_for('quotation.quotation_view', quotation_id=quotation.id) }}" class="btn btn-sm btn-outline-secondary">戻る</a>
+        <a href="{{ url_for('quotation.quotation_edit', quotation_id=quotation.id) }}" class="btn btn-sm btn-outline-primary me-2">見積作成画面に戻る</a>
+        <a href="{{ url_for('quotation.quotation_list') }}" class="btn btn-sm btn-outline-secondary me-2">見積一覧へ戻る</a>
+        <button onclick="window.print()" class="btn btn-sm btn-primary">印刷</button>
     </div>
     {% endif %}
 

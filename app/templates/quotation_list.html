@@ -35,7 +35,7 @@
                 </td>
                 <td>
                     <div class="d-flex gap-2 flex-wrap">
-                        <a href="{{ url_for('quotation.quotation_view', quotation_id=q.id) }}" class="btn btn-sm btn-outline-secondary" title="詳細表示">詳細</a>
+                        <a href="{{ url_for('quotation.quotation_edit', quotation_id=q.id) }}" class="btn btn-sm btn-outline-primary" title="編集">編集</a>
                         <a href="{{ url_for('quotation.print_view', quotation_id=q.id) }}" class="btn btn-sm btn-outline-info" title="印刷画面へ">印刷</a>
                         <a href="{{ url_for('quotation.quotation_revise', quotation_id=q.id) }}" class="btn btn-sm btn-outline-primary" title="改定版を作成">改定</a>
                         <form method="post" action="{{ url_for('quotation.quotation_delete', quotation_id=q.id) }}" style="display:inline;" onsubmit="return confirm('この見積を削除します。よろしいですか？（改定履歴も削除されます）');">

@@ -655,7 +655,7 @@ def print_view(quotation_id):
             v2_inputs = {}
     
     # 管理者判定
-    is_admin = g.current_user and getattr(g.current_user, 'role', None) == 'admin'
+    is_admin = g.get('current_user') and getattr(g.get('current_user'), 'role', None) == 'admin'
     
     return render_template(
         "quotation_print.html",
@@ -667,7 +667,7 @@ def print_view(quotation_id):
         customer_display_name=customer_display_name,
         estimator_info=estimator_info,
         print_mode=True,
-        current_user=current_user,
+        current_user=g.get('current_user'),
         summary=summary,
         v2_result=v2_result,
         v2_inputs=v2_inputs,

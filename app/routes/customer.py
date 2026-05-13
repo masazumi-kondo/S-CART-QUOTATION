@@ -18,6 +18,7 @@ from app.services.customer_email_notification_service import (
     notify_customer_approval_request,
     notify_customer_approval_result,
 )
+from app.csv_utils import create_csv_response
 
 # Blueprint定義は必ず先
 customer_bp = Blueprint('customer', __name__)
@@ -150,6 +151,49 @@ def customer_list():
         query = query.filter(Customer.status == CustomerStatus.APPROVED.value)
     customers = query.order_by(Customer.name).all()
     return render_template('customer_list.html', customers=customers, q=q, is_admin=is_admin, current_user=g.current_user)
+
+@customer_bp.route('/customers/export-csv')
+@login_required
+@roles_required('admin')
+def customer_export_csv():
+    """顧客マスタをCSV形式で出力"""
+    customers = Customer.query.order_by(Customer.name).all()
+    
+    headers = ['顧客ID', '得意先コード', '顧客名', 'カナ', '郵便番号', '住所', '担当者名', '電話', 'メール', '支払条件', 'ステータス', '申請者', '作成日', '更新日']
+    rows = []
+    
+    for c in customers:
+        requester_name = ''
+        if c.requested_by_user_id:
+            user = User.query.get(c.requested_by_user_id)
+            requester_name = user.display_name if user else ''
+        
+        status_display = {
+            'pending': '審査待ち',
+            'approved': '承認済み',
+            'rejected': '却下'
+        }.get(c.status, c.status)
+        
+        payment_term = c.payment_term_ref.name if c.payment_term_ref else ''
+        
+        rows.append([
+            c.id or '',
+            c.customer_code or '',
+            c.name or '',
+            c.name_kana or '',
+            c.postal_code or '',
+            c.address or '',
+            c.contact_name or '',
+            c.phone or '',
+            c.email or '',
+            payment_term,
+            status_display,
+            requester_name,
+            c.created_at.strftime('%Y/%m/%d %H:%M') if c.created_at else '',
+            c.updated_at.strftime('%Y/%m/%d %H:%M') if c.updated_at else '',
+        ])
+    
+    return create_csv_response('顧客マスタ', headers, rows)
 
 @customer_bp.route('/customers/new', methods=['GET', 'POST'])
 @login_required

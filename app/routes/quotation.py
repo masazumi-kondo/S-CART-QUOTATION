@@ -39,10 +39,14 @@ from app.models.quotation import Quotation
 from app.models.quotation_detail import QuotationDetail
 from app.models.product import Product
 from app.models.customer import Customer, CustomerStatus
+from app.models.user import User
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 from app.cost_utils import calc_design_setup_for_quotation
 from sqlalchemy import func
+from app.auth_utils import login_required, roles_required
+from app.csv_utils import create_csv_response
+from app.approval_utils import get_approval_status_label, can_request_approval
 
 quotation_bp = Blueprint("quotation", __name__)
 
@@ -661,7 +665,14 @@ def normalize_revision_fields():
 def quotation_list():
     normalize_revision_fields()
     # originals: revision_no==0のみ
-    originals = Quotation.query.filter(Quotation.revision_no == 0).order_by(Quotation.created_at.desc()).all()
+    originals = Quotation.query.options(
+        joinedload(Quotation.customer),
+        joinedload(Quotation.estimator),
+        joinedload(Quotation.details),
+        joinedload(Quotation.approved_by_user),
+        joinedload(Quotation.rejected_by_user)
+    ).filter(Quotation.revision_no == 0).order_by(Quotation.created_at.desc()).all()
+    
     # original_idごとに最新改定（DBでmaxを取得）
     orig_ids = [o.id for o in originals]
     latest_rev_map = {}
@@ -677,6 +688,13 @@ def quotation_list():
         )
         latests = (
             db.session.query(Quotation)
+            .options(
+                joinedload(Quotation.customer),
+                joinedload(Quotation.estimator),
+                joinedload(Quotation.details),
+                joinedload(Quotation.approved_by_user),
+                joinedload(Quotation.rejected_by_user)
+            )
             .join(subq, (Quotation.original_id == subq.c.original_id) & (Quotation.revision_no == subq.c.max_rev))
             .all()
         )
@@ -688,26 +706,79 @@ def quotation_list():
         if orig.id in latest_rev_map:
             quotations.append(latest_rev_map[orig.id])
     
-    # Convert Quotation objects to dictionaries with calculated totals
-    def get_total_after_discount(q):
-        total_sell = sum((d.subtotal or 0) for d in q.details) if q.details else 0
-        discount_amount = (q.discount_amount or 0) if q.discount_amount else 0
-        return max(0, total_sell - discount_amount)
+    return render_template("quotation_list.html", quotations=quotations)
+
+
+@quotation_bp.route("/quotations/export-csv")
+@login_required
+@roles_required("admin")
+def quotation_export_csv():
+    """
+    見積一覧をCSV形式でエクスポートします。
+    フィールド: 見積ID, 見積No., 改定版No., 顧客名, 担当者名, プロジェクト名, 見積人名, 作成日時, 更新日時, 
+               小計価格, 小計原価, 値引金額, 最終合計額, 利益率%, 承認状態, 承認者, 承認日時, 差戻し者, 差戻し日時, 備考
+    """
+    # All quotations with their customer and estimator info
+    quotations = Quotation.query.options(
+        joinedload(Quotation.customer),
+        joinedload(Quotation.estimator),
+        joinedload(Quotation.approved_by_user),
+        joinedload(Quotation.rejected_by_user),
+        joinedload(Quotation.details)
+    ).all()
     
-    quotations_data = []
+    headers = ['見積ID', '見積No.', '改定版No.', '顧客名', '担当者名', 'プロジェクト名', '見積人名', 
+               '作成日時', '更新日時', '小計価格', '小計原価', '値引金額', '最終合計額', '利益率%', 
+               '承認状態', '承認者', '承認日時', '差戻し者', '差戻し日時', '備考']
+    
+    rows = []
     for q in quotations:
-        quotations_data.append({
-            'quotation_no': q.quotation_no or f"{q.original_id or q.id}-R{q.revision_no}",
-            'original_id': q.original_id,
-            'revision_no': q.revision_no,
-            'company_name': q.company_name,
-            'project_name': q.project_name,
-            'created_at': q.created_at.strftime('%Y-%m-%d') if q.created_at else '',
-            'total_after_discount': get_total_after_discount(q),
-            'id': q.id
-        })
+        # Calculate subtotals from details
+        subtotal_price = sum((d.subtotal or 0) for d in q.details) if q.details else 0
+        subtotal_cost = sum((d.subtotal_cost or 0) for d in q.details) if q.details else 0
+        discount_amount = q.discount_amount or 0
+        final_total_price = max(0, subtotal_price - discount_amount)
+        
+        # Calculate profit margin
+        if final_total_price > 0:
+            profit_margin = ((final_total_price - subtotal_cost) / final_total_price * 100) if final_total_price > 0 else 0
+        else:
+            profit_margin = 0
+        
+        # Format dates
+        created_at = q.created_at.strftime('%Y/%m/%d %H:%M') if q.created_at else ''
+        updated_at = q.updated_at.strftime('%Y/%m/%d %H:%M') if q.updated_at else ''
+        approved_at = q.approved_at.strftime('%Y/%m/%d %H:%M') if q.approved_at else ''
+        rejected_at = q.rejected_at.strftime('%Y/%m/%d %H:%M') if q.rejected_at else ''
+        
+        # Approval status label
+        approval_status_label = get_approval_status_label(q.approval_status)
+        
+        row = [
+            q.id or '',
+            q.quotation_no or f"{q.original_id or q.id}-R{q.revision_no}",
+            q.revision_no or '',
+            q.customer.name if q.customer else '',
+            q.customer.contact_name if q.customer else '',
+            q.project_name or '',
+            q.estimator.display_name if q.estimator else '',
+            created_at,
+            updated_at,
+            subtotal_price,
+            subtotal_cost,
+            discount_amount,
+            final_total_price,
+            f"{profit_margin:.1f}" if profit_margin else '0.0',
+            approval_status_label,
+            q.approved_by_user.display_name if q.approved_by_user else '',
+            approved_at,
+            q.rejected_by_user.display_name if q.rejected_by_user else '',
+            rejected_at,
+            q.remarks or ''
+        ]
+        rows.append(row)
     
-    return render_template("quotation_list.html", quotations=quotations_data)
+    return create_csv_response('見積一覧', headers, rows)
 
 
 @quotation_bp.route("/quotation/new", methods=["GET", "POST"])
@@ -1065,6 +1136,8 @@ def quotation_new():
         if not values["company_name"] or not values["project_name"]:
             error = "「宛先企業名」と「案件名」は必須です。"
 
+        # 承認状態リセット判定用フラグの初期化
+        approval_status_was_reset = False
 
         if not error:
             revise_source_id = request.form.get("revise_source_id")
@@ -1149,6 +1222,9 @@ def quotation_new():
                 edit_id = int(request.form.get("edit_quotation_id"))
                 quotation = Quotation.query.get_or_404(edit_id)
                 
+                # 承認状態がリセットされるかを記録（更新前）
+                approval_status_was_reset = quotation.approval_status in ["pending", "approved", "rejected"]
+                
                 # 基本項目を更新
                 quotation.company_name = values["company_name"]
                 quotation.contact_name = values["contact_name"]
@@ -1164,6 +1240,16 @@ def quotation_new():
                 quotation.discount_amount = values.get("discount_amount", 0)
                 quotation.updated_at = datetime.utcnow()
                 quotation.customer_id = cust_id_int
+                
+                # 承認状態をリセット（pending/approved/rejected の場合）
+                if approval_status_was_reset:
+                    quotation.approval_status = "draft"
+                    quotation.approval_requested_at = None
+                    quotation.approved_at = None
+                    quotation.approved_by_user_id = None
+                    quotation.rejected_at = None
+                    quotation.rejected_by_user_id = None
+                    quotation.approval_comment = None
                 
                 # 既存明細を削除
                 QuotationDetail.query.filter_by(quotation_id=quotation.id).delete(synchronize_session=False)
@@ -1289,7 +1375,10 @@ def quotation_new():
             if save_action == "stay":
                 # 保存後も編集画面に残る
                 if is_edit:
-                    flash("見積を更新しました。引き続き編集できます。", "success")
+                    if approval_status_was_reset:
+                        flash("見積を更新しました。内容変更のため承認状態を作成中に戻しました。", "success")
+                    else:
+                        flash("見積を更新しました。引き続き編集できます。", "success")
                     return redirect(url_for("quotation.quotation_edit", quotation_id=quotation.id))
                 else:
                     flash("見積を保存しました。引き続き編集できます。", "success")
@@ -1297,7 +1386,10 @@ def quotation_new():
             else:
                 # 一覧へ
                 if is_edit:
-                    flash("見積を更新しました。", "success")
+                    if approval_status_was_reset:
+                        flash("見積を更新しました。内容変更のため承認状態を作成中に戻しました。", "success")
+                    else:
+                        flash("見積を更新しました。", "success")
                 else:
                     flash("見積を保存しました。", "success")
                 return redirect(url_for("quotation.quotation_list"))
@@ -1338,4 +1430,86 @@ def quotation_delete(quotation_id):
         db.session.delete(qq)
     db.session.commit()
     flash("見積を削除しました。", "success")
+    return redirect(url_for("quotation.quotation_list"))
+
+
+@quotation_bp.route("/quotation/<int:quotation_id>/request-approval", methods=["POST"])
+@login_required
+def quotation_request_approval(quotation_id):
+    """Request approval for a quotation"""
+    quotation = Quotation.query.get_or_404(quotation_id)
+    
+    # Check if quotation can be submitted for approval
+    can_request, error_msg = can_request_approval(quotation)
+    if not can_request:
+        flash(f"承認申請できません。{error_msg}", "danger")
+        return redirect(url_for("quotation.quotation_list"))
+    
+    # Update approval status
+    quotation.approval_status = "pending"
+    quotation.approval_requested_at = datetime.utcnow()
+    # Clear any previous rejection/approval
+    quotation.approved_at = None
+    quotation.approved_by_user_id = None
+    quotation.rejected_at = None
+    quotation.rejected_by_user_id = None
+    quotation.approval_comment = None
+    
+    db.session.commit()
+    flash("見積を承認申請しました。", "success")
+    return redirect(url_for("quotation.quotation_list"))
+
+
+@quotation_bp.route("/quotation/<int:quotation_id>/approve", methods=["POST"])
+@login_required
+@roles_required("admin")
+def quotation_approve(quotation_id):
+    """Approve a quotation (admin only)"""
+    quotation = Quotation.query.get_or_404(quotation_id)
+    
+    # Only allow approving pending quotations
+    if quotation.approval_status != "pending":
+        flash("この見積は承認待ち状態ではありません。", "danger")
+        return redirect(url_for("quotation.quotation_list"))
+    
+    # Update approval status
+    quotation.approval_status = "approved"
+    quotation.approved_at = datetime.utcnow()
+    quotation.approved_by_user_id = g.current_user.id
+    # Clear any previous rejection
+    quotation.rejected_at = None
+    quotation.rejected_by_user_id = None
+    quotation.approval_comment = None
+    
+    db.session.commit()
+    flash("見積を承認しました。", "success")
+    return redirect(url_for("quotation.quotation_list"))
+
+
+@quotation_bp.route("/quotation/<int:quotation_id>/reject", methods=["POST"])
+@login_required
+@roles_required("admin")
+def quotation_reject(quotation_id):
+    """Reject a quotation with optional comment (admin only)"""
+    quotation = Quotation.query.get_or_404(quotation_id)
+    
+    # Only allow rejecting pending quotations
+    if quotation.approval_status != "pending":
+        flash("この見積は承認待ち状態ではありません。", "danger")
+        return redirect(url_for("quotation.quotation_list"))
+    
+    # Get comment from form
+    approval_comment = request.form.get("approval_comment", "").strip()
+    
+    # Update approval status
+    quotation.approval_status = "rejected"
+    quotation.rejected_at = datetime.utcnow()
+    quotation.rejected_by_user_id = g.current_user.id
+    quotation.approval_comment = approval_comment if approval_comment else None
+    # Clear any previous approval
+    quotation.approved_at = None
+    quotation.approved_by_user_id = None
+    
+    db.session.commit()
+    flash("見積を差戻しました。", "success")
     return redirect(url_for("quotation.quotation_list"))

@@ -1,0 +1,57 @@
+{% macro approval_badge(status) -%}
+{% set status_map = {
+    'draft': ('作成中', 'secondary'),
+    'pending': ('承認待ち', 'warning'),
+    'approved': ('承認済み', 'success'),
+    'rejected': ('差戻し', 'danger')
+} %}
+{% set label, color = status_map.get(status, ('作成中', 'secondary')) %}
+<span class="badge bg-{{ color }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro approval_buttons(quotation, current_user) -%}
+<div style="margin-top: 8px;">
+    {% if quotation.approval_status in ['draft', 'rejected'] %}
+        <!-- Show request-approval button for draft or rejected quotations -->
+        <form method="post" action="{{ url_for('quotation.quotation_request_approval', quotation_id=quotation.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-sm btn-outline-warning">承認申請</button>
+        </form>
+    {% elif quotation.approval_status == 'pending' %}
+        <!-- Show pending status indicator and admin approval/reject buttons -->
+        <span class="badge bg-warning">申請中...</span>
+        {% if current_user.role == 'admin' %}
+        <form method="post" action="{{ url_for('quotation.quotation_approve', quotation_id=quotation.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-sm btn-outline-success">承認</button>
+        </form>
+        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ quotation.id }}">差戻し</button>
+        
+        <!-- Reject modal -->
+        <div class="modal fade" id="rejectModal{{ quotation.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">見積を差戻し</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="post" action="{{ url_for('quotation.quotation_reject', quotation_id=quotation.id) }}">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="comment{{ quotation.id }}" class="form-label">差戻し理由（オプション）</label>
+                                <textarea class="form-control" id="comment{{ quotation.id }}" name="approval_comment" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                            <button type="submit" class="btn btn-danger">差戻し</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% elif quotation.approval_status == 'approved' %}
+        <!-- Show approved status -->
+        <span class="badge bg-success">承認済み</span>
+    {% endif %}
+</div>
+{%- endmacro %}

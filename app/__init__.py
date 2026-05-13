@@ -705,6 +705,17 @@ def create_app():
             ensure_column_exists(conn, "quotations", "valid_days", "INTEGER")  # 見積期限（日数）
             ensure_column_exists(conn, "quotations", "v2_result_json", "TEXT")  # V2設計費・現地セットアップ費の算出結果
             ensure_column_exists(conn, "quotations", "summary_json", "TEXT")  # 小計、原価、利益率、値引き、最終合計などを保存
+            
+            # 承認ワークフロー関連カラム
+            ensure_column_exists(conn, "quotations", "approval_status", "VARCHAR(20) DEFAULT 'draft'")
+            ensure_column_exists(conn, "quotations", "approval_requested_at", "DATETIME")
+            ensure_column_exists(conn, "quotations", "approved_at", "DATETIME")
+            ensure_column_exists(conn, "quotations", "approved_by_user_id", "INTEGER")
+            ensure_column_exists(conn, "quotations", "rejected_at", "DATETIME")
+            ensure_column_exists(conn, "quotations", "rejected_by_user_id", "INTEGER")
+            ensure_column_exists(conn, "quotations", "approval_comment", "TEXT")
+            ensure_column_exists(conn, "quotations", "estimator_user_id", "INTEGER")  # 見積作成者（ユーザーマスタへのリンク）
+            
             # v1判定は冒頭で済ませたのでここは削除
             logging.info("[MIG] done user_version=%s", get_user_version(conn))
         except Exception as e:

@@ -2,7 +2,44 @@
 {% block content %}
 <div class="container-fluid print-container mt-4" id="print-section">
     <div class="print-header mb-5">
-        <h2 class="mb-3">見積書</h2>
+        <div class="d-flex justify-content-between align-items-start">
+            <h2 class="mb-3">見積書</h2>
+            <!-- Approval Stamp -->
+            <div style="text-align: right;">
+                {% if quotation.approval_status == 'approved' %}
+                    <div style="border: 2px solid #198754; color: #198754; padding: 8px 12px; font-weight: bold; display: inline-block; margin-top: 8px;">
+                        <div>承認済み</div>
+                        <div style="font-size: 0.85em; font-weight: normal; margin-top: 4px;">
+                            承認者: {{ quotation.approved_by_user.display_name if quotation.approved_by_user else '-' }}
+                        </div>
+                        <div style="font-size: 0.85em; font-weight: normal;">
+                            承認日: {{ quotation.approved_at.strftime('%Y/%m/%d') if quotation.approved_at else '-' }}
+                        </div>
+                    </div>
+                {% elif quotation.approval_status == 'pending' %}
+                    <div style="border: 2px solid #ffc107; color: #856404; padding: 8px 12px; font-weight: bold; display: inline-block; margin-top: 8px;">
+                        <div>承認待ち</div>
+                        <div style="font-size: 0.85em; font-weight: normal; margin-top: 4px;">
+                            社内確認用
+                        </div>
+                    </div>
+                {% elif quotation.approval_status == 'rejected' %}
+                    <div style="border: 2px solid #dc3545; color: #dc3545; padding: 8px 12px; font-weight: bold; display: inline-block; margin-top: 8px;">
+                        <div>差戻し</div>
+                        <div style="font-size: 0.85em; font-weight: normal; margin-top: 4px;">
+                            社内確認用
+                        </div>
+                    </div>
+                {% else %}
+                    <div style="border: 2px solid #dc3545; color: #dc3545; padding: 8px 12px; font-weight: bold; display: inline-block; margin-top: 8px;">
+                        <div>未承認</div>
+                        <div style="font-size: 0.85em; font-weight: normal; margin-top: 4px;">
+                            社内確認用
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
         
         <!-- 基本情報 -->
         <div class="row mb-4">

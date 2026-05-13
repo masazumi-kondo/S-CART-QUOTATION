@@ -52,6 +52,31 @@ class Quotation(db.Model):
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=True, index=True)
     customer = relationship("Customer", back_populates="quotations")
 
+    # 見積作成者（ユーザーマスタへのリンク）
+    estimator_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    estimator = relationship("User", foreign_keys=[estimator_user_id])
+
+    # 承認ワークフロー関連カラム
+    approval_status = db.Column(db.String(20), default="draft", nullable=False)
+    approval_requested_at = db.Column(db.DateTime, nullable=True)
+    approved_at = db.Column(db.DateTime, nullable=True)
+    approved_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    rejected_at = db.Column(db.DateTime, nullable=True)
+    rejected_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    approval_comment = db.Column(db.Text, nullable=True)
+
+    # 承認者・差戻し者へのリレーションシップ
+    approved_by_user = relationship(
+        "User",
+        foreign_keys=[approved_by_user_id],
+        backref="approved_quotations"
+    )
+    rejected_by_user = relationship(
+        "User",
+        foreign_keys=[rejected_by_user_id],
+        backref="rejected_quotations"
+    )
+
     details = relationship(
         "QuotationDetail",
         back_populates="quotation",

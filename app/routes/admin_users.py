@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.models.user import User
 from app import db
 from app.auth_utils import login_required, roles_required
+from app.csv_utils import create_csv_response
 from datetime import datetime
 from werkzeug.security import generate_password_hash
 import re
@@ -38,6 +39,42 @@ def users_list():
     """List all users"""
     users = User.query.order_by(User.id.desc()).all()
     return render_template("admin/users.html", users=users)
+
+
+@admin_users_bp.route("/admin/users/export-csv")
+@login_required
+@roles_required("admin")
+def users_export_csv():
+    """
+    ユーザー一覧をCSV形式でエクスポートします。
+    フィールド: ユーザーID, ログインID, 表示名, メール, 権限, 有効, 通知有効, PW変更要求, 作成日時, 更新日時
+    """
+    users = User.query.order_by(User.id.asc()).all()
+    
+    headers = ['ユーザーID', 'ログインID', '表示名', 'メール', '権限', '有効', '通知有効', 
+               'PW変更要求', '作成日時', '更新日時']
+    
+    rows = []
+    for u in users:
+        # Format dates
+        created_at = u.created_at.strftime('%Y/%m/%d %H:%M') if hasattr(u, 'created_at') and u.created_at else ''
+        updated_at = u.updated_at.strftime('%Y/%m/%d %H:%M') if hasattr(u, 'updated_at') and u.updated_at else ''
+        
+        row = [
+            u.id or '',
+            u.login_id or '',
+            u.display_name or '',
+            u.email or '',
+            u.role or '',
+            '有効' if u.is_active else '無効',
+            '有効' if u.notification_enabled else '無効',
+            '要求' if u.password_change_required else '不要',
+            created_at,
+            updated_at
+        ]
+        rows.append(row)
+    
+    return create_csv_response('ユーザー一覧', headers, rows)
 
 
 @admin_users_bp.route("/admin/users/new", methods=["GET", "POST"])

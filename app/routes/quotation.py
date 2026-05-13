@@ -654,6 +654,9 @@ def print_view(quotation_id):
         except Exception:
             v2_inputs = {}
     
+    # 管理者判定
+    is_admin = g.current_user and getattr(g.current_user, 'role', None) == 'admin'
+    
     return render_template(
         "quotation_print.html",
         quotation=quotation,
@@ -667,7 +670,8 @@ def print_view(quotation_id):
         current_user=current_user,
         summary=summary,
         v2_result=v2_result,
-        v2_inputs=v2_inputs
+        v2_inputs=v2_inputs,
+        is_admin=is_admin
     )
 
 

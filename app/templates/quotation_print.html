@@ -98,7 +98,7 @@
         {% endif %}
 
         <!-- Approval Review Panel (Admin Only, No Print) -->
-        {% if current_user and current_user.role == "admin" %}
+        {% if is_admin %}
         <div class="approval-review-panel no-print mt-4 mb-4">
             <h5>【承認判断用情報】社内確認用</h5>
             

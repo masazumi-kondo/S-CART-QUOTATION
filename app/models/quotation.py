@@ -48,6 +48,8 @@ class Quotation(db.Model):
     v2_result_json = db.Column(db.Text, nullable=True)  # V2設計費・現地セットアップ費の算出結果
     # 合計・利益率などの集計値保存（JSON）
     summary_json = db.Column(db.Text, nullable=True)  # 小計、原価、利益率、値引き、最終合計などを保存
+    # V2入力パラメーター保存（JSON）
+    v2_input_json = db.Column(db.Text, nullable=True)  # V2見積作成時のパラメーター入力値（AGV台数、搬送条件など）
 
     customer_id = db.Column(db.Integer, db.ForeignKey("customers.id"), nullable=True, index=True)
     customer = relationship("Customer", back_populates="quotations")

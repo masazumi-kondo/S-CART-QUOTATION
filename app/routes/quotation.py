@@ -641,6 +641,19 @@ def print_view(quotation_id):
     customer_display_name = get_customer_display_name(quotation)
     estimator_info = get_estimator_info(quotation, g.get('current_user'))
     
+    # 金額サマリーと V2結果を復元
+    import json
+    summary = build_summary_from_details(quotation)
+    v2_result = build_v2_result_from_details(details)
+    
+    # V2入力パラメーターを復元
+    v2_inputs = {}
+    if quotation.v2_input_json:
+        try:
+            v2_inputs = json.loads(quotation.v2_input_json)
+        except Exception:
+            v2_inputs = {}
+    
     return render_template(
         "quotation_print.html",
         quotation=quotation,
@@ -651,7 +664,10 @@ def print_view(quotation_id):
         customer_display_name=customer_display_name,
         estimator_info=estimator_info,
         print_mode=True,
-        current_user=current_user
+        current_user=current_user,
+        summary=summary,
+        v2_result=v2_result,
+        v2_inputs=v2_inputs
     )
 
 
@@ -1365,6 +1381,25 @@ def quotation_new():
                 "final_profit_margin": request.form.get("final_profit_margin", "")
             }
             quotation.summary_json = json.dumps(summary, ensure_ascii=False)
+
+            # V2入力パラメーターをJSON保存
+            v2_inputs = {
+                "agv_count": request.form.get("v2_vehicle_count", ""),
+                "pickup_count": request.form.get("v2_pickup_count", ""),
+                "dropoff_count": request.form.get("v2_dropoff_count", ""),
+                "area_short_m": request.form.get("v2_area_short_m", ""),
+                "area_long_m": request.form.get("v2_area_long_m", ""),
+                "route_complexity": request.form.get("v2_route_complexity", ""),
+                "merge_complexity": request.form.get("v2_merge_level", ""),
+                "charger_count": request.form.get("v2_charger_count", ""),
+                "magnetic_stop_count": request.form.get("v2_magnetic_stop_count", ""),
+                "landmark_scope": request.form.get("v2_landmark_range", ""),
+                "elevator_count": request.form.get("v2_elevator_count", ""),
+                "auto_door_count": request.form.get("v2_auto_door_count", ""),
+                "plc_scale": request.form.get("v2_plc_scale", ""),
+                "host_system_scale": request.form.get("v2_host_system", ""),
+            }
+            quotation.v2_input_json = json.dumps(v2_inputs, ensure_ascii=False)
 
             db.session.commit()
 

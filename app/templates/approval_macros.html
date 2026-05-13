@@ -1,12 +1,15 @@
 {% macro approval_badge(status) -%}
-{% set status_map = {
-    'draft': ('作成中', 'secondary'),
-    'pending': ('承認待ち', 'warning'),
-    'approved': ('承認済み', 'success'),
-    'rejected': ('差戻し', 'danger')
-} %}
-{% set label, color = status_map.get(status, ('作成中', 'secondary')) %}
-<span class="badge bg-{{ color }}">{{ label }}</span>
+{% if status == 'draft' %}
+    <span class="badge bg-secondary">作成中</span>
+{% elif status == 'pending' %}
+    <span class="badge bg-warning">承認待ち</span>
+{% elif status == 'approved' %}
+    <span class="badge bg-success">承認済み</span>
+{% elif status == 'rejected' %}
+    <span class="badge bg-danger">差戻し</span>
+{% else %}
+    <span class="badge bg-secondary">作成中</span>
+{% endif %}
 {%- endmacro %}
 
 {% macro approval_buttons(quotation, current_user) -%}

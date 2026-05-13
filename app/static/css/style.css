@@ -46,3 +46,10 @@ body {
 footer {
     color: #888;
 }
+
+/* Print-friendly styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}

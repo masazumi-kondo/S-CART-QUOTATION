@@ -34,6 +34,7 @@ def _norm_difficulty(v: str):
     return s if s in ("medium", "high") else None
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, g
+from flask_login import current_user
 import logging
 from app import db
 
@@ -649,7 +650,8 @@ def print_view(quotation_id):
         total_after_discount=total_after_discount,
         customer_display_name=customer_display_name,
         estimator_info=estimator_info,
-        print_mode=True
+        print_mode=True,
+        current_user=current_user
     )
 
 
@@ -1474,6 +1476,9 @@ def quotation_approve(quotation_id):
     # Only allow approving pending quotations
     if quotation.approval_status != "pending":
         flash("この見積は承認待ち状態ではありません。", "danger")
+        next_url = request.form.get("next")
+        if next_url and next_url.startswith("/"):
+            return redirect(next_url)
         return redirect(url_for("quotation.quotation_list"))
     
     # Update approval status
@@ -1487,6 +1492,11 @@ def quotation_approve(quotation_id):
     
     db.session.commit()
     flash("見積を承認しました。", "success")
+    
+    # Redirect to next URL if provided, otherwise to quotation list
+    next_url = request.form.get("next")
+    if next_url and next_url.startswith("/"):
+        return redirect(next_url)
     return redirect(url_for("quotation.quotation_list"))
 
 
@@ -1500,6 +1510,9 @@ def quotation_reject(quotation_id):
     # Only allow rejecting pending quotations
     if quotation.approval_status != "pending":
         flash("この見積は承認待ち状態ではありません。", "danger")
+        next_url = request.form.get("next")
+        if next_url and next_url.startswith("/"):
+            return redirect(next_url)
         return redirect(url_for("quotation.quotation_list"))
     
     # Get comment from form
@@ -1516,4 +1529,9 @@ def quotation_reject(quotation_id):
     
     db.session.commit()
     flash("見積を差戻しました。", "success")
+    
+    # Redirect to next URL if provided, otherwise to quotation list
+    next_url = request.form.get("next")
+    if next_url and next_url.startswith("/"):
+        return redirect(next_url)
     return redirect(url_for("quotation.quotation_list"))

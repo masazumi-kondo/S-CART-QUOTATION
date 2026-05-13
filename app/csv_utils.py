@@ -4,6 +4,24 @@ import io
 from flask import Response
 
 
+def format_datetime_safe(value):
+    """
+    日時値を安全にフォーマットする
+    
+    Args:
+        value: datetime オブジェクトまたは None
+    
+    Returns:
+        'YYYY/MM/DD HH:MM' 形式の文字列、または空文字列
+    """
+    if not value:
+        return ""
+    try:
+        return value.strftime("%Y/%m/%d %H:%M")
+    except (AttributeError, TypeError):
+        return ""
+
+
 def create_csv_response(filename, headers, rows):
     """
     CSV形式のレスポンスを生成する

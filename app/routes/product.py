@@ -28,6 +28,8 @@ def product_list():
 @roles_required("admin")
 def product_export_csv():
     """製品マスタをCSV形式で出力"""
+    from app.csv_utils import format_datetime_safe
+    
     products = Product.query.order_by(Product.id).all()
     
     headers = ['製品ID', '製品名', '単価', '原価', '利益率（%）', '備考', '作成日', '更新日']
@@ -36,6 +38,10 @@ def product_export_csv():
     for p in products:
         profit_rate = ((p.unit_price - (p.cost or 0)) / p.unit_price * 100) if p.unit_price and p.unit_price > 0 else 0
         
+        # Safely get optional datetime attributes
+        created_at = getattr(p, 'created_at', None)
+        updated_at = getattr(p, 'updated_at', None)
+        
         rows.append([
             p.id or '',
             p.name or '',
@@ -43,8 +49,8 @@ def product_export_csv():
             int(p.cost or 0),
             f'{profit_rate:.1f}',
             p.note or '',
-            p.created_at.strftime('%Y/%m/%d %H:%M') if p.created_at else '',
-            p.updated_at.strftime('%Y/%m/%d %H:%M') if p.updated_at else '',
+            format_datetime_safe(created_at),
+            format_datetime_safe(updated_at),
         ])
     
     return create_csv_response('製品マスタ', headers, rows)

@@ -641,7 +641,7 @@ def print_view(quotation_id):
     estimator_info = get_estimator_info(quotation, g.get('current_user'))
     
     return render_template(
-        "quotation_view.html",
+        "quotation_print.html",
         quotation=quotation,
         details=details,
         total_amount=total_amount,

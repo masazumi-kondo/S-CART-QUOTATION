@@ -1480,6 +1480,9 @@ def quotation_delete(quotation_id):
 
 @quotation_bp.route("/quotation/<int:quotation_id>/request-approval", methods=["POST"])
 @login_required
+@quotation_bp.route("/quotation/<int:quotation_id>/request-approval", methods=["POST"])
+@login_required
+@roles_required("user")
 def quotation_request_approval(quotation_id):
     """Request approval for a quotation"""
     quotation = Quotation.query.get_or_404(quotation_id)
@@ -1501,6 +1504,15 @@ def quotation_request_approval(quotation_id):
     quotation.approval_comment = None
     
     db.session.commit()
+    
+    # Send approval request notification to admins
+    try:
+        from app.services.quotation_email_notification_service import notify_quotation_approval_request
+        notify_quotation_approval_request(quotation)
+    except Exception as e:
+        current_app.logger.warning("[REQUEST_APPROVAL] failed to send notification: %s", e)
+        # Don't fail the approval request if notification fails
+    
     flash("見積を承認申請しました。", "success")
     return redirect(url_for("quotation.quotation_list"))
 

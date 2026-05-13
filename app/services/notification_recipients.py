@@ -22,23 +22,40 @@ def can_receive_notification(user):
     )
 
 
-def get_customer_approval_admin_recipients():
+def get_approval_notification_users():
     """
-    Get list of admin email addresses for customer approval notifications
+    Get list of admin users for approval notifications (both customer and quotation).
+    Unified function for both customer master approval and quotation approval notifications.
     
     Returns:
-        List of email addresses of active admins with notifications enabled
+        List of User objects that are:
+        - admin role
+        - active
+        - have notifications enabled
     """
     try:
         admins = User.query.filter_by(role="admin", receive_notifications=True).all()
         recipients = [
-            user.email for user in admins
+            user for user in admins
             if user.email and is_user_active(user)
         ]
         return recipients
     except Exception as e:
-        current_app.logger.exception("[RECIPIENTS] failed to get admin recipients: %s", e)
+        current_app.logger.exception("[RECIPIENTS] failed to get approval notification users: %s", e)
         return []
+
+
+def get_customer_approval_admin_recipients():
+    """
+    Get list of admin email addresses for customer approval notifications.
+    
+    DEPRECATED: Use get_approval_notification_users() instead for unified notification handling.
+    
+    Returns:
+        List of email addresses of active admins with notifications enabled
+    """
+    users = get_approval_notification_users()
+    return [user.email for user in users]
 
 
 def get_customer_approval_result_recipient(customer):

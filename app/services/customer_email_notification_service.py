@@ -16,7 +16,10 @@ def notify_customer_approval_request(customer):
     Returns:
         True if email sent successfully, False otherwise
     """
-    recipients = get_customer_approval_admin_recipients()
+    from app.services.notification_recipients import get_approval_notification_users
+    
+    users = get_approval_notification_users()
+    recipients = [user.email for user in users if user.email]
 
     if not recipients:
         current_app.logger.warning("[CUSTOMER NOTIFY] no admin recipients for customer approval request. customer_id=%s", getattr(customer, "id", None))

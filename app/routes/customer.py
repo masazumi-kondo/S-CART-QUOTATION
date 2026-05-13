@@ -193,7 +193,7 @@ def customer_export_csv():
             c.updated_at.strftime('%Y/%m/%d %H:%M') if c.updated_at else '',
         ])
     
-    return create_csv_response('顧客マスタ', headers, rows)
+    return create_csv_response('customers', headers, rows)
 
 @customer_bp.route('/customers/new', methods=['GET', 'POST'])
 @login_required

@@ -67,14 +67,14 @@ def users_export_csv():
             u.email or '',
             u.role or '',
             '有効' if u.is_active else '無効',
-            '有効' if u.notification_enabled else '無効',
-            '要求' if u.password_change_required else '不要',
+            '有効' if getattr(u, 'receive_notifications', True) else '無効',
+            '不要',  # password_change_required not in User model
             created_at,
             updated_at
         ]
         rows.append(row)
     
-    return create_csv_response('ユーザー一覧', headers, rows)
+    return create_csv_response('users', headers, rows)
 
 
 @admin_users_bp.route("/admin/users/new", methods=["GET", "POST"])

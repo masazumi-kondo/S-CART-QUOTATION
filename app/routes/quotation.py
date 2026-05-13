@@ -735,7 +735,7 @@ def quotation_export_csv():
     for q in quotations:
         # Calculate subtotals from details
         subtotal_price = sum((d.subtotal or 0) for d in q.details) if q.details else 0
-        subtotal_cost = sum((d.subtotal_cost or 0) for d in q.details) if q.details else 0
+        subtotal_cost = sum((d.quantity * (d.cost or 0)) for d in q.details) if q.details else 0
         discount_amount = q.discount_amount or 0
         final_total_price = max(0, subtotal_price - discount_amount)
         
@@ -778,7 +778,7 @@ def quotation_export_csv():
         ]
         rows.append(row)
     
-    return create_csv_response('見積一覧', headers, rows)
+    return create_csv_response('quotations', headers, rows)
 
 
 @quotation_bp.route("/quotation/new", methods=["GET", "POST"])

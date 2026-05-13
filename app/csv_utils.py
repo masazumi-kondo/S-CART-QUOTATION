@@ -27,7 +27,7 @@ def create_csv_response(filename, headers, rows):
     CSV形式のレスポンスを生成する
     
     Args:
-        filename: ダウンロードファイル名（.csvは不要）
+        filename: ダウンロードファイル名（英数字、.csvは不要）
         headers: ヘッダー行（リスト）
         rows: データ行のリスト（各行はリスト）
     
@@ -38,13 +38,22 @@ def create_csv_response(filename, headers, rows):
     # UTF-8 BOM を追加（Excel で文字化けを防ぐ）
     output.write('\ufeff')
     
-    writer = csv.writer(output)
+    writer = csv.writer(output, lineterminator='\n')
     writer.writerow(headers)
     writer.writerows(rows)
     
+    csv_content = output.getvalue()
+    output.close()
+    
+    # Ensure filename is ASCII-only for HTTP header compatibility
+    safe_filename = f"{filename}.csv" if not filename.endswith('.csv') else filename
     response = Response(
-        output.getvalue(),
-        mimetype="text/csv; charset=utf-8-sig"
+        csv_content,
+        mimetype="text/csv; charset=utf-8"
     )
-    response.headers["Content-Disposition"] = f"attachment; filename={filename}.csv"
+    # HTTP headers must contain only ASCII characters
+    response.headers["Content-Disposition"] = f'attachment; filename="{safe_filename}"'
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     return response

@@ -53,7 +53,8 @@ def product_export_csv():
             format_datetime_safe(updated_at),
         ])
     
-    return create_csv_response('製品マスタ', headers, rows)
+    # Use ASCII filename for reliable cross-browser download
+    return create_csv_response('products', headers, rows)
 
 # --- 新規追加: 製品マスタ新規登録 ---
 @product_bp.route("/products/new", methods=["GET", "POST"])

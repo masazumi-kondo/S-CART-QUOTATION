@@ -34,7 +34,10 @@ def _norm_difficulty(v: str):
     return s if s in ("medium", "high") else None
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, g
+import logging
 from app import db
+
+logger = logging.getLogger(__name__)
 from app.models.quotation import Quotation
 from app.models.quotation_detail import QuotationDetail
 from app.models.product import Product
@@ -383,6 +386,7 @@ def quotation_edit(quotation_id):
         values=values,
         details=detail_dicts,
         edit_quotation_id=quotation.id,  # 編集モード用パラメータ
+        quotation=quotation,  # Pass quotation object for approval buttons
         rates=rates,
         v2_settings=v2_settings,
         v2_result=v2_result,  # V2結果復元

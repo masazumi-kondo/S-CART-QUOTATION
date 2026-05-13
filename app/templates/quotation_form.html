@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% from "approval_macros.html" import approval_buttons, approval_badge %}
 {% block content %}
 <style>
     /* Step2: 視認性を上げる */
@@ -477,6 +478,20 @@
         </div>
 
 </form>
+
+{% if quotation %}
+<!-- Approval section for existing quotations -->
+<div class="q-section mt-3" style="border-top: 2px solid #dee2e6; padding-top: 1rem;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="q-muted">
+            <strong>承認状態:</strong> {{ approval_badge(quotation.approval_status) }}
+        </div>
+        <div class="d-flex gap-2">
+            {{ approval_buttons(quotation, current_user) }}
+        </div>
+    </div>
+</div>
+{% endif %}
 
     <!-- /#quotation-form : form ends here (do not move without updating JS bindings) -->
     {# --- JSONデータブロック（Jinjaで埋め込む） --- #}

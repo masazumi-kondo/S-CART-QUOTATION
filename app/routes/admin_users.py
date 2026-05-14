@@ -118,7 +118,7 @@ def users_new():
         if password != password_confirm:
             errors.append("パスワードと確認が一致しません。")
         
-        if role not in ["admin", "user"]:
+        if role not in ["admin", "approver", "user"]:
             errors.append("権限の値が不正です。")
 
         if errors:
@@ -188,7 +188,7 @@ def users_edit(user_id):
         elif User.query.filter_by(email=email).filter(User.id != user_id).first():
             errors.append("このメールアドレスは既に使用されています。")
         
-        if role not in ["admin", "user"]:
+        if role not in ["admin", "approver", "user"]:
             errors.append("権限の値が不正です。")
 
         # Check for admin protection

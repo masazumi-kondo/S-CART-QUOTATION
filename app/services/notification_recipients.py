@@ -24,19 +24,23 @@ def can_receive_notification(user):
 
 def get_approval_notification_users():
     """
-    Get list of admin users for approval notifications (both customer and quotation).
-    Unified function for both customer master approval and quotation approval notifications.
+    Get list of users with approval permissions for notifications (both customer and quotation).
+    Includes both admin and approver roles.
     
     Returns:
         List of User objects that are:
-        - admin role
+        - admin or approver role
         - active
         - have notifications enabled
+        - have email address
     """
     try:
-        admins = User.query.filter_by(role="admin", receive_notifications=True).all()
+        users = User.query.filter(
+            User.role.in_(["admin", "approver"]),
+            User.receive_notifications == True
+        ).all()
         recipients = [
-            user for user in admins
+            user for user in users
             if user.email and is_user_active(user)
         ]
         return recipients

@@ -111,7 +111,7 @@ def upsert_customer_credits(customer_id, form):
 
 @customer_bp.route('/customers/pending')
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'approver')
 def customer_pending_list():
     """統合承認待ち一覧：顧客マスタ + 見積"""
     q = request.args.get('q', '').strip()
@@ -162,13 +162,13 @@ def customer_list():
     query = Customer.query
     if q:
         query = query.filter(or_(Customer.name.contains(q), Customer.name_kana.contains(q)))
-    # 一般ユーザーはapprovedのみ、管理者は全件
+    # 承認者・管理者は全件、一般ユーザーはapprovedのみ
     role = getattr(g.current_user, 'role', None)
-    is_admin = role == 'admin'
-    if not is_admin:
+    can_approve = role in ['admin', 'approver']
+    if not can_approve:
         query = query.filter(Customer.status == CustomerStatus.APPROVED.value)
     customers = query.order_by(Customer.name).all()
-    return render_template('customer_list.html', customers=customers, q=q, is_admin=is_admin, current_user=g.current_user)
+    return render_template('customer_list.html', customers=customers, q=q, is_admin=can_approve, current_user=g.current_user)
 
 @customer_bp.route('/customers/export-csv')
 @login_required
@@ -288,11 +288,11 @@ def customer_new():
 def customer_edit(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     role = getattr(g.current_user, "role", None)
-    is_admin = role == "admin"
+    can_approve = role in ["admin", "approver"]
     requested_by = getattr(customer, "requested_by_user_id", None)
     is_owner = (requested_by is not None) and (requested_by == getattr(g.current_user, "id", None))
-    # アクセス制御: admin以外はapprovedのみ閲覧可。申請者もpendingは閲覧可（要件により変更可）
-    if not is_admin:
+    # アクセス制御: 管理者・承認者以外はapprovedのみ閲覧可。申請者もpendingは閲覧可（要件により変更可）
+    if not can_approve:
         if customer.status == CustomerStatus.APPROVED.value:
             pass  # allow
         elif customer.status == CustomerStatus.PENDING.value and is_owner:
@@ -312,11 +312,11 @@ def customer_edit(customer_id):
         note = request.form.get('note', '').strip()
         if not name:
             flash('顧客名は必須です', 'danger')
-            return render_template('customer_form.html', customer=customer, credit_rows=get_credit_rows(customer.id), is_admin=is_admin, current_user=g.current_user)
+            return render_template('customer_form.html', customer=customer, credit_rows=get_credit_rows(customer.id), is_admin=can_approve, current_user=g.current_user)
         exists = Customer.query.filter(Customer.id != customer.id, Customer.name == name).first()
         if exists:
             flash('同名の顧客が既に存在します', 'danger')
-            return render_template('customer_form.html', customer=customer, credit_rows=get_credit_rows(customer.id), is_admin=is_admin, current_user=g.current_user)
+            return render_template('customer_form.html', customer=customer, credit_rows=get_credit_rows(customer.id), is_admin=can_approve, current_user=g.current_user)
         try:
             customer.customer_code = customer_code
             customer.name = name
@@ -338,11 +338,11 @@ def customer_edit(customer_id):
             db.session.rollback()
             current_app.logger.error(f"Error in customer_edit: {e}")
             flash('保存に失敗しました。入力内容を確認してください。', 'danger')
-            return render_template('customer_form.html', customer=customer, credit_rows=get_credit_rows(customer.id), is_admin=is_admin, current_user=g.current_user)
+            return render_template('customer_form.html', customer=customer, credit_rows=get_credit_rows(customer.id), is_admin=can_approve, current_user=g.current_user)
     # GET時もcredit_rows, is_admin, current_userを渡す
     latest_log = None
     requester_login_id = None
-    if is_admin:
+    if can_approve:
         latest_log = (
             CustomerApprovalLog.query
             .filter(CustomerApprovalLog.customer_id == customer.id)
@@ -357,7 +357,7 @@ def customer_edit(customer_id):
         'customer_form.html',
         customer=customer,
         credit_rows=get_credit_rows(customer.id),
-        is_admin=is_admin,
+        is_admin=can_approve,
         current_user=g.current_user,
         latest_log=latest_log,
         requester_login_id=requester_login_id
@@ -407,7 +407,7 @@ def _safe_add_approval_log(**kwargs) -> bool:
 
 @customer_bp.route('/customers/<int:customer_id>/approve', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'approver')
 def customer_approve(customer_id):
     customer = Customer.query.get_or_404(customer_id)
 
@@ -485,7 +485,7 @@ def customer_approve(customer_id):
 
 @customer_bp.route('/customers/<int:customer_id>/reject', methods=['POST'])
 @login_required
-@roles_required('admin')
+@roles_required('admin', 'approver')
 def customer_reject(customer_id):
     comment = (request.form.get('reason') or '').strip()
     if not comment:

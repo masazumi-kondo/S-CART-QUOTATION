@@ -44,8 +44,8 @@
   {{ item('顧客マスタ', 'customer.customer_list') }}
 {% endif %}
 
-{# 管理（管理者のみ） #}
-{% if current_user and current_user.role == 'admin' and 'customer.customer_pending_list' in view_functions %}
+{# 承認待機リスト（管理者・承認者） #}
+{% if current_user and current_user.role in ['admin', 'approver'] and 'customer.customer_pending_list' in view_functions %}
   {% set badge %}
     承認待機リスト
     {% if pending_customer_count and pending_customer_count > 0 %}

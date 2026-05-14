@@ -42,7 +42,7 @@
         </div>
 
         <!-- Admin Approval Actions (print hidden) -->
-        {% if is_admin and quotation.approval_status == "pending" %}
+        {% if can_approve and quotation.approval_status == "pending" %}
         <div class="approval-actions-area no-print mt-4 mb-4">
             <div class="alert alert-warning mb-3" role="alert">
                 <strong>⚠️ 承認待ち</strong><br>
@@ -96,142 +96,6 @@
             </div>
         </div>
         {% endif %}
-
-        <!-- Approval Review Panel (Admin Only, No Print) -->
-        {% if is_admin %}
-        <div class="approval-review-panel no-print mt-4 mb-4">
-            <h5>【承認判断用情報】社内確認用</h5>
-            
-            <!-- A. 金額サマリー -->
-            <div class="mb-3">
-                <h6 class="text-secondary">金額サマリー</h6>
-                <div class="approval-review-grid">
-                    <div class="review-item">
-                        <div class="review-label">合計売価</div>
-                        <div class="review-value">¥{{ summary.get('subtotal_price', 0)|int }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">合計原価</div>
-                        <div class="review-value">¥{{ summary.get('subtotal_cost', 0)|int }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">値引き額</div>
-                        <div class="review-value">¥{{ summary.get('discount_amount', 0)|int }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">最終合計売価</div>
-                        <div class="review-value">¥{{ summary.get('final_total_price', 0)|int }}</div>
-                    </div>
-                    <div class="review-item" style="grid-column: span 2;">
-                        <div class="review-label">利益率</div>
-                        <div class="review-value">{{ "%.1f" % summary.get('profit_margin', 0) }}%</div>
-                    </div>
-                    <div class="review-item" style="grid-column: span 2;">
-                        <div class="review-label">最終利益率</div>
-                        <div class="review-value">{{ "%.1f" % summary.get('final_profit_margin', 0) }}%</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- B. V2工数 -->
-            <div class="mb-3">
-                <h6 class="text-secondary">V2工数</h6>
-                <div class="approval-review-grid">
-                    <div class="review-item" style="grid-column: span 2;">
-                        <div class="review-label">設計工数</div>
-                        <div class="review-value">{{ v2_result.get('design_hours', '-') }} h</div>
-                    </div>
-                    <div class="review-item" style="grid-column: span 2;">
-                        <div class="review-label">現地セットアップ工数</div>
-                        <div class="review-value">{{ v2_result.get('setup_hours', '-') }} h</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- C. V2金額 -->
-            <div class="mb-3">
-                <h6 class="text-secondary">V2金額</h6>
-                <div class="approval-review-grid">
-                    <div class="review-item">
-                        <div class="review-label">設計費 売価</div>
-                        <div class="review-value">¥{{ (v2_result.get('design_price', 0)|int) }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">設計費 原価</div>
-                        <div class="review-value">¥{{ (v2_result.get('design_cost', 0)|int) }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">セットアップ費 売価</div>
-                        <div class="review-value">¥{{ (v2_result.get('setup_price', 0)|int) }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">セットアップ費 原価</div>
-                        <div class="review-value">¥{{ (v2_result.get('setup_cost', 0)|int) }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- D. 見積作成時のV2パラメーター入力値 -->
-            <div class="mb-3">
-                <h6 class="text-secondary">見積作成時のV2パラメーター入力値</h6>
-                <div class="approval-review-grid">
-                    <div class="review-item">
-                        <div class="review-label">AGV台数</div>
-                        <div class="review-value">{{ v2_inputs.get('agv_count', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">搬送元数</div>
-                        <div class="review-value">{{ v2_inputs.get('pickup_count', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">搬送先数</div>
-                        <div class="review-value">{{ v2_inputs.get('dropoff_count', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">走行エリア</div>
-                        <div class="review-value">{{ v2_inputs.get('area_short_m', '-') }} × {{ v2_inputs.get('area_long_m', '-') }}m</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">搬送ルート複雑度</div>
-                        <div class="review-value">{{ v2_inputs.get('route_complexity', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">すれ違い合流多さ</div>
-                        <div class="review-value">{{ v2_inputs.get('merge_complexity', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">充電器数</div>
-                        <div class="review-value">{{ v2_inputs.get('charger_count', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">磁気テープ停止箇所</div>
-                        <div class="review-value">{{ v2_inputs.get('magnetic_stop_count', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">ランドマーク設置範囲</div>
-                        <div class="review-value">{{ v2_inputs.get('landmark_scope', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">エレベーター連携数</div>
-                        <div class="review-value">{{ v2_inputs.get('elevator_count', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">自動扉連携数</div>
-                        <div class="review-value">{{ v2_inputs.get('auto_door_count', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">PLC規模</div>
-                        <div class="review-value">{{ v2_inputs.get('plc_scale', '-') }}</div>
-                    </div>
-                    <div class="review-item">
-                        <div class="review-label">上位システム規模</div>
-                        <div class="review-value">{{ v2_inputs.get('host_system_scale', '-') }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        
         
         <!-- 基本情報 -->
         <div class="row mb-4">
@@ -359,6 +223,141 @@
             </div>
         </div>
     </div>
+
+    <!-- Approval Review Panel (Admin Only, No Print) - Placed after totals -->
+    {% if can_approve %}
+    <div class="approval-review-panel no-print mt-5 mb-4">
+        <h5>【承認判断用情報】社内確認用</h5>
+        
+        <!-- A. 金額サマリー -->
+        <div class="mb-3">
+            <h6 class="text-secondary">金額サマリー</h6>
+            <div class="approval-review-grid">
+                <div class="review-item">
+                    <div class="review-label">合計売価</div>
+                    <div class="review-value">¥{{ summary.get('subtotal_price', 0)|int }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">合計原価</div>
+                    <div class="review-value">¥{{ summary.get('subtotal_cost', 0)|int }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">値引き額</div>
+                    <div class="review-value">¥{{ summary.get('discount_amount', 0)|int }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">最終合計売価</div>
+                    <div class="review-value">¥{{ summary.get('final_total_price', 0)|int }}</div>
+                </div>
+                <div class="review-item" style="grid-column: span 2;">
+                    <div class="review-label">利益率</div>
+                    <div class="review-value">{{ "%.1f" % summary.get('profit_margin', 0) }}%</div>
+                </div>
+                <div class="review-item" style="grid-column: span 2;">
+                    <div class="review-label">最終利益率</div>
+                    <div class="review-value">{{ "%.1f" % summary.get('final_profit_margin', 0) }}%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- B. V2工数 -->
+        <div class="mb-3">
+            <h6 class="text-secondary">V2工数</h6>
+            <div class="approval-review-grid">
+                <div class="review-item" style="grid-column: span 2;">
+                    <div class="review-label">設計工数</div>
+                    <div class="review-value">{{ v2_result.get('design_hours', '-') }} h</div>
+                </div>
+                <div class="review-item" style="grid-column: span 2;">
+                    <div class="review-label">現地セットアップ工数</div>
+                    <div class="review-value">{{ v2_result.get('setup_hours', '-') }} h</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- C. V2金額 -->
+        <div class="mb-3">
+            <h6 class="text-secondary">V2金額</h6>
+            <div class="approval-review-grid">
+                <div class="review-item">
+                    <div class="review-label">設計費 売価</div>
+                    <div class="review-value">¥{{ (v2_result.get('design_price', 0)|int) }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">設計費 原価</div>
+                    <div class="review-value">¥{{ (v2_result.get('design_cost', 0)|int) }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">セットアップ費 売価</div>
+                    <div class="review-value">¥{{ (v2_result.get('setup_price', 0)|int) }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">セットアップ費 原価</div>
+                    <div class="review-value">¥{{ (v2_result.get('setup_cost', 0)|int) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- D. 見積作成時のV2パラメーター入力値 -->
+        <div class="mb-3">
+            <h6 class="text-secondary">見積作成時のV2パラメーター入力値</h6>
+            <div class="approval-review-grid">
+                <div class="review-item">
+                    <div class="review-label">AGV台数</div>
+                    <div class="review-value">{{ v2_inputs.get('agv_count', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">搬送元数</div>
+                    <div class="review-value">{{ v2_inputs.get('pickup_count', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">搬送先数</div>
+                    <div class="review-value">{{ v2_inputs.get('dropoff_count', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">走行エリア</div>
+                    <div class="review-value">{{ v2_inputs.get('area_short_m', '-') }} × {{ v2_inputs.get('area_long_m', '-') }}m</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">搬送ルート複雑度</div>
+                    <div class="review-value">{{ v2_inputs.get('route_complexity', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">すれ違い合流多さ</div>
+                    <div class="review-value">{{ v2_inputs.get('merge_complexity', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">充電器数</div>
+                    <div class="review-value">{{ v2_inputs.get('charger_count', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">磁気テープ停止箇所</div>
+                    <div class="review-value">{{ v2_inputs.get('magnetic_stop_count', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">ランドマーク設置範囲</div>
+                    <div class="review-value">{{ v2_inputs.get('landmark_scope', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">エレベーター連携数</div>
+                    <div class="review-value">{{ v2_inputs.get('elevator_count', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">自動扉連携数</div>
+                    <div class="review-value">{{ v2_inputs.get('auto_door_count', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">PLC規模</div>
+                    <div class="review-value">{{ v2_inputs.get('plc_scale', '-') }}</div>
+                </div>
+                <div class="review-item">
+                    <div class="review-label">上位システム規模</div>
+                    <div class="review-value">{{ v2_inputs.get('host_system_scale', '-') }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- 印刷ボタン -->

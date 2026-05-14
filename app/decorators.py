@@ -19,7 +19,7 @@ def roles_required(*roles):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            from flask import request
+            from flask import request, current_app
             if not session.get("user_id"):
                 next_url = request.full_path
                 if next_url.endswith('?'):

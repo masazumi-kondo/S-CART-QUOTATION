@@ -49,6 +49,8 @@
                     <td>
                         {% if user.role == 'admin' %}
                         <span class="badge bg-danger">管理者</span>
+                        {% elif user.role == 'approver' %}
+                        <span class="badge bg-primary">承認者</span>
                         {% else %}
                         <span class="badge bg-secondary">一般ユーザー</span>
                         {% endif %}

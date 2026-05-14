@@ -654,8 +654,8 @@ def print_view(quotation_id):
         except Exception:
             v2_inputs = {}
     
-    # 管理者判定
-    is_admin = g.get('current_user') and getattr(g.get('current_user'), 'role', None) == 'admin'
+    # 承認権限判定（管理者または承認者）
+    can_approve = g.get('current_user') and getattr(g.get('current_user'), 'can_approve', False)
     
     return render_template(
         "quotation_print.html",
@@ -671,7 +671,7 @@ def print_view(quotation_id):
         summary=summary,
         v2_result=v2_result,
         v2_inputs=v2_inputs,
-        is_admin=is_admin
+        can_approve=can_approve
     )
 
 
@@ -1516,7 +1516,7 @@ def quotation_request_approval(quotation_id):
 
 @quotation_bp.route("/quotation/<int:quotation_id>/approve", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "approver")
 def quotation_approve(quotation_id):
     """Approve a quotation (admin only)"""
     quotation = Quotation.query.get_or_404(quotation_id)
@@ -1550,7 +1550,7 @@ def quotation_approve(quotation_id):
 
 @quotation_bp.route("/quotation/<int:quotation_id>/reject", methods=["POST"])
 @login_required
-@roles_required("admin")
+@roles_required("admin", "approver")
 def quotation_reject(quotation_id):
     """Reject a quotation with optional comment (admin only)"""
     quotation = Quotation.query.get_or_404(quotation_id)

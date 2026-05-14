@@ -67,6 +67,7 @@
                     <select id="role" name="role" class="form-select" required>
                         <option value="">-- 選択してください --</option>
                         <option value="user" {% if role == 'user' %}selected{% endif %}>一般ユーザー</option>
+                        <option value="approver" {% if role == 'approver' %}selected{% endif %}>承認者</option>
                         <option value="admin" {% if role == 'admin' %}selected{% endif %}>管理者</option>
                     </select>
                 </div>

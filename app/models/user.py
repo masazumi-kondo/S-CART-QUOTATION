@@ -26,3 +26,13 @@ class User(db.Model):
     @property
     def is_admin(self):
         return self.role == "admin"
+    
+    @property
+    def can_approve(self):
+        """Check if user can approve quotations/customers (admin or approver)"""
+        return self.role in ["admin", "approver"]
+    
+    @property
+    def is_authenticated(self):
+        """Required by Flask-Login interface"""
+        return True

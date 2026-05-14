@@ -112,13 +112,16 @@ def upsert_customer_credits(customer_id, form):
 @login_required
 @roles_required('admin')
 def customer_pending_list():
+    """統合承認待ち一覧：顧客マスタ + 見積"""
     q = request.args.get('q', '').strip()
+    
+    # 顧客マスタ pending 取得
     query = Customer.query.filter(Customer.status == CustomerStatus.PENDING.value)
     if q:
         query = query.filter(or_(Customer.name.contains(q), Customer.name_kana.contains(q)))
     customers = query.order_by(Customer.name).all()
 
-    # 申請者（requested_by_user_id）のlogin_idを引く（最小）
+    # 申請者（requested_by_user_id）のlogin_idを引く
     user_map = {}
     try:
         ids = {c.requested_by_user_id for c in customers if getattr(c, "requested_by_user_id", None)}
@@ -128,9 +131,14 @@ def customer_pending_list():
     except Exception:
         user_map = {}
 
+    # 見積 pending 取得
+    from app.models.quotation import Quotation
+    quotations = Quotation.query.filter(Quotation.approval_status == "pending").order_by(Quotation.approval_requested_at.desc()).all()
+
     return render_template(
         'customer_pending_list.html',
         customers=customers,
+        quotations=quotations,
         q=q,
         current_user=g.current_user,
         user_map=user_map

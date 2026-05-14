@@ -3,14 +3,21 @@
 <div class="container mt-4">
   <h2 class="mb-4">承認待ち一覧</h2>
 
-  <form class="d-flex mb-3" method="get" action="{{ url_for('customer.customer_pending_list') }}">
-    <input type="text" name="q" class="form-control form-control-sm me-2" placeholder="検索（社名/カナ）" value="{{ q or '' }}">
-    <button class="btn btn-sm btn-outline-primary" type="submit">検索</button>
-  </form>
-
   <div class="mb-2 text-muted">
-    承認待ち：{{ customers|length }} 件
+    全体：{{ customers|length + quotations|length }} 件 
+    （顧客マスタ {{ customers|length }} 件 + 見積 {{ quotations|length }} 件）
   </div>
+
+  <!-- 顧客マスタ承認待ち セクション -->
+  <div class="mb-5">
+    <h4 class="mb-3 border-bottom pb-2">
+      <span class="badge bg-info me-2">1</span>顧客マスタ承認待ち
+    </h4>
+
+    <form class="d-flex mb-3" method="get" action="{{ url_for('customer.customer_pending_list') }}">
+      <input type="text" name="q" class="form-control form-control-sm me-2" placeholder="検索（社名/カナ）" value="{{ q or '' }}">
+      <button class="btn btn-sm btn-outline-primary" type="submit">検索</button>
+    </form>
   <div class="table-responsive">
     <table class="table table-bordered table-hover align-middle">
       <thead class="table-light">
@@ -45,6 +52,76 @@
         {% endif %}
       </tbody>
     </table>
+  </div>
+  </div>
+
+  <!-- 見積承認待ち セクション -->
+  <div class="mb-5">
+    <h4 class="mb-3 border-bottom pb-2">
+      <span class="badge bg-info me-2">2</span>見積承認待ち
+    </h4>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 90px;">見積No.</th>
+            <th style="width: 80px;">改定No.</th>
+            <th>顧客名</th>
+            <th>案件名</th>
+            <th style="width: 140px;">申請者</th>
+            <th style="width: 120px;">申請日</th>
+            <th style="width: 120px; text-align: right;">金額</th>
+            <th style="width: 100px;">ステータス</th>
+            <th style="width: 180px;">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if quotations and quotations|length > 0 %}
+            {% for q in quotations %}
+              <tr>
+                <td><strong>{{ q.quotation_no or '-' }}</strong></td>
+                <td>{{ q.revision_no or '0' }}</td>
+                <td>{{ q.customer.name if q.customer else '-' }}</td>
+                <td>{{ q.project_name or '-' }}</td>
+                <td>
+                  {% if q.estimator_user %}
+                    {{ q.estimator_user.login_id }}
+                  {% else %}
+                    {{ q.estimator_name or '-' }}
+                  {% endif %}
+                </td>
+                <td>
+                  {% if q.approval_requested_at %}
+                    {{ q.approval_requested_at.strftime('%Y-%m-%d') }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td style="text-align: right;">
+                  {% if q.summary_json %}
+                    {% set summary = q.summary_json | safe | fromjson %}
+                    ¥{{ "{:,.0f}".format(summary.get('total_after_discount', summary.get('total_amount', 0))|float) }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td><span class="badge bg-warning text-dark">pending</span></td>
+                <td class="text-nowrap">
+                  <a class="btn btn-sm btn-outline-primary"
+                     href="{{ url_for('quotation.print_view', quotation_id=q.id) }}"
+                     target="_blank">
+                    詳細（審査）
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="9" class="text-center text-muted py-4">承認待ち見積はありません</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <a href="{{ url_for('customer.customer_list') }}" class="btn btn-link">顧客一覧へ戻る</a>

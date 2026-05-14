@@ -314,12 +314,16 @@ def create_app():
     def inject_pending_customer_count():
         """
         admin/approver のときだけ承認待ち件数をナビ表示用に注入する
+        顧客マスタ pending + 見積 pending の合計
         """
         try:
+            from app.models.quotation import Quotation
             user = getattr(g, "current_user", None)
             if user and getattr(user, "role", None) == "admin":
-                cnt = Customer.query.filter(Customer.status == CustomerStatus.PENDING.value).count()
-                return {"pending_customer_count": cnt}
+                customer_pending_cnt = Customer.query.filter(Customer.status == CustomerStatus.PENDING.value).count()
+                quotation_pending_cnt = Quotation.query.filter(Quotation.approval_status == "pending").count()
+                total_pending_cnt = customer_pending_cnt + quotation_pending_cnt
+                return {"pending_customer_count": total_pending_cnt}
         except Exception:
             pass
         return {"pending_customer_count": 0}

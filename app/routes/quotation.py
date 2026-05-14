@@ -1480,9 +1480,6 @@ def quotation_delete(quotation_id):
 
 @quotation_bp.route("/quotation/<int:quotation_id>/request-approval", methods=["POST"])
 @login_required
-@quotation_bp.route("/quotation/<int:quotation_id>/request-approval", methods=["POST"])
-@login_required
-@roles_required("user")
 def quotation_request_approval(quotation_id):
     """Request approval for a quotation"""
     quotation = Quotation.query.get_or_404(quotation_id)

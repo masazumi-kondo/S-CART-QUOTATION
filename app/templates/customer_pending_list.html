@@ -52,9 +52,8 @@
                   {% endif %}
                 </td>
                 <td style="text-align: right;">
-                  {% if q.summary_json %}
-                    {% set summary = q.summary_json | safe | fromjson %}
-                    ¥{{ "{:,.0f}".format(summary.get('total_after_discount', summary.get('total_amount', 0))|float) }}
+                  {% if q.summary_data %}
+                    ¥{{ "{:,.0f}".format(q.summary_data.get('total_after_discount', q.summary_data.get('total_amount', 0))|float) }}
                   {% else %}
                     -
                   {% endif %}

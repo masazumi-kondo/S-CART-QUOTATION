@@ -2,6 +2,7 @@
 
 
 from datetime import datetime
+import json
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, g, current_app
 from sqlalchemy import or_
@@ -132,8 +133,17 @@ def customer_pending_list():
         user_map = {}
 
     # 見積 pending 取得
-    from app.models.quotation import Quotation
     quotations = Quotation.query.filter(Quotation.approval_status == "pending").order_by(Quotation.approval_requested_at.desc()).all()
+    
+    # 見積のサマリーJSONをパース
+    for quote in quotations:
+        if quote.summary_json:
+            try:
+                quote.summary_data = json.loads(quote.summary_json)
+            except Exception:
+                quote.summary_data = {}
+        else:
+            quote.summary_data = {}
 
     return render_template(
         'customer_pending_list.html',

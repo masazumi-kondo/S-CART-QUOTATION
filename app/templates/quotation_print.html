@@ -42,7 +42,7 @@
         </div>
 
         <!-- Admin Approval Actions (print hidden) -->
-        {% if current_user.is_authenticated and current_user.role == "admin" and quotation.approval_status == "pending" %}
+        {% if is_admin and quotation.approval_status == "pending" %}
         <div class="approval-actions-area no-print mt-4 mb-4">
             <div class="alert alert-warning mb-3" role="alert">
                 <strong>⚠️ 承認待ち</strong><br>

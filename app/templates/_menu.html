@@ -47,7 +47,7 @@
 {# 管理（管理者のみ） #}
 {% if current_user and current_user.role == 'admin' and 'customer.customer_pending_list' in view_functions %}
   {% set badge %}
-    顧客承認（審査待ち）
+    承認待機リスト
     {% if pending_customer_count and pending_customer_count > 0 %}
       <span class="badge bg-warning text-dark ms-1">{{ pending_customer_count }}</span>
     {% endif %}

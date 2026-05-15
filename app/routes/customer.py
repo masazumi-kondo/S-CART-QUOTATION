@@ -114,13 +114,9 @@ def upsert_customer_credits(customer_id, form):
 @roles_required('admin', 'approver')
 def customer_pending_list():
     """統合承認待ち一覧：顧客マスタ + 見積"""
-    q = request.args.get('q', '').strip()
     
     # 顧客マスタ pending 取得
-    query = Customer.query.filter(Customer.status == CustomerStatus.PENDING.value)
-    if q:
-        query = query.filter(or_(Customer.name.contains(q), Customer.name_kana.contains(q)))
-    customers = query.order_by(Customer.name).all()
+    customers = Customer.query.filter(Customer.status == CustomerStatus.PENDING.value).order_by(Customer.name).all()
 
     # 申請者（requested_by_user_id）のlogin_idを引く
     user_map = {}
@@ -149,7 +145,6 @@ def customer_pending_list():
         'customer_pending_list.html',
         customers=customers,
         quotations=quotations,
-        q=q,
         current_user=g.current_user,
         user_map=user_map
     )

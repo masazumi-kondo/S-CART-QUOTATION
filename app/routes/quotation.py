@@ -671,6 +671,57 @@ def print_view(quotation_id):
         summary=summary,
         v2_result=v2_result,
         v2_inputs=v2_inputs,
+        can_approve=False
+    )
+
+
+@quotation_bp.route("/quotation/<int:quotation_id>/approval")
+def quotation_approval_view(quotation_id):
+    """承認用画面を表示"""
+    quotation = Quotation.query.get_or_404(quotation_id)
+    details = sort_details_for_display(quotation.details)
+    
+    # 各明細に単位情報を追加
+    for detail in details:
+        detail.unit_display = get_unit_display(detail)
+    
+    total_amount = sum((getattr(d, "subtotal", 0) or 0) for d in details)
+    discount_amount = getattr(quotation, "discount_amount", 0) or 0
+    total_after_discount = max(0, total_amount - discount_amount)
+    
+    # 見積書用の表示情報を準備
+    customer_display_name = get_customer_display_name(quotation)
+    estimator_info = get_estimator_info(quotation, g.get('current_user'))
+    
+    # 金額サマリーと V2結果を復元
+    import json
+    summary = build_summary_from_details(quotation)
+    v2_result = build_v2_result_from_details(details)
+    
+    # V2入力パラメーターを復元
+    v2_inputs = {}
+    if quotation.v2_input_json:
+        try:
+            v2_inputs = json.loads(quotation.v2_input_json)
+        except Exception:
+            v2_inputs = {}
+    
+    # 承認権限判定（管理者または承認者）
+    can_approve = g.get('current_user') and getattr(g.get('current_user'), 'can_approve', False)
+    
+    return render_template(
+        "quotation_approval.html",
+        quotation=quotation,
+        details=details,
+        total_amount=total_amount,
+        discount_amount=discount_amount,
+        total_after_discount=total_after_discount,
+        customer_display_name=customer_display_name,
+        estimator_info=estimator_info,
+        current_user=g.get('current_user'),
+        summary=summary,
+        v2_result=v2_result,
+        v2_inputs=v2_inputs,
         can_approve=can_approve
     )
 
@@ -1511,7 +1562,7 @@ def quotation_request_approval(quotation_id):
         # Don't fail the approval request if notification fails
     
     flash("見積を承認申請しました。", "success")
-    return redirect(url_for("quotation.quotation_list"))
+    return redirect(url_for("quotation.quotation_approval_view", quotation_id=quotation_id))
 
 
 @quotation_bp.route("/quotation/<int:quotation_id>/approve", methods=["POST"])
@@ -1524,10 +1575,7 @@ def quotation_approve(quotation_id):
     # Only allow approving pending quotations
     if quotation.approval_status != "pending":
         flash("この見積は承認待ち状態ではありません。", "danger")
-        next_url = request.form.get("next")
-        if next_url and next_url.startswith("/"):
-            return redirect(next_url)
-        return redirect(url_for("quotation.quotation_list"))
+        return redirect(url_for("quotation.quotation_approval_view", quotation_id=quotation_id))
     
     # Update approval status
     quotation.approval_status = "approved"
@@ -1541,11 +1589,8 @@ def quotation_approve(quotation_id):
     db.session.commit()
     flash("見積を承認しました。", "success")
     
-    # Redirect to next URL if provided, otherwise to quotation list
-    next_url = request.form.get("next")
-    if next_url and next_url.startswith("/"):
-        return redirect(next_url)
-    return redirect(url_for("quotation.quotation_list"))
+    # Redirect to approval view
+    return redirect(url_for("quotation.quotation_approval_view", quotation_id=quotation_id))
 
 
 @quotation_bp.route("/quotation/<int:quotation_id>/reject", methods=["POST"])
@@ -1558,10 +1603,7 @@ def quotation_reject(quotation_id):
     # Only allow rejecting pending quotations
     if quotation.approval_status != "pending":
         flash("この見積は承認待ち状態ではありません。", "danger")
-        next_url = request.form.get("next")
-        if next_url and next_url.startswith("/"):
-            return redirect(next_url)
-        return redirect(url_for("quotation.quotation_list"))
+        return redirect(url_for("quotation.quotation_approval_view", quotation_id=quotation_id))
     
     # Get comment from form
     approval_comment = request.form.get("approval_comment", "").strip()
@@ -1578,8 +1620,5 @@ def quotation_reject(quotation_id):
     db.session.commit()
     flash("見積を差戻しました。", "success")
     
-    # Redirect to next URL if provided, otherwise to quotation list
-    next_url = request.form.get("next")
-    if next_url and next_url.startswith("/"):
-        return redirect(next_url)
-    return redirect(url_for("quotation.quotation_list"))
+    # Redirect to approval view
+    return redirect(url_for("quotation.quotation_approval_view", quotation_id=quotation_id))

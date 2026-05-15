@@ -1,0 +1,371 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <h2>見積承認確認</h2>
+            <div class="text-muted" style="font-size: 0.9em;">
+                <small>【社内承認用画面】</small>
+            </div>
+        </div>
+
+        <!-- Approval Status Display -->
+        <div style="text-align: right; margin-bottom: 1rem;">
+            {% if quotation.approval_status == 'approved' %}
+                <div style="border: 2px solid #198754; color: #198754; padding: 8px 12px; font-weight: bold; display: inline-block;">
+                    <div>承認済み</div>
+                    <div style="font-size: 0.85em; font-weight: normal; margin-top: 4px;">
+                        承認者: {{ quotation.approved_by_user.display_name if quotation.approved_by_user else '-' }}
+                    </div>
+                    <div style="font-size: 0.85em; font-weight: normal;">
+                        承認日: {{ quotation.approved_at.strftime('%Y/%m/%d') if quotation.approved_at else '-' }}
+                    </div>
+                </div>
+            {% elif quotation.approval_status == 'pending' %}
+                <div style="border: 2px solid #ffc107; color: #856404; padding: 8px 12px; font-weight: bold; display: inline-block;">
+                    <div>承認待ち</div>
+                </div>
+            {% elif quotation.approval_status == 'rejected' %}
+                <div style="border: 2px solid #dc3545; color: #dc3545; padding: 8px 12px; font-weight: bold; display: inline-block;">
+                    <div>差戻し</div>
+                    <div style="font-size: 0.85em; font-weight: normal; margin-top: 4px;">
+                        差戻者: {{ quotation.rejected_by_user.display_name if quotation.rejected_by_user else '-' }}
+                    </div>
+                    <div style="font-size: 0.85em; font-weight: normal;">
+                        差戻日: {{ quotation.rejected_at.strftime('%Y/%m/%d') if quotation.rejected_at else '-' }}
+                    </div>
+                    {% if quotation.approval_comment %}
+                    <div style="font-size: 0.85em; font-weight: normal; margin-top: 4px;">
+                        理由: {{ quotation.approval_comment }}
+                    </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div style="border: 2px solid #dc3545; color: #dc3545; padding: 8px 12px; font-weight: bold; display: inline-block;">
+                    <div>未承認</div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Approval Actions (admin/approver only) -->
+        {% if can_approve and quotation.approval_status == "pending" %}
+        <div class="mb-4">
+            <div class="alert alert-warning mb-3" role="alert">
+                <strong>⚠️ 承認待ち</strong><br>
+                この見積は承認待ち状態です。内容を確認のうえ、承認または差戻しを実行してください。
+            </div>
+
+            <div class="d-flex gap-2">
+                <form method="post"
+                      action="{{ url_for('quotation.quotation_approve', quotation_id=quotation.id) }}"
+                      style="display:inline;">
+                    <button type="submit" 
+                            class="btn btn-success"
+                            onclick="return confirm('この見積を承認します。よろしいですか？');">
+                        ✓ 承認
+                    </button>
+                </form>
+
+                <button type="button"
+                        class="btn btn-danger"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#rejectForm">
+                    ✗ 差戻し
+                </button>
+            </div>
+
+            <div id="rejectForm" class="collapse mt-3">
+                <div class="card card-body bg-light">
+                    <form method="post"
+                          action="{{ url_for('quotation.quotation_reject', quotation_id=quotation.id) }}">
+                        <div class="mb-3">
+                            <label for="approval_comment" class="form-label">差戻しコメント</label>
+                            <textarea name="approval_comment"
+                                      id="approval_comment"
+                                      class="form-control"
+                                      rows="3"
+                                      placeholder="差戻し理由を入力してください。"></textarea>
+                        </div>
+                        <button type="submit" 
+                                class="btn btn-danger"
+                                onclick="return confirm('この見積を差戻します。よろしいですか？');">
+                            差戻し実行
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <hr class="my-4">
+
+    <!-- 基本情報 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="mb-2">
+                <span class="text-muted">宛先企業名:</span>
+                <strong>{{ quotation.company_name }}</strong>
+            </div>
+            <div class="mb-2">
+                <span class="text-muted">担当者名:</span>
+                <strong>{{ quotation.contact_name or "-" }}</strong>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-2">
+                <span class="text-muted">案件名:</span>
+                <strong>{{ quotation.project_name }}</strong>
+            </div>
+            <div class="mb-2">
+                <span class="text-muted">見積作成担当:</span>
+                <strong>{{ quotation.estimator_name or "-" }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- 納期・条件 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="mb-2">
+                <span class="text-muted">納期:</span>
+                <strong>{{ quotation.delivery_date or "-" }}</strong>
+            </div>
+            <div class="mb-2">
+                <span class="text-muted">引渡条件:</span>
+                <strong>{{ quotation.delivery_terms or "-" }}</strong>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-2">
+                <span class="text-muted">支払条件:</span>
+                <strong>{{ quotation.payment_terms or "-" }}</strong>
+            </div>
+            <div class="mb-2">
+                <span class="text-muted">有効期限:</span>
+                <strong>{{ quotation.valid_until or "-" }}</strong>
+            </div>
+        </div>
+    </div>
+
+    {% if quotation.remarks %}
+    <div class="mb-4">
+        <span class="text-muted">摘要:</span>
+        <div class="border-top pt-2">{{ quotation.remarks }}</div>
+    </div>
+    {% endif %}
+
+    <hr class="my-4">
+
+    <!-- 明細テーブル -->
+    <div class="mb-4">
+        <h5 class="mb-3">明細</h5>
+        <table class="table table-bordered table-sm">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 5%;">No.</th>
+                    <th style="width: 40%;">品名・説明</th>
+                    <th style="width: 15%;">数量</th>
+                    <th style="width: 15%;">単価</th>
+                    <th style="width: 15%; text-align: right;">小計</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detail in details %}
+                <tr>
+                    <td style="text-align: center;">{{ loop.index }}</td>
+                    <td>
+                        {% if detail.description %}
+                            {{ detail.description }}
+                        {% elif detail.product %}
+                            {{ detail.product.name }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">{{ detail.quantity|default(0)|int }}</td>
+                    <td style="text-align: right;">¥{{ "{:,}".format(detail.price|default(0)|int) }}</td>
+                    <td style="text-align: right;">¥{{ "{:,}".format(detail.subtotal|default(0)|int) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- 合計・値引き・最終合計 -->
+    <div>
+        <div class="row justify-content-end">
+            <div class="col-md-6">
+                <table class="table table-sm border-top border-bottom mb-3">
+                    <tbody>
+                        <tr>
+                            <td class="fw-bold">合計売価:</td>
+                            <td style="text-align: right;">
+                                <strong>¥{{ "{:,}".format(total_amount|int) }}</strong>
+                            </td>
+                        </tr>
+                        {% if discount_amount > 0 %}
+                        <tr>
+                            <td class="fw-bold">値引き額:</td>
+                            <td style="text-align: right;">
+                                <strong>-¥{{ "{:,}".format(discount_amount|int) }}</strong>
+                            </td>
+                        </tr>
+                        <tr class="table-light">
+                            <td class="fw-bold fs-5">最終合計売価:</td>
+                            <td style="text-align: right;">
+                                <strong class="fs-5">¥{{ "{:,}".format(total_after_discount|int) }}</strong>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Review Panel (Admin/Approver Only) -->
+    {% if can_approve %}
+    <div id="approval-review-panel" class="mt-5 mb-4">
+        <h5 class="mb-3">【承認判断用情報】社内確認用</h5>
+        
+        <!-- A. 金額サマリー -->
+        <div class="mb-3">
+            <h6 class="text-secondary">金額サマリー</h6>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">合計売価</div>
+                    <div style="font-weight: bold;">¥{{ summary.get('subtotal_price', 0)|int }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">合計原価</div>
+                    <div style="font-weight: bold;">¥{{ summary.get('subtotal_cost', 0)|int }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">値引き額</div>
+                    <div style="font-weight: bold;">¥{{ summary.get('discount_amount', 0)|int }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">最終合計売価</div>
+                    <div style="font-weight: bold;">¥{{ summary.get('final_total_price', 0)|int }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem; grid-column: span 2;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">利益率</div>
+                    <div style="font-weight: bold;">{{ "%.1f" % summary.get('profit_margin', 0) }}%</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem; grid-column: span 2;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">最終利益率</div>
+                    <div style="font-weight: bold;">{{ "%.1f" % summary.get('final_profit_margin', 0) }}%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- B. V2工数 -->
+        <div class="mb-3">
+            <h6 class="text-secondary">V2工数</h6>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                <div style="border: 1px solid #ddd; padding: 0.75rem; grid-column: span 2;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">設計工数</div>
+                    <div style="font-weight: bold;">{{ v2_result.get('design_hours', '-') }} h</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem; grid-column: span 2;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">現地セットアップ工数</div>
+                    <div style="font-weight: bold;">{{ v2_result.get('setup_hours', '-') }} h</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- C. V2金額 -->
+        <div class="mb-3">
+            <h6 class="text-secondary">V2金額</h6>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">設計費 売価</div>
+                    <div style="font-weight: bold;">¥{{ (v2_result.get('design_price', 0)|int) }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">設計費 原価</div>
+                    <div style="font-weight: bold;">¥{{ (v2_result.get('design_cost', 0)|int) }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">セットアップ費 売価</div>
+                    <div style="font-weight: bold;">¥{{ (v2_result.get('setup_price', 0)|int) }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">セットアップ費 原価</div>
+                    <div style="font-weight: bold;">¥{{ (v2_result.get('setup_cost', 0)|int) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- D. V2パラメーター入力値 -->
+        <div class="mb-3">
+            <h6 class="text-secondary">見積作成時のV2パラメーター入力値</h6>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">AGV台数</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('agv_count', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">搬送元数</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('pickup_count', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">搬送先数</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('dropoff_count', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">走行エリア</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('area_short_m', '-') }} × {{ v2_inputs.get('area_long_m', '-') }}m</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">搬送ルート複雑度</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('route_complexity', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">すれ違い合流多さ</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('merge_complexity', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">充電器数</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('charger_count', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">磁気テープ停止箇所</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('magnetic_stop_count', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">ランドマーク設置範囲</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('landmark_scope', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">エレベーター連携数</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('elevator_count', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">自動扉連携数</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('auto_door_count', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">PLC規模</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('plc_scale', '-') }}</div>
+                </div>
+                <div style="border: 1px solid #ddd; padding: 0.75rem;">
+                    <div style="color: #6c757d; font-size: 0.85em; margin-bottom: 0.25rem;">上位システム規模</div>
+                    <div style="font-weight: bold;">{{ v2_inputs.get('host_system_scale', '-') }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 戻るボタン -->
+    <div class="mt-5 mb-4">
+        <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+            戻る
+        </button>
+    </div>
+</div>
+{% endblock %}

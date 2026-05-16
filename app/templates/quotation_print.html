@@ -2,247 +2,380 @@
 {% block content %}
 
 <style>
-    /* 見積書シート用レイアウト */
+    /* ===== 見積書全体レイアウト ===== */
     .quotation-sheet {
-        max-width: 1050px;
+        max-width: 1100px;
         margin: 24px auto;
-        padding: 40px;
-        background: #fff;
+        padding: 32px;
+        background: #ffffff;
         border: 1px solid #ddd;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        font-family: 'MS Gothic', 'Yu Gothic', sans-serif;
+        color: #333;
     }
 
-    /* ヘッダー */
-    .quotation-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 30px;
-        border-bottom: 2px solid #000;
-        padding-bottom: 20px;
+    /* ===== タイトル行 ===== */
+    .quotation-title-row {
+        text-align: center;
+        margin-bottom: 28px;
+        padding-bottom: 16px;
+        border-bottom: 3px solid #000;
     }
 
     .quotation-title {
-        font-size: 24px;
+        font-size: 32px;
         font-weight: bold;
+        letter-spacing: 2px;
         color: #000;
+        margin: 0;
+        line-height: 1.2;
     }
 
-    .quotation-meta {
-        text-align: right;
+    /* ===== 上部情報エリア（左右2カラム） ===== */
+    .quotation-top-section {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 32px;
+        margin-bottom: 32px;
+        font-size: 13px;
+        line-height: 1.8;
+    }
+
+    /* ===== 左側：宛先・案件情報 ===== */
+    .quotation-left {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .recipient-block {
+        border: 1px solid #666;
+        padding: 16px;
+        background: #fafafa;
+    }
+
+    .recipient-company {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 4px;
+    }
+
+    .recipient-title {
+        font-size: 11px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .recipient-contact {
         font-size: 12px;
+        color: #333;
     }
 
-    .quotation-meta-item {
-        margin: 4px 0;
+    .estimate-intro {
+        font-size: 13px;
+        margin: 16px 0;
+        padding: 12px;
+        background: #fffef0;
+        border-left: 3px solid #ff9800;
         line-height: 1.6;
     }
 
-    /* 宛先・案件情報 */
-    .quotation-info {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 30px;
-        margin-bottom: 30px;
-    }
-
-    .info-block {
+    .detail-group {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 8px;
     }
 
-    .info-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 10px;
+    .detail-item {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 12px;
         font-size: 13px;
     }
 
-    .info-label {
+    .detail-label {
+        font-weight: bold;
+        color: #333;
+        min-width: 100px;
+    }
+
+    .detail-value {
+        color: #333;
+    }
+
+    /* ===== 右側：会社情報・作成日 ===== */
+    .quotation-right {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        font-size: 12px;
+    }
+
+    .company-info-block {
+        border: 1px solid #999;
+        padding: 14px 12px;
+        background: #f8f8f8;
+    }
+
+    .company-info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-bottom: 8px;
+        font-size: 11px;
+        line-height: 1.5;
+    }
+
+    .company-info-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .company-info-label {
         color: #666;
-        min-width: 80px;
-        flex-shrink: 0;
+        font-weight: bold;
+        font-size: 10px;
     }
 
-    .info-value {
-        font-weight: 500;
-        flex-grow: 1;
+    .company-info-value {
+        color: #000;
+        font-size: 11px;
     }
 
-    /* 明細テーブル */
-    .quotation-details-section {
-        margin: 30px 0;
+    /* ===== 承認欄 ===== */
+    .approval-stamps {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #999;
     }
 
-    .quotation-details-title {
+    .stamp-labels {
+        display: flex;
+        justify-content: space-around;
+        gap: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .stamp-box {
+        flex: 1;
+        border: 1px solid #999;
+        height: 50px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        font-size: 10px;
+        padding-bottom: 4px;
+        color: #999;
+    }
+
+    /* ===== 合計金額 ===== */
+    .total-amount-section {
+        display: flex;
+        justify-content: center;
+        margin: 28px 0;
+    }
+
+    .total-amount-box {
+        border: 3px solid #000;
+        padding: 20px 40px;
+        text-align: center;
+        background: #fffef0;
+    }
+
+    .total-amount-label {
         font-size: 14px;
         font-weight: bold;
-        margin-bottom: 12px;
-        border-bottom: 1px solid #ccc;
-        padding-bottom: 6px;
+        color: #333;
+        margin-bottom: 8px;
     }
 
+    .total-amount-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: #d32f2f;
+        letter-spacing: 1px;
+    }
+
+    .total-amount-note {
+        font-size: 10px;
+        color: #666;
+        margin-top: 8px;
+        letter-spacing: 0.5px;
+    }
+
+    /* ===== 明細テーブル ===== */
     .quotation-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 20px;
+        margin: 28px 0;
         font-size: 12px;
     }
 
     .quotation-table thead {
-        background-color: #f5f5f5;
-        border: 1px solid #ddd;
+        background-color: #e8e8e8;
     }
 
-    .quotation-table thead tr {
-        border: 1px solid #ddd;
-    }
-
-    .quotation-table th {
-        padding: 10px;
-        text-align: left;
+    .quotation-table thead th {
+        border: 1px solid #666;
+        padding: 10px 8px;
+        text-align: center;
         font-weight: bold;
-        border: 1px solid #ddd;
         color: #333;
+        font-size: 12px;
     }
 
-    .quotation-table tbody tr {
-        border: 1px solid #ddd;
+    .quotation-table tbody td {
+        border: 1px solid #ccc;
+        padding: 10px 8px;
+        font-size: 12px;
+        height: 24px;
     }
 
-    .quotation-table td {
-        padding: 10px;
-        border: 1px solid #ddd;
+    .quotation-table tbody tr:nth-child(odd) {
+        background-color: #fafafa;
     }
 
-    .quotation-table th.col-no {
+    .col-no {
         width: 40px;
         text-align: center;
     }
 
-    .quotation-table th.col-name {
-        width: auto;
-        flex-grow: 1;
-    }
-
-    .quotation-table th.col-qty {
-        width: 70px;
-        text-align: center;
-    }
-
-    .quotation-table th.col-price {
-        width: 110px;
-        text-align: right;
-    }
-
-    .quotation-table th.col-subtotal {
-        width: 110px;
-        text-align: right;
-    }
-
-    .quotation-table td.col-no {
-        text-align: center;
-    }
-
-    .quotation-table td.col-name {
+    .col-name {
         text-align: left;
     }
 
-    .quotation-table td.col-qty {
+    .col-qty {
+        width: 60px;
         text-align: center;
     }
 
-    .quotation-table td.col-price {
-        text-align: right;
-        font-family: monospace;
+    .col-unit {
+        width: 50px;
+        text-align: center;
     }
 
-    .quotation-table td.col-subtotal {
+    .col-price {
+        width: 110px;
         text-align: right;
-        font-family: monospace;
     }
 
-    /* 合計欄 */
-    .quotation-totals {
-        margin: 30px 0;
+    .col-amount {
+        width: 130px;
+        text-align: right;
+    }
+
+    /* ===== 小計・合計欄 ===== */
+    .quotation-summary {
         display: flex;
         justify-content: flex-end;
+        margin: 20px 0 28px 0;
     }
 
-    .totals-box {
+    .summary-box {
         width: 280px;
     }
 
-    .totals-row {
+    .summary-row {
         display: flex;
         justify-content: space-between;
-        padding: 10px 15px;
-        border: 1px solid #ddd;
+        align-items: center;
+        border: 1px solid #999;
+        border-top: none;
+        padding: 10px 12px;
         font-size: 12px;
+        background: #fff;
     }
 
-    .totals-row.header {
-        background-color: #f5f5f5;
+    .summary-row:first-child {
+        border-top: 1px solid #999;
+        background: #f0f0f0;
         font-weight: bold;
     }
 
-    .totals-row.total {
-        background-color: #fff;
+    .summary-row.subtotal {
         border-top: 2px solid #000;
+        background: #fff;
+    }
+
+    .summary-row.discount {
+        border-top: none;
+        background: #fff;
+    }
+
+    .summary-row.total {
+        border-top: 2px solid #000;
+        background: #fffef0;
         font-weight: bold;
-        font-size: 14px;
+        font-size: 13px;
     }
 
-    .totals-label {
-        flex-grow: 1;
+    .summary-label {
+        flex: 1;
+        font-weight: normal;
     }
 
-    .totals-value {
+    .summary-value {
         text-align: right;
-        font-family: monospace;
-        white-space: nowrap;
+        min-width: 110px;
+        font-family: 'Courier New', monospace;
+        font-weight: normal;
     }
 
-    /* 備考欄 */
-    .quotation-remarks-section {
-        margin: 30px 0;
+    /* ===== 備考欄 ===== */
+    .remarks-section {
+        margin: 28px 0;
     }
 
-    .quotation-remarks-title {
-        font-size: 12px;
+    .remarks-title {
         font-weight: bold;
-        margin-bottom: 8px;
-    }
-
-    .quotation-remarks {
-        padding: 10px;
-        border: 1px solid #ddd;
-        background-color: #fafafa;
-        min-height: 30px;
         font-size: 12px;
-        line-height: 1.5;
+        margin-bottom: 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #ccc;
     }
 
-    /* ボタンエリア */
+    .remarks-box {
+        border: 1px solid #999;
+        padding: 12px;
+        min-height: 100px;
+        background: #fafafa;
+        font-size: 12px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    /* ===== ボタンエリア ===== */
     .quotation-buttons {
         text-align: center;
-        margin-top: 30px;
+        margin-top: 32px;
         padding-top: 20px;
         border-top: 1px solid #ddd;
     }
 
     .quotation-buttons button {
-        margin: 0 8px;
+        margin: 0 10px;
+        padding: 8px 20px;
+        font-size: 14px;
     }
 
-    /* 印刷時のスタイル */
+    .quotation-buttons .no-print {
+        display: inline-block;
+    }
+
+    /* ===== 印刷時のスタイル ===== */
     @media print {
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+
         body {
             background: #fff !important;
             margin: 0;
             padding: 0;
+            font-size: 12px;
         }
 
         .navbar {
@@ -250,9 +383,9 @@
         }
 
         .quotation-sheet {
-            max-width: none;
+            max-width: 100%;
             margin: 0;
-            padding: 12mm;
+            padding: 10mm;
             border: none;
             box-shadow: none;
             page-break-after: avoid;
@@ -262,21 +395,20 @@
             display: none !important;
         }
 
-        .quotation-header {
-            border-bottom: 2px solid #000;
+        .no-print {
+            display: none !important;
         }
 
         .quotation-table {
             page-break-inside: avoid;
         }
 
-        .quotation-totals {
+        .total-amount-section {
             page-break-inside: avoid;
         }
 
-        @page {
-            size: A4 portrait;
-            margin: 12mm;
+        .quotation-summary {
+            page-break-inside: avoid;
         }
     }
 </style>
@@ -284,142 +416,202 @@
 <!-- メイン見積書シート -->
 <div class="quotation-sheet">
     
-    <!-- ヘッダー -->
-    <div class="quotation-header">
-        <div class="quotation-title">見積書</div>
-        <div class="quotation-meta">
-            <div class="quotation-meta-item">
-                <span style="color: #999;">見積No.：</span>
-                <strong>{{ quotation.quotation_no }}</strong>
-            </div>
-            <div class="quotation-meta-item">
-                <span style="color: #999;">改定No.：</span>
-                <strong>{{ quotation.revision_no or "0" }}</strong>
-            </div>
-            {% if quotation.created_at %}
-            <div class="quotation-meta-item">
-                <span style="color: #999;">発行日：</span>
-                <strong>{{ quotation.created_at.strftime('%Y/%m/%d') }}</strong>
-            </div>
-            {% endif %}
-        </div>
+    <!-- タイトル -->
+    <div class="quotation-title-row">
+        <h1 class="quotation-title">御見積書</h1>
     </div>
 
-    <!-- 宛先・案件情報 -->
-    <div class="quotation-info">
-        <!-- 左：宛先情報 -->
-        <div class="info-block">
-            <div class="info-item">
-                <span class="info-label">宛先企業名</span>
-                <span class="info-value">{{ customer_display_name }}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">担当者名</span>
-                <span class="info-value">{{ quotation.contact_name or "-" }}</span>
-            </div>
-        </div>
-
-        <!-- 右：案件・条件情報 -->
-        <div class="info-block">
-            <div class="info-item">
-                <span class="info-label">案件名</span>
-                <span class="info-value">{{ quotation.project_name or "-" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">見積作成担当</span>
-                <span class="info-value">{{ estimator_info or "-" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">支払条件</span>
-                <span class="info-value">{{ quotation.payment_terms or "-" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">納期</span>
-                <span class="info-value">{{ quotation.delivery_date or "-" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">引渡条件</span>
-                <span class="info-value">{{ quotation.delivery_terms or "-" }}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">有効期限</span>
-                <span class="info-value">{{ quotation.valid_until or "-" }}</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- 明細セクション -->
-    <div class="quotation-details-section">
-        <div class="quotation-details-title">明細</div>
+    <!-- 上部情報セクション（左右2カラム） -->
+    <div class="quotation-top-section">
         
-        <table class="quotation-table">
-            <thead>
-                <tr>
-                    <th class="col-no">No.</th>
-                    <th class="col-name">品名・説明</th>
-                    <th class="col-qty">数量</th>
-                    <th class="col-price">単価</th>
-                    <th class="col-subtotal">小計</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for detail in details %}
-                <tr>
-                    <td class="col-no">{{ loop.index }}</td>
-                    <td class="col-name">
-                        {% if detail.description %}
-                            {{ detail.description }}
-                        {% elif detail.product %}
-                            {{ detail.product.name }}
+        <!-- 左側：宛先・案件情報 -->
+        <div class="quotation-left">
+            <!-- 宛先企業ブロック -->
+            <div class="recipient-block">
+                <div class="recipient-company">{{ customer_display_name }}</div>
+                <div class="recipient-title">ご担当：</div>
+                <div class="recipient-contact">{{ quotation.contact_name or "ご担当者様" }}</div>
+            </div>
+
+            <!-- 見積案内文 -->
+            <div class="estimate-intro">
+                平素は格別のご愛顧を賜り、厚く御礼申し上げます。<br/>
+                この度は、下記の通りお見積り申し上げます。
+            </div>
+
+            <!-- 詳細情報 -->
+            <div class="detail-group">
+                <div class="detail-item">
+                    <div class="detail-label">件名</div>
+                    <div class="detail-value">{{ quotation.project_name or "-" }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">引渡場所</div>
+                    <div class="detail-value">{{ quotation.delivery_terms or "-" }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">御支払条件</div>
+                    <div class="detail-value">{{ quotation.payment_terms or "-" }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">納期</div>
+                    <div class="detail-value">{{ quotation.delivery_date or "-" }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">見積有効期限</div>
+                    <div class="detail-value">{{ quotation.valid_until or "-" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：会社情報・作成日 -->
+        <div class="quotation-right">
+            <!-- 会社情報ブロック -->
+            <div class="company-info-block">
+                <div class="company-info-item">
+                    <div class="company-info-label">作成日</div>
+                    <div class="company-info-value">
+                        {% if quotation.created_at %}
+                            {{ quotation.created_at.strftime('%Y年%m月%d日') }}
                         {% else %}
                             -
                         {% endif %}
-                    </td>
-                    <td class="col-qty">{{ detail.quantity|default(0)|int }}</td>
-                    <td class="col-price">¥{{ "{:,}".format(detail.price|default(0)|int) }}</td>
-                    <td class="col-subtotal">¥{{ "{:,}".format(detail.subtotal|default(0)|int) }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </div>
+                </div>
+                <div class="company-info-item">
+                    <div class="company-info-label">見積No.</div>
+                    <div class="company-info-value">{{ quotation.quotation_no }}</div>
+                </div>
+                <div class="company-info-item">
+                    <div class="company-info-label">改定No.</div>
+                    <div class="company-info-value">{{ quotation.revision_no or "0" }}</div>
+                </div>
+                <div class="company-info-item">
+                    <div class="company-info-label">自社名</div>
+                    <div class="company-info-value">武蔵精密工業 株式会社</div>
+                </div>
+                <div class="company-info-item">
+                    <div class="company-info-label">部署名</div>
+                    <div class="company-info-value">Smart Industry営業グループ</div>
+                </div>
+                <div class="company-info-item">
+                    <div class="company-info-label">住所</div>
+                    <div class="company-info-value">〒441-8560 愛知県豊橋市植田町字大膳39-5</div>
+                </div>
+                <div class="company-info-item">
+                    <div class="company-info-label">TEL</div>
+                    <div class="company-info-value">0532-25-8111</div>
+                </div>
+                <div class="company-info-item">
+                    <div class="company-info-label">見積作成</div>
+                    <div class="company-info-value">{{ estimator_info or "-" }}</div>
+                </div>
+            </div>
+
+            <!-- 承認欄 -->
+            <div class="approval-stamps">
+                <div class="stamp-labels">
+                    <div class="stamp-box">承認</div>
+                    <div class="stamp-box">審査</div>
+                    <div class="stamp-box">作成</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 合計欄 -->
-    <div class="quotation-totals">
-        <div class="totals-box">
-            <div class="totals-row header">
-                <span class="totals-label">合計売価</span>
-                <span class="totals-value">¥{{ "{:,}".format(total_amount|int) }}</span>
+    <!-- 合計金額ボックス -->
+    <div class="total-amount-section">
+        <div class="total-amount-box">
+            <div class="total-amount-label">合計金額</div>
+            <div class="total-amount-value">¥{{ "{:,}".format(total_amount|int) }}</div>
+            <div class="total-amount-note">※本見積金額に消費税は含まれておりません。</div>
+        </div>
+    </div>
+
+    <!-- 明細テーブル -->
+    <table class="quotation-table">
+        <thead>
+            <tr>
+                <th class="col-no">No.</th>
+                <th class="col-name">品名・仕様</th>
+                <th class="col-qty">数量</th>
+                <th class="col-unit">単位</th>
+                <th class="col-price">単価</th>
+                <th class="col-amount">合計金額</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detail in details %}
+            <tr>
+                <td class="col-no">{{ loop.index }}</td>
+                <td class="col-name">
+                    {% if detail.description %}
+                        {{ detail.description }}
+                    {% elif detail.product %}
+                        {{ detail.product.name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="col-qty">{{ detail.quantity|default(0)|int }}</td>
+                <td class="col-unit">式</td>
+                <td class="col-price">¥{{ "{:,}".format(detail.price|default(0)|int) }}</td>
+                <td class="col-amount">¥{{ "{:,}".format(detail.subtotal|default(0)|int) }}</td>
+            </tr>
+            {% endfor %}
+            <!-- 空行を追加 -->
+            {% for i in range(3) %}
+            <tr>
+                <td class="col-no"></td>
+                <td class="col-name"></td>
+                <td class="col-qty"></td>
+                <td class="col-unit"></td>
+                <td class="col-price"></td>
+                <td class="col-amount"></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- 小計・合計欄 -->
+    <div class="quotation-summary">
+        <div class="summary-box">
+            <div class="summary-row">
+                <span class="summary-label">小計</span>
+                <span class="summary-value">¥{{ "{:,}".format(total_amount|int) }}</span>
             </div>
             {% if discount_amount and discount_amount > 0 %}
-            <div class="totals-row">
-                <span class="totals-label">値引き額</span>
-                <span class="totals-value">-¥{{ "{:,}".format(discount_amount|int) }}</span>
-            </div>
-            <div class="totals-row total">
-                <span class="totals-label">最終合計売価</span>
-                <span class="totals-value">¥{{ "{:,}".format(total_after_discount|int) }}</span>
+            <div class="summary-row discount">
+                <span class="summary-label">値引き額</span>
+                <span class="summary-value">-¥{{ "{:,}".format(discount_amount|int) }}</span>
             </div>
             {% endif %}
+            <div class="summary-row total">
+                <span class="summary-label">合計</span>
+                <span class="summary-value">
+                    {% if discount_amount and discount_amount > 0 %}
+                        ¥{{ "{:,}".format(total_after_discount|int) }}
+                    {% else %}
+                        ¥{{ "{:,}".format(total_amount|int) }}
+                    {% endif %}
+                </span>
+            </div>
         </div>
     </div>
 
-    <!-- 備考 -->
-    {% if quotation.remarks or summary.remarks %}
-    <div class="quotation-remarks-section">
-        <div class="quotation-remarks-title">備考</div>
-        <div class="quotation-remarks">
-            {{ quotation.remarks or summary.remarks or "特に無し" }}
-        </div>
+    <!-- 備考欄 -->
+    <div class="remarks-section">
+        <div class="remarks-title">備考</div>
+        <div class="remarks-box">
+{% if quotation.remarks %}{{ quotation.remarks }}{% elif summary.remarks %}{{ summary.remarks }}{% endif %}</div>
     </div>
-    {% endif %}
 
     <!-- ボタン（印刷時は非表示） -->
-    <div class="quotation-buttons no-print">
-        <button type="button" class="btn btn-primary" onclick="window.print()">
+    <div class="quotation-buttons">
+        <button type="button" class="btn btn-primary no-print" onclick="window.print()">
             <i class="fas fa-print"></i> 印刷
         </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+        <button type="button" class="btn btn-outline-secondary no-print" onclick="window.history.back()">
             <i class="fas fa-arrow-left"></i> 戻る
         </button>
     </div>

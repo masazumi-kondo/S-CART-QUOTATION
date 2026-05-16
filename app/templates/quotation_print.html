@@ -25,40 +25,27 @@
 
     /* ===== 見積書シート全体 ===== */
     .quotation-sheet {
-        width: 210mm;
-        max-width: 210mm;
+        width: 190mm;
+        max-width: 190mm;
         height: auto;
         margin: 16px auto;
-        padding: 10mm 12mm;
+        padding: 6mm;
         background: #ffffff;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        font-family: 'Noto Sans JP', 'Segoe UI', 'Yu Gothic', 'Meiryo', sans-serif;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        font-family: 'Yu Gothic', 'Meiryo', 'Noto Sans JP', 'Segoe UI', sans-serif;
         color: #222222;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        page-break-after: avoid;
-    }
-
-    /* Screen-specific styles */
-    @media screen {
-        .quotation-sheet {
-            width: 210mm;
-            max-width: 210mm;
-            margin: 16px auto;
-            padding: 10mm 12mm;
-            background: #ffffff;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
     }
 
     /* ===== ヘッダーエリア（タイトル + 右上情報） ===== */
     .quotation-header {
         display: grid;
         grid-template-columns: auto 1fr auto;
-        gap: 16px;
-        margin-bottom: 8mm;
-        padding-bottom: 8mm;
+        gap: 14px;
+        margin-bottom: 5mm;
+        padding-bottom: 5mm;
         border-bottom: 2.5px solid #163a70;
         align-items: flex-start;
     }
@@ -129,8 +116,8 @@
     .quotation-content {
         display: grid;
         grid-template-columns: 1.2fr 1fr;
-        gap: 14mm;
-        margin-bottom: 6mm;
+        gap: 10mm;
+        margin-bottom: 4mm;
         align-items: flex-start;
     }
 
@@ -271,7 +258,7 @@
     /* ===== 合計金額ボックス（横長帯） ===== */
     .total-section {
         width: 100%;
-        margin: 5mm 0 6mm;
+        margin: 3mm 0 4mm;
         page-break-inside: avoid;
     }
 
@@ -326,7 +313,7 @@
     /* ===== 明細テーブル ===== */
     .details-section {
         width: 100%;
-        margin: 2mm 0 1mm;
+        margin: 0.5mm 0 0.5mm;
         overflow: hidden;
         page-break-inside: avoid;
     }
@@ -434,7 +421,7 @@
         width: 100%;
         display: grid;
         grid-template-columns: 1fr 150px;
-        margin: 0 0 4mm;
+        margin: 0 0 2mm;
         gap: 0;
         page-break-inside: avoid;
     }
@@ -501,10 +488,10 @@
     /* ===== 備考欄 ===== */
     .remarks-section {
         width: 100%;
-        margin-top: 3mm;
+        margin-top: 2mm;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 3px;
         page-break-inside: avoid;
     }
 
@@ -531,8 +518,8 @@
     .remarks-box {
         width: 100%;
         border: 1.5px solid #4a7ba7;
-        padding: 6mm 7mm;
-        min-height: 40mm;
+        padding: 5mm 6mm;
+        min-height: 32mm;
         background: #ffffff;
         font-size: 9px;
         line-height: 1.5;
@@ -546,8 +533,8 @@
     /* ===== ボタンエリア ===== */
     .quotation-actions {
         text-align: center;
-        margin-top: 6mm;
-        padding-top: 4mm;
+        margin-top: 3mm;
+        padding-top: 2mm;
         border-top: 1px solid #e0e0e0;
     }
 
@@ -569,85 +556,27 @@
             size: A4 portrait;
             margin: 8mm;
         }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        html {
-            width: 100%;
-            height: auto;
-            margin: 0;
-            padding: 0;
-            background: #fff !important;
-        }
-
+        
+        html,
         body {
-            width: 100%;
-            height: auto;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #fff !important;
-            font-size: 9pt;
-        }
-
-        .navbar {
-            display: none !important;
-        }
-
-        footer {
-            display: none !important;
-        }
-
-        .container-fluid {
-            width: auto;
             margin: 0;
             padding: 0;
-        }
-
-        .quotation-sheet {
-            width: 100%;
-            max-width: 194mm;
-            height: auto;
-            margin: 0 auto !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
             background: #fff !important;
-            page-break-after: avoid;
-            page-break-inside: avoid;
         }
-
+        
+        .navbar,
+        footer,
+        .no-print,
         .quotation-actions {
             display: none !important;
         }
-
-        .no-print {
-            display: none !important;
-        }
-
-        .quotation-header {
-            page-break-inside: avoid;
-        }
-
-        .quotation-content {
-            page-break-inside: avoid;
-        }
-
-        .total-section {
-            page-break-inside: avoid;
-        }
-
-        .details-section {
-            page-break-inside: avoid;
-        }
-
-        .summary-section {
-            page-break-inside: avoid;
-        }
-
-        .remarks-section {
-            page-break-inside: avoid;
+        
+        .quotation-sheet {
+            margin: 0;
+            box-shadow: none;
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
         }
     }
 

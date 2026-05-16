@@ -5,3 +5,5 @@ Flask-SQLAlchemy
 Werkzeug
 requests
 msal
+reportlab>=4.0.0
+Pillow

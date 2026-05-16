@@ -33,7 +33,7 @@ def _norm_difficulty(v: str):
     s = (v or "").strip().lower()
     return s if s in ("medium", "high") else None
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, g
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, g, Response
 from flask_login import current_user
 import logging
 from app import db
@@ -673,6 +673,28 @@ def print_view(quotation_id):
         v2_inputs=v2_inputs,
         can_approve=False
     )
+
+
+@quotation_bp.route("/quotation/<int:quotation_id>/pdf")
+@login_required
+def quotation_pdf(quotation_id):
+    """見積書PDF生成エンドポイント"""
+    from app.services.quotation_pdf_service import generate_quotation_pdf
+    import re
+    
+    quotation = Quotation.query.get_or_404(quotation_id)
+    customer_display_name = get_customer_display_name(quotation)
+    
+    # PDF生成
+    pdf_bytes = generate_quotation_pdf(quotation, customer_display_name=customer_display_name)
+    
+    # レスポンス設定
+    filename = f"{quotation.quotation_no or 'quotation'}.pdf"
+    filename_ascii = re.sub(r'[^\w\.\-]', '_', filename)
+    
+    response = Response(pdf_bytes, mimetype='application/pdf')
+    response.headers['Content-Disposition'] = f'inline; filename="{filename_ascii}"'
+    return response
 
 
 @quotation_bp.route("/quotation/<int:quotation_id>/approval")

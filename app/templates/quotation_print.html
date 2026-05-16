@@ -3,7 +3,7 @@
 
 <style type="text/css">
     /* ========================================
-       見積書プレミアムレイアウト - A4帳票フォーマット
+       見積書 - 正式BtoB帳票フォーマット
        ======================================== */
 
     /* Universal box-sizing */
@@ -29,11 +29,11 @@
         max-width: 210mm;
         height: auto;
         margin: 16px auto;
-        padding: 8mm 10mm;
+        padding: 10mm 12mm;
         background: #ffffff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         font-family: 'Noto Sans JP', 'Segoe UI', 'Yu Gothic', 'Meiryo', sans-serif;
-        color: #2c2c2c;
+        color: #222222;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
@@ -46,37 +46,53 @@
             width: 210mm;
             max-width: 210mm;
             margin: 16px auto;
-            padding: 8mm 10mm;
+            padding: 10mm 12mm;
             background: #ffffff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
     }
 
     /* ===== ヘッダーエリア（タイトル + 右上情報） ===== */
     .quotation-header {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 5mm;
-        padding-bottom: 6mm;
-        border-bottom: 2px solid #1a3a5c;
+        grid-template-columns: auto 1fr auto;
+        gap: 16px;
+        margin-bottom: 8mm;
+        padding-bottom: 8mm;
+        border-bottom: 2.5px solid #163a70;
         align-items: flex-start;
+    }
+
+    .header-accent-bar {
+        width: 4px;
+        background: #163a70;
+        height: 50px;
+        margin-top: 2px;
     }
 
     .header-title-box {
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
+        gap: 3px;
     }
 
     .header-title {
-        font-size: 32px;
+        font-size: 42px;
         font-weight: 700;
-        color: #1a3a5c;
+        color: #163a70;
         margin: 0;
         padding: 0;
-        line-height: 1.1;
-        letter-spacing: 0.3px;
+        line-height: 1;
+        letter-spacing: 0.5px;
+    }
+
+    .header-subtitle {
+        font-size: 10px;
+        color: #666666;
+        font-weight: 500;
+        margin: 0;
+        line-height: 1.3;
     }
 
     .header-meta {
@@ -84,71 +100,83 @@
         flex-direction: column;
         justify-content: flex-start;
         text-align: right;
-        font-size: 10px;
-        line-height: 1.5;
+        gap: 4px;
     }
 
     .meta-item {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 6px;
+        display: flex;
+        gap: 8px;
         justify-content: flex-end;
+        align-items: center;
     }
 
     .meta-label {
-        color: #666;
+        color: #666666;
         font-weight: 600;
+        font-size: 9px;
         white-space: nowrap;
     }
 
     .meta-value {
-        color: #1a3a5c;
+        color: #163a70;
         font-weight: 500;
+        font-size: 10px;
         text-align: right;
-        min-width: 90px;
+        min-width: 100px;
     }
 
     /* ===== コンテンツエリア（顧客 + 自社情報） ===== */
     .quotation-content {
         display: grid;
-        grid-template-columns: 1.05fr 1fr;
-        gap: 10mm;
-        margin-bottom: 4mm;
-        font-size: 10px;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 14mm;
+        margin-bottom: 6mm;
+        align-items: flex-start;
     }
 
     /* 左側：顧客情報 */
     .recipient-section {
         display: flex;
         flex-direction: column;
-        gap: 6mm;
+        gap: 5mm;
+    }
+
+    .recipient-label {
+        background: #163a70;
+        color: #ffffff;
+        padding: 2px 6px;
+        font-size: 9px;
+        font-weight: 700;
+        border-radius: 2px;
+        display: inline-block;
+        width: fit-content;
     }
 
     .recipient-box {
-        border: 1.5px solid #1a3a5c;
-        padding: 6mm 8mm;
-        background: #f9fafb;
-        line-height: 1.5;
+        border: 2px solid #4a7ba7;
+        padding: 7mm 9mm;
+        background: #ffffff;
+        line-height: 1.6;
     }
 
     .recipient-company {
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 700;
-        color: #1a3a5c;
-        margin: 0 0 3px 0;
-        letter-spacing: 0.2px;
+        color: #163a70;
+        margin: 0 0 4px 0;
+        letter-spacing: 0.3px;
     }
 
     .recipient-contact-label {
-        font-size: 9px;
-        color: #888;
+        font-size: 8px;
+        color: #999999;
         font-weight: 600;
-        margin-bottom: 2px;
+        margin-bottom: 1px;
     }
 
     .recipient-contact-name {
-        font-size: 10px;
-        color: #2c2c2c;
+        font-size: 11px;
+        color: #222222;
         font-weight: 500;
     }
 
@@ -156,7 +184,7 @@
     .quotation-conditions {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 5px 10mm;
+        gap: 8px 12mm;
         font-size: 10px;
     }
 
@@ -167,120 +195,140 @@
     }
 
     .condition-label {
-        color: #666;
-        font-weight: 600;
-        font-size: 9px;
+        color: #666666;
+        font-weight: 700;
+        font-size: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
     }
 
     .condition-value {
-        color: #2c2c2c;
+        color: #222222;
         font-weight: 500;
         font-size: 10px;
+        line-height: 1.3;
     }
 
     /* 右側：自社情報 */
     .company-section {
         display: flex;
         flex-direction: column;
-        gap: 6mm;
+        gap: 7mm;
     }
 
     .company-info-box {
         border: 1px solid #d0d0d0;
-        padding: 6mm 8mm;
-        background: #f9fafb;
+        padding: 7mm 9mm;
+        background: #ffffff;
     }
 
     .company-logo {
-        height: 24px;
-        margin-bottom: 6px;
+        height: 28px;
+        margin-bottom: 5mm;
         display: flex;
         align-items: center;
+        border-bottom: 1px solid #e8e8e8;
+        padding-bottom: 5mm;
     }
 
     .company-logo img {
-        max-height: 24px;
+        max-height: 28px;
         width: auto;
     }
 
     .company-name {
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 700;
-        color: #1a3a5c;
-        margin: 4px 0 3px 0;
-        letter-spacing: 0.1px;
+        color: #163a70;
+        margin: 0 0 2px 0;
+        letter-spacing: 0.2px;
     }
 
     .company-info-line {
         font-size: 9px;
-        color: #2c2c2c;
-        line-height: 1.4;
-        margin: 1.5px 0;
+        color: #222222;
+        line-height: 1.5;
+        margin: 1px 0;
     }
 
     .company-info-line.title {
         font-weight: 600;
-        color: #555;
+        color: #666666;
+        margin-top: 3px;
+    }
+
+    .company-info-line.tel {
         margin-top: 4px;
+        font-weight: 600;
+    }
+
+    .company-info-line.estimator {
+        margin-top: 6px;
+        border-top: 1px solid #e8e8e8;
+        padding-top: 4px;
     }
 
     /* ===== 合計金額ボックス（横長帯） ===== */
     .total-section {
         width: 100%;
-        margin: 3mm 0 3mm;
+        margin: 5mm 0 6mm;
+        page-break-inside: avoid;
     }
 
     .total-box {
         width: 100%;
         display: grid;
-        grid-template-columns: 50mm 1fr 70mm;
-        background: #1a3a5c;
+        grid-template-columns: 48mm 1fr 60mm;
+        background: #163a70;
         color: #ffffff;
-        min-height: 18mm;
+        min-height: 20mm;
         box-sizing: border-box;
-        box-shadow: none;
-        border: none;
+        border: 1.5px solid #163a70;
+        box-shadow: 0 2px 6px rgba(22, 58, 112, 0.15);
     }
 
     .total-label {
-        font-size: 11px;
+        font-size: 12px;
         color: #ffffff;
         font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 6mm;
-        letter-spacing: 0.3px;
-        background: #0b2f55;
-    }
-
-    .total-amount {
-        font-size: 26px;
-        font-weight: 700;
-        color: #ffffff;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 0 8mm;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.5px;
+        background: #0d1f3d;
+    }
+
+    .total-amount {
+        font-size: 32px;
+        font-weight: 700;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 12mm;
+        letter-spacing: 0.5px;
     }
 
     .total-note {
         font-size: 8px;
-        color: #e0e0e0;
+        color: #d0d0d0;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 0 6mm;
         font-weight: 500;
-        background: #1a3a5c;
+        background: #163a70;
+        text-align: center;
+        line-height: 1.3;
     }
 
     /* ===== 明細テーブル ===== */
     .details-section {
         width: 100%;
-        margin: 2mm 0;
+        margin: 2mm 0 1mm;
         overflow: hidden;
+        page-break-inside: avoid;
     }
 
     .quotation-table {
@@ -292,16 +340,16 @@
     }
 
     .quotation-table thead {
-        background: #e8eef5;
-        border-bottom: 1.5px solid #1a3a5c;
+        background: #163a70;
+        color: #ffffff;
     }
 
     .quotation-table th {
-        padding: 4px 3px;
+        padding: 6px 4px;
         text-align: center;
-        font-weight: 600;
-        color: #1a3a5c;
-        border-right: 1px solid #ccc;
+        font-weight: 700;
+        color: #ffffff;
+        border-right: 1px solid #0d1f3d;
         font-size: 9px;
         letter-spacing: 0.2px;
         line-height: 1.2;
@@ -312,11 +360,11 @@
     }
 
     .quotation-table tbody td {
-        padding: 3px 3px;
-        border-right: 1px solid #e0e0e0;
-        border-bottom: 1px solid #e0e0e0;
+        padding: 4px 4px;
+        border-right: 1px solid #d8d8d8;
+        border-bottom: 1px solid #e8e8e8;
         background: #ffffff;
-        line-height: 1.25;
+        line-height: 1.3;
     }
 
     .quotation-table tbody td:last-child {
@@ -324,70 +372,71 @@
     }
 
     .quotation-table tbody tr:last-child td {
-        border-bottom: 1px solid #ccc;
+        border-bottom: 1px solid #999999;
     }
 
     .quotation-table .col-no {
-        width: 7%;
+        width: 6%;
         text-align: center;
-        color: #2c2c2c;
-        font-size: 10px;
+        color: #222222;
+        font-size: 9px;
     }
 
     .quotation-table .col-name {
-        width: 42%;
+        width: 44%;
         text-align: left;
-        padding-left: 5px;
-        color: #2c2c2c;
-        font-size: 10px;
+        padding-left: 6px;
+        color: #222222;
+        font-size: 9px;
     }
 
     .quotation-table .col-qty {
         width: 10%;
         text-align: center;
-        color: #2c2c2c;
-        font-size: 10px;
+        color: #222222;
+        font-size: 9px;
     }
 
     .quotation-table .col-unit {
         width: 8%;
         text-align: center;
-        color: #2c2c2c;
-        font-size: 10px;
+        color: #222222;
+        font-size: 9px;
     }
 
     .quotation-table .col-price {
         width: 16%;
         text-align: right;
-        padding-right: 5px;
-        color: #2c2c2c;
-        font-family: 'Courier New', monospace;
-        font-size: 10px;
+        padding-right: 6px;
+        color: #222222;
+        font-family: 'Courier New', 'Lucida Console', monospace;
+        font-size: 9px;
     }
 
     .quotation-table .col-amount {
-        width: 17%;
+        width: 16%;
         text-align: right;
-        padding-right: 5px;
-        color: #1a3a5c;
-        font-weight: 500;
-        font-family: 'Courier New', monospace;
-        font-size: 10px;
+        padding-right: 6px;
+        color: #163a70;
+        font-weight: 600;
+        font-family: 'Courier New', 'Lucida Console', monospace;
+        font-size: 9px;
     }
 
     /* 空行のスタイル */
     .quotation-table tbody tr.empty-row td {
         background: #fafbfc;
-        color: #ccc;
+        color: #d8d8d8;
     }
 
     /* ===== 小計・合計エリア ===== */
     .summary-section {
         width: 100%;
         display: grid;
-        grid-template-columns: 1fr 180px;
-        margin: 1mm 0 2mm;
+        grid-template-columns: 1fr 150px;
+        margin: 0 0 4mm;
         gap: 0;
+        page-break-inside: avoid;
     }
 
     .summary-table {
@@ -398,17 +447,19 @@
     .summary-row {
         display: grid;
         grid-template-columns: 1fr 90px;
-        gap: 10px;
-        padding: 4px 6px;
-        border-bottom: 1px solid #e0e0e0;
+        gap: 0;
+        padding: 5px 8px;
+        border-bottom: 1px solid #d8d8d8;
         font-size: 9px;
         align-items: center;
+        background: #ffffff;
     }
 
     .summary-row.subtotal {
-        background: #f9fafb;
-        border-top: 1.5px solid #1a3a5c;
-        border-bottom: 1px solid #e0e0e0;
+        background: #ffffff;
+        border-top: 1.5px solid #163a70;
+        border-bottom: 1px solid #d8d8d8;
+        padding: 6px 8px;
     }
 
     .summary-row.discount {
@@ -416,63 +467,76 @@
     }
 
     .summary-row.total {
-        background: #e8eef5;
-        border-top: 1.5px solid #1a3a5c;
+        background: #163a70;
+        color: #ffffff;
+        border-top: 1.5px solid #163a70;
         border-bottom: none;
-        font-weight: 600;
-        color: #1a3a5c;
+        font-weight: 700;
+        padding: 8px 8px;
     }
 
     .summary-label {
-        color: #666;
-        font-weight: 600;
+        color: #666666;
+        font-weight: 700;
         font-size: 9px;
     }
 
     .summary-row.total .summary-label {
-        color: #1a3a5c;
+        color: #ffffff;
     }
 
     .summary-value {
         text-align: right;
-        color: #2c2c2c;
-        font-family: 'Courier New', monospace;
-        font-weight: 500;
+        color: #222222;
+        font-family: 'Courier New', 'Lucida Console', monospace;
+        font-weight: 600;
         font-size: 9px;
     }
 
     .summary-row.total .summary-value {
-        color: #1a3a5c;
-        font-size: 10px;
+        color: #ffffff;
+        font-size: 11px;
     }
 
     /* ===== 備考欄 ===== */
     .remarks-section {
         width: 100%;
-        margin-top: 2mm;
+        margin-top: 3mm;
         display: flex;
         flex-direction: column;
+        gap: 4px;
+        page-break-inside: avoid;
     }
 
     .remarks-title {
-        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 700;
         font-size: 10px;
-        color: #1a3a5c;
-        margin-bottom: 4px;
-        padding-bottom: 2px;
-        border-bottom: 1px solid #d0d0d0;
-        letter-spacing: 0.2px;
+        color: #163a70;
+        margin: 0;
+        letter-spacing: 0.3px;
+    }
+
+    .remarks-icon {
+        width: 10px;
+        height: 10px;
+        background: #163a70;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
     }
 
     .remarks-box {
         width: 100%;
-        border: 1px solid #d0d0d0;
-        padding: 5mm 6mm;
-        height: 35mm;
-        background: #fafbfc;
-        font-size: 9.5px;
-        line-height: 1.4;
-        color: #2c2c2c;
+        border: 1.5px solid #4a7ba7;
+        padding: 6mm 7mm;
+        min-height: 40mm;
+        background: #ffffff;
+        font-size: 9px;
+        line-height: 1.5;
+        color: #222222;
         white-space: pre-wrap;
         word-break: break-word;
         overflow: hidden;
@@ -603,8 +667,10 @@
     
     <!-- ===== ヘッダー（タイトル + 右上情報） ===== -->
     <div class="quotation-header">
+        <div class="header-accent-bar"></div>
         <div class="header-title-box">
             <h1 class="header-title">見積書</h1>
+            <p class="header-subtitle">下記の通りお見積り申し上げます。</p>
         </div>
         <div class="header-meta">
             <div class="meta-item">
@@ -633,6 +699,9 @@
         
         <!-- 左側：顧客情報 -->
         <div class="recipient-section">
+            <!-- お客様ラベル -->
+            <div class="recipient-label">お客様</div>
+
             <!-- 顧客ボックス -->
             <div class="recipient-box">
                 <div class="recipient-company">{{ customer_display_name or '-' }}</div>
@@ -680,9 +749,9 @@
                 <div class="company-info-line title">Smart Industry営業グループ</div>
                 <div class="company-info-line">〒441-8560</div>
                 <div class="company-info-line">愛知県豊橋市植田町字大膳39-5</div>
-                <div class="company-info-line" style="margin-top: 6px;">TEL：0532-25-8111</div>
+                <div class="company-info-line tel">TEL：0532-25-8111</div>
                 {% if estimator_info %}
-                <div class="company-info-line" style="margin-top: 8px;">見積作成：{{ estimator_info }}</div>
+                <div class="company-info-line estimator">見積作成：{{ estimator_info }}</div>
                 {% endif %}
             </div>
         </div>
@@ -779,7 +848,10 @@
 
     <!-- ===== 備考欄 ===== -->
     <div class="remarks-section">
-        <div class="remarks-title">備考</div>
+        <div class="remarks-title">
+            <span class="remarks-icon"></span>
+            <span>備考</span>
+        </div>
         <div class="remarks-box">{% if quotation.remarks %}{{ quotation.remarks }}{% elif summary.remarks %}{{ summary.remarks }}{% else %}-{% endif %}</div>
     </div>
 

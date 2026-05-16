@@ -18,11 +18,11 @@
 
     /* ===== 見積書シート全体 ===== */
     .quotation-sheet {
-        width: 190mm;
+        width: 210mm;
+        max-width: 210mm;
         height: auto;
-        max-height: 297mm;
         margin: 15px auto;
-        padding: 10mm;
+        padding: 8mm 10mm;
         background: #ffffff;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         font-family: 'Noto Sans JP', 'Segoe UI', 'Yu Gothic', 'Meiryo', sans-serif;
@@ -38,8 +38,8 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
-        margin-bottom: 8mm;
-        padding-bottom: 8mm;
+        margin-bottom: 5mm;
+        padding-bottom: 6mm;
         border-bottom: 2px solid #1a3a5c;
         align-items: flex-start;
     }
@@ -92,9 +92,9 @@
     /* ===== コンテンツエリア（顧客 + 自社情報） ===== */
     .quotation-content {
         display: grid;
-        grid-template-columns: 1.2fr 1fr;
-        gap: 12mm;
-        margin-bottom: 8mm;
+        grid-template-columns: 1.05fr 1fr;
+        gap: 10mm;
+        margin-bottom: 4mm;
         font-size: 10px;
     }
 
@@ -205,48 +205,62 @@
         margin-top: 4px;
     }
 
-    /* ===== 合計金額ボックス（中央） ===== */
+    /* ===== 合計金額ボックス（横長帯） ===== */
     .total-section {
-        display: flex;
-        justify-content: center;
-        margin: 6mm 0;
+        width: 100%;
+        margin: 3mm 0 3mm;
     }
 
     .total-box {
-        border: 2px solid #1a3a5c;
-        border-radius: 3px;
-        padding: 8mm 16mm;
-        text-align: center;
-        background: #f9fafb;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        width: 100%;
+        display: grid;
+        grid-template-columns: 50mm 1fr 70mm;
+        background: #1a3a5c;
+        color: #ffffff;
+        min-height: 18mm;
+        box-sizing: border-box;
+        box-shadow: none;
+        border: none;
     }
 
     .total-label {
-        font-size: 10px;
-        color: #666;
-        font-weight: 600;
-        margin-bottom: 4px;
-        letter-spacing: 0.2px;
+        font-size: 11px;
+        color: #ffffff;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 6mm;
+        letter-spacing: 0.3px;
+        background: #0b2f55;
     }
 
     .total-amount {
-        font-size: 28px;
+        font-size: 26px;
         font-weight: 700;
-        color: #1a3a5c;
-        margin: 0;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 8mm;
         letter-spacing: 0.3px;
     }
 
     .total-note {
         font-size: 8px;
-        color: #888;
-        margin-top: 4px;
+        color: #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 6mm;
         font-weight: 500;
+        background: #1a3a5c;
     }
 
     /* ===== 明細テーブル ===== */
     .details-section {
-        margin: 6mm 0;
+        width: 100%;
+        margin: 2mm 0;
         overflow: hidden;
     }
 
@@ -295,50 +309,51 @@
     }
 
     .quotation-table .col-no {
-        width: 26px;
+        width: 7%;
         text-align: center;
         color: #2c2c2c;
-        font-size: 9px;
+        font-size: 10px;
     }
 
     .quotation-table .col-name {
+        width: 42%;
         text-align: left;
-        padding-left: 4px;
+        padding-left: 5px;
         color: #2c2c2c;
-        font-size: 9px;
+        font-size: 10px;
     }
 
     .quotation-table .col-qty {
-        width: 45px;
+        width: 10%;
         text-align: center;
         color: #2c2c2c;
-        font-size: 9px;
+        font-size: 10px;
     }
 
     .quotation-table .col-unit {
-        width: 40px;
+        width: 8%;
         text-align: center;
         color: #2c2c2c;
-        font-size: 9px;
+        font-size: 10px;
     }
 
     .quotation-table .col-price {
-        width: 75px;
+        width: 16%;
         text-align: right;
-        padding-right: 4px;
+        padding-right: 5px;
         color: #2c2c2c;
         font-family: 'Courier New', monospace;
-        font-size: 9px;
+        font-size: 10px;
     }
 
     .quotation-table .col-amount {
-        width: 85px;
+        width: 17%;
         text-align: right;
-        padding-right: 4px;
+        padding-right: 5px;
         color: #1a3a5c;
         font-weight: 500;
         font-family: 'Courier New', monospace;
-        font-size: 9px;
+        font-size: 10px;
     }
 
     /* 空行のスタイル */
@@ -349,13 +364,16 @@
 
     /* ===== 小計・合計エリア ===== */
     .summary-section {
-        display: flex;
-        justify-content: flex-end;
-        margin: 4mm 0;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 180px;
+        margin: 1mm 0 2mm;
+        gap: 0;
     }
 
     .summary-table {
-        width: 260px;
+        width: 100%;
+        grid-column: 2;
     }
 
     .summary-row {
@@ -411,7 +429,8 @@
 
     /* ===== 備考欄 ===== */
     .remarks-section {
-        margin-top: 4mm;
+        width: 100%;
+        margin-top: 2mm;
         display: flex;
         flex-direction: column;
     }
@@ -427,16 +446,18 @@
     }
 
     .remarks-box {
+        width: 100%;
         border: 1px solid #d0d0d0;
-        padding: 6mm;
-        height: 32mm;
+        padding: 5mm 6mm;
+        height: 35mm;
         background: #fafbfc;
-        font-size: 9px;
+        font-size: 9.5px;
         line-height: 1.4;
         color: #2c2c2c;
         white-space: pre-wrap;
         word-break: break-word;
         overflow: hidden;
+        box-sizing: border-box;
     }
 
     /* ===== ボタンエリア ===== */
@@ -463,7 +484,7 @@
     @media print {
         @page {
             size: A4 portrait;
-            margin: 6mm;
+            margin: 0;
         }
 
         html, body {
@@ -483,11 +504,11 @@
         }
 
         .quotation-sheet {
-            width: 100%;
+            width: 210mm;
+            max-width: 210mm;
             height: auto;
-            max-height: none;
             margin: 0;
-            padding: 8mm;
+            padding: 8mm 10mm;
             box-shadow: none;
             border: none;
             page-break-after: avoid;

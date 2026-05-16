@@ -1,87 +1,372 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="container-fluid print-container mt-4" id="print-section">
-    <div class="print-header mb-5">
-        <div class="d-flex justify-content-between align-items-start">
-            <h2 class="mb-3">見積書</h2>
-        </div>
-        
-        <!-- 基本情報 -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="mb-2">
-                    <span class="text-muted">宛先企業名:</span>
-                    <strong>{{ quotation.company_name }}</strong>
-                </div>
-                <div class="mb-2">
-                    <span class="text-muted">担当者名:</span>
-                    <strong>{{ quotation.contact_name or "-" }}</strong>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="mb-2">
-                    <span class="text-muted">案件名:</span>
-                    <strong>{{ quotation.project_name }}</strong>
-                </div>
-                <div class="mb-2">
-                    <span class="text-muted">見積作成担当:</span>
-                    <strong>{{ quotation.estimator_name or "-" }}</strong>
-                </div>
-            </div>
-        </div>
 
-        <!-- 納期・条件 -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="mb-2">
-                    <span class="text-muted">納期:</span>
-                    <strong>{{ quotation.delivery_date or "-" }}</strong>
-                </div>
-                <div class="mb-2">
-                    <span class="text-muted">引渡条件:</span>
-                    <strong>{{ quotation.delivery_terms or "-" }}</strong>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="mb-2">
-                    <span class="text-muted">支払条件:</span>
-                    <strong>{{ quotation.payment_terms or "-" }}</strong>
-                </div>
-                <div class="mb-2">
-                    <span class="text-muted">有効期限:</span>
-                    <strong>{{ quotation.valid_until or "-" }}</strong>
-                </div>
-            </div>
-        </div>
+<style>
+    /* 見積書シート用レイアウト */
+    .quotation-sheet {
+        max-width: 1050px;
+        margin: 24px auto;
+        padding: 40px;
+        background: #fff;
+        border: 1px solid #ddd;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
 
-        {% if quotation.remarks %}
-        <div class="mb-4">
-            <span class="text-muted">摘要:</span>
-            <div class="border-top pt-2">{{ quotation.remarks }}</div>
+    /* ヘッダー */
+    .quotation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 20px;
+    }
+
+    .quotation-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #000;
+    }
+
+    .quotation-meta {
+        text-align: right;
+        font-size: 12px;
+    }
+
+    .quotation-meta-item {
+        margin: 4px 0;
+        line-height: 1.6;
+    }
+
+    /* 宛先・案件情報 */
+    .quotation-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    .info-block {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 13px;
+    }
+
+    .info-label {
+        color: #666;
+        min-width: 80px;
+        flex-shrink: 0;
+    }
+
+    .info-value {
+        font-weight: 500;
+        flex-grow: 1;
+    }
+
+    /* 明細テーブル */
+    .quotation-details-section {
+        margin: 30px 0;
+    }
+
+    .quotation-details-title {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 12px;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 6px;
+    }
+
+    .quotation-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 12px;
+    }
+
+    .quotation-table thead {
+        background-color: #f5f5f5;
+        border: 1px solid #ddd;
+    }
+
+    .quotation-table thead tr {
+        border: 1px solid #ddd;
+    }
+
+    .quotation-table th {
+        padding: 10px;
+        text-align: left;
+        font-weight: bold;
+        border: 1px solid #ddd;
+        color: #333;
+    }
+
+    .quotation-table tbody tr {
+        border: 1px solid #ddd;
+    }
+
+    .quotation-table td {
+        padding: 10px;
+        border: 1px solid #ddd;
+    }
+
+    .quotation-table th.col-no {
+        width: 40px;
+        text-align: center;
+    }
+
+    .quotation-table th.col-name {
+        width: auto;
+        flex-grow: 1;
+    }
+
+    .quotation-table th.col-qty {
+        width: 70px;
+        text-align: center;
+    }
+
+    .quotation-table th.col-price {
+        width: 110px;
+        text-align: right;
+    }
+
+    .quotation-table th.col-subtotal {
+        width: 110px;
+        text-align: right;
+    }
+
+    .quotation-table td.col-no {
+        text-align: center;
+    }
+
+    .quotation-table td.col-name {
+        text-align: left;
+    }
+
+    .quotation-table td.col-qty {
+        text-align: center;
+    }
+
+    .quotation-table td.col-price {
+        text-align: right;
+        font-family: monospace;
+    }
+
+    .quotation-table td.col-subtotal {
+        text-align: right;
+        font-family: monospace;
+    }
+
+    /* 合計欄 */
+    .quotation-totals {
+        margin: 30px 0;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .totals-box {
+        width: 280px;
+    }
+
+    .totals-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        font-size: 12px;
+    }
+
+    .totals-row.header {
+        background-color: #f5f5f5;
+        font-weight: bold;
+    }
+
+    .totals-row.total {
+        background-color: #fff;
+        border-top: 2px solid #000;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    .totals-label {
+        flex-grow: 1;
+    }
+
+    .totals-value {
+        text-align: right;
+        font-family: monospace;
+        white-space: nowrap;
+    }
+
+    /* 備考欄 */
+    .quotation-remarks-section {
+        margin: 30px 0;
+    }
+
+    .quotation-remarks-title {
+        font-size: 12px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    .quotation-remarks {
+        padding: 10px;
+        border: 1px solid #ddd;
+        background-color: #fafafa;
+        min-height: 30px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    /* ボタンエリア */
+    .quotation-buttons {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+    }
+
+    .quotation-buttons button {
+        margin: 0 8px;
+    }
+
+    /* 印刷時のスタイル */
+    @media print {
+        body {
+            background: #fff !important;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            display: none !important;
+        }
+
+        .quotation-sheet {
+            max-width: none;
+            margin: 0;
+            padding: 12mm;
+            border: none;
+            box-shadow: none;
+            page-break-after: avoid;
+        }
+
+        .quotation-buttons {
+            display: none !important;
+        }
+
+        .quotation-header {
+            border-bottom: 2px solid #000;
+        }
+
+        .quotation-table {
+            page-break-inside: avoid;
+        }
+
+        .quotation-totals {
+            page-break-inside: avoid;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 12mm;
+        }
+    }
+</style>
+
+<!-- メイン見積書シート -->
+<div class="quotation-sheet">
+    
+    <!-- ヘッダー -->
+    <div class="quotation-header">
+        <div class="quotation-title">見積書</div>
+        <div class="quotation-meta">
+            <div class="quotation-meta-item">
+                <span style="color: #999;">見積No.：</span>
+                <strong>{{ quotation.quotation_no }}</strong>
+            </div>
+            <div class="quotation-meta-item">
+                <span style="color: #999;">改定No.：</span>
+                <strong>{{ quotation.revision_no or "0" }}</strong>
+            </div>
+            {% if quotation.created_at %}
+            <div class="quotation-meta-item">
+                <span style="color: #999;">発行日：</span>
+                <strong>{{ quotation.created_at.strftime('%Y/%m/%d') }}</strong>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
-    <hr class="my-4">
+    <!-- 宛先・案件情報 -->
+    <div class="quotation-info">
+        <!-- 左：宛先情報 -->
+        <div class="info-block">
+            <div class="info-item">
+                <span class="info-label">宛先企業名</span>
+                <span class="info-value">{{ customer_display_name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">担当者名</span>
+                <span class="info-value">{{ quotation.contact_name or "-" }}</span>
+            </div>
+        </div>
 
-    <!-- 明細テーブル -->
-    <div class="print-details mb-4">
-        <h5 class="mb-3">明細</h5>
-        <table class="table table-bordered table-sm">
-            <thead class="table-light">
+        <!-- 右：案件・条件情報 -->
+        <div class="info-block">
+            <div class="info-item">
+                <span class="info-label">案件名</span>
+                <span class="info-value">{{ quotation.project_name or "-" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">見積作成担当</span>
+                <span class="info-value">{{ estimator_info or "-" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">支払条件</span>
+                <span class="info-value">{{ quotation.payment_terms or "-" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">納期</span>
+                <span class="info-value">{{ quotation.delivery_date or "-" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">引渡条件</span>
+                <span class="info-value">{{ quotation.delivery_terms or "-" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">有効期限</span>
+                <span class="info-value">{{ quotation.valid_until or "-" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 明細セクション -->
+    <div class="quotation-details-section">
+        <div class="quotation-details-title">明細</div>
+        
+        <table class="quotation-table">
+            <thead>
                 <tr>
-                    <th style="width: 5%;">No.</th>
-                    <th style="width: 40%;">品名・説明</th>
-                    <th style="width: 15%;">数量</th>
-                    <th style="width: 15%;">単価</th>
-                    <th style="width: 15%; text-align: right;">小計</th>
+                    <th class="col-no">No.</th>
+                    <th class="col-name">品名・説明</th>
+                    <th class="col-qty">数量</th>
+                    <th class="col-price">単価</th>
+                    <th class="col-subtotal">小計</th>
                 </tr>
             </thead>
             <tbody>
                 {% for detail in details %}
                 <tr>
-                    <td style="text-align: center;">{{ loop.index }}</td>
-                    <td>
+                    <td class="col-no">{{ loop.index }}</td>
+                    <td class="col-name">
                         {% if detail.description %}
                             {{ detail.description }}
                         {% elif detail.product %}
@@ -90,71 +375,55 @@
                             -
                         {% endif %}
                     </td>
-                    <td style="text-align: right;">{{ detail.quantity|default(0)|int }}</td>
-                    <td style="text-align: right;">¥{{ "{:,}".format(detail.price|default(0)|int) }}</td>
-                    <td style="text-align: right;">¥{{ "{:,}".format(detail.subtotal|default(0)|int) }}</td>
+                    <td class="col-qty">{{ detail.quantity|default(0)|int }}</td>
+                    <td class="col-price">¥{{ "{:,}".format(detail.price|default(0)|int) }}</td>
+                    <td class="col-subtotal">¥{{ "{:,}".format(detail.subtotal|default(0)|int) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <hr class="my-4">
-
-    <!-- 合計・値引き・最終合計 -->
-    <div class="print-totals">
-        <div class="row justify-content-end">
-            <div class="col-md-6">
-                <table class="table table-sm border-top border-bottom mb-3">
-                    <tbody>
-                        <tr>
-                            <td class="fw-bold">合計売価:</td>
-                            <td style="text-align: right;">
-                                <strong>¥{{ "{:,}".format(total_amount|int) }}</strong>
-                            </td>
-                        </tr>
-                        {% if discount_amount > 0 %}
-                        <tr>
-                            <td class="fw-bold">値引き額:</td>
-                            <td style="text-align: right;">
-                                <strong>-¥{{ "{:,}".format(discount_amount|int) }}</strong>
-                            </td>
-                        </tr>
-                        <tr class="table-light">
-                            <td class="fw-bold fs-5">最終合計売価:</td>
-                            <td style="text-align: right;">
-                                <strong class="fs-5">¥{{ "{:,}".format(total_after_discount|int) }}</strong>
-                            </td>
-                        </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
+    <!-- 合計欄 -->
+    <div class="quotation-totals">
+        <div class="totals-box">
+            <div class="totals-row header">
+                <span class="totals-label">合計売価</span>
+                <span class="totals-value">¥{{ "{:,}".format(total_amount|int) }}</span>
             </div>
+            {% if discount_amount and discount_amount > 0 %}
+            <div class="totals-row">
+                <span class="totals-label">値引き額</span>
+                <span class="totals-value">-¥{{ "{:,}".format(discount_amount|int) }}</span>
+            </div>
+            <div class="totals-row total">
+                <span class="totals-label">最終合計売価</span>
+                <span class="totals-value">¥{{ "{:,}".format(total_after_discount|int) }}</span>
+            </div>
+            {% endif %}
         </div>
     </div>
 
-    <!-- 印刷ボタン -->
-    <div class="print-button-area mt-5 mb-4 d-print-none">
-        <div class="d-flex gap-2 justify-content-center">
-            <button type="button" class="btn btn-primary" onclick="window.print()">
-                印刷
-            </button>
-            <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
-                戻る
-            </button>
+    <!-- 備考 -->
+    {% if quotation.remarks or summary.remarks %}
+    <div class="quotation-remarks-section">
+        <div class="quotation-remarks-title">備考</div>
+        <div class="quotation-remarks">
+            {{ quotation.remarks or summary.remarks or "特に無し" }}
         </div>
     </div>
+    {% endif %}
 
-<style media="print">
-    .d-print-none {
-        display: none !important;
-    }
-    .print-container {
-        margin: 0;
-        padding: 20mm;
-    }
-    body {
-        background: white;
-    }
-</style>
+    <!-- ボタン（印刷時は非表示） -->
+    <div class="quotation-buttons no-print">
+        <button type="button" class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print"></i> 印刷
+        </button>
+        <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+            <i class="fas fa-arrow-left"></i> 戻る
+        </button>
+    </div>
+
+</div>
+
 {% endblock %}

@@ -315,16 +315,18 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     band_h = total_band_height_mm * mm
     band_center_y = total_band_y + band_h / 2
     
-    # ラベル「合計金額」（12pt）- 帯の上下中央に配置
+    # ラベル「合計金額」（12pt）- 視覚的に帯の上下中央に配置
     label_font_size = 12
-    label_baseline_y = band_center_y - label_font_size * 0.35
+    # フォントの視覚的中央がband_center_yに来るようにベースラインをオフセット
+    label_baseline_y = band_center_y - label_font_size * 0.25
     c.setFont(font_name, label_font_size)
     c.setFillColor(white)
     c.drawString(left_margin + 4*mm, label_baseline_y, "合計金額")
     
-    # 金額「￥582,000」（30pt）- 帯の上下中央に配置
+    # 金額「￥582,000」（30pt）- 視覚的に帯の上下中央に配置
     amount_font_size = 30
-    amount_baseline_y = band_center_y - amount_font_size * 0.35
+    # フォントの視覚的中央がband_center_yに来るようにベースラインをオフセット
+    amount_baseline_y = band_center_y - amount_font_size * 0.25
     c.setFont(font_name, amount_font_size)
     c.setFillColor(white)
     c.drawRightString(width - right_margin - 40*mm, amount_baseline_y, f"¥{int(total_amount):,}")
@@ -333,8 +335,8 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     note_font_size = 6
     note_x = width - right_margin - 37*mm
     note_line_gap = 3.5 * mm
-    # ReportLab のベースライン補正：フォントサイズの約35%がベースライン下
-    note_baseline_offset = note_font_size * 0.35
+    # フォントの視覚的中央を基準に配置
+    note_baseline_offset = note_font_size * 0.25
     note_y1 = band_center_y + note_line_gap / 2 - note_baseline_offset
     note_y2 = band_center_y - note_line_gap / 2 - note_baseline_offset
     

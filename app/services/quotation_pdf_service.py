@@ -132,7 +132,7 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     # 余白
     left_margin = 8 * mm
     right_margin = 8 * mm
-    top_margin = 8 * mm
+    top_margin = 7 * mm
     bottom_margin = 8 * mm
     
     page_width = width - left_margin - right_margin
@@ -140,33 +140,33 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     # ========================================
     # A4上からのmm座標定義（すべてA4上端からの距離）
     # ========================================
-    header_title_top_mm = 13
-    header_subtitle_top_mm = 34
-    header_line_top_mm = 43
+    header_title_top_mm = 12
+    header_subtitle_top_mm = 33
+    header_line_top_mm = 42
     
-    info_top_mm = 48
-    customer_label_top_mm = 48
-    customer_name_top_mm = 55
-    conditions_top_mm = 78
+    info_top_mm = 46
+    customer_label_top_mm = 46
+    customer_name_top_mm = 53
+    conditions_top_mm = 76
     
-    company_logo_top_mm = 50
-    company_name_top_mm = 64
-    company_tel_top_mm = 86
+    company_logo_top_mm = 48
+    company_name_top_mm = 62
+    company_tel_top_mm = 84
     
-    total_band_top_mm = 108
-    total_band_height_mm = 15
+    total_band_top_mm = 103
+    total_band_height_mm = 16
     
-    table_top_mm = 127
-    table_header_height_mm = 5.5
-    detail_row_height_mm = 4.5
+    table_top_mm = 124
+    table_header_height_mm = 5.8
+    detail_row_height_mm = 4.9
     detail_rows_count = 15
     
-    summary_top_mm = 198
-    summary_row_height_mm = 5
-    summary_total_height_mm = 6
+    summary_top_mm = 206
+    summary_row_height_mm = 5.5
+    summary_total_height_mm = 6.5
     
-    remarks_label_top_mm = 218
-    remarks_box_top_mm = 224
+    remarks_label_top_mm = 225
+    remarks_box_top_mm = 232
     remarks_box_height_mm = 50
     
     # ========================================
@@ -180,9 +180,9 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     # 左側：濃紺バー + 「見積書」タイトル
     header_line_y = _y_from_top(header_line_top_mm, height)
     c.setFillColor(navy)
-    c.rect(left_margin, header_line_y, 3*mm, title_y - header_line_y, fill=1, stroke=0)
+    c.rect(left_margin, header_line_y, 2*mm, title_y - header_line_y, fill=1, stroke=0)
     
-    c.setFont(font_name, 42)
+    c.setFont(font_name, 44)
     c.setFillColor(navy)
     c.drawString(left_margin + 6*mm, title_y - 8*mm, "見積書")
     
@@ -195,9 +195,9 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.setFillColor(text_color)
     
     issued_date = quotation.created_at.strftime("%Y年%m月%d日") if quotation.created_at else "日付なし"
-    c.drawRightString(width - right_margin, _y_from_top(18, height), f"発行日：{issued_date}")
-    c.drawRightString(width - right_margin, _y_from_top(23, height), f"見積No：{quotation.quotation_no or '-'}")
-    c.drawRightString(width - right_margin, _y_from_top(28, height), f"改定No：{quotation.revision_no or 0}")
+    c.drawRightString(width - right_margin, _y_from_top(17, height), f"発行日：{issued_date}")
+    c.drawRightString(width - right_margin, _y_from_top(22, height), f"見積No：{quotation.quotation_no or '-'}")
+    c.drawRightString(width - right_margin, _y_from_top(27, height), f"改定No：{quotation.revision_no or 0}")
     
     # ヘッダー下の水平線
     c.setLineWidth(0.5)
@@ -312,20 +312,20 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.rect(left_margin, total_band_y, page_width, total_band_height_mm * mm, fill=1, stroke=0)
     
     # 合計金額テキスト
-    c.setFont(font_name, 11)
+    c.setFont(font_name, 12)
     c.setFillColor(white)
-    c.drawString(left_margin + 4*mm, _y_from_top(total_band_top_mm + 4.5, height), "合計金額")
+    c.drawString(left_margin + 4*mm, _y_from_top(total_band_top_mm + 5, height), "合計金額")
     
-    c.setFont(font_name, 27)
+    c.setFont(font_name, 30)
     c.setFillColor(white)
-    c.drawRightString(width - right_margin - 40*mm, _y_from_top(total_band_top_mm + 4, height), f"¥{int(total_amount):,}")
+    c.drawRightString(width - right_margin - 40*mm, _y_from_top(total_band_top_mm + 5, height), f"¥{int(total_amount):,}")
     
     # 注記：2行化・読みやすく
     c.setFont(font_name, 6)
     c.setFillColor(white)
     note_x = width - right_margin - 37*mm
-    c.drawString(note_x, _y_from_top(total_band_top_mm + 5, height), "※本見積金額に")
-    c.drawString(note_x, _y_from_top(total_band_top_mm + 8, height), "消費税は含まれておりません")
+    c.drawString(note_x, _y_from_top(total_band_top_mm + 5.5, height), "※本見積金額に")
+    c.drawString(note_x, _y_from_top(total_band_top_mm + 8.5, height), "消費税は含まれておりません")
     
     # ========================================
     # 5. 明細表 - ReportLab座標で固定

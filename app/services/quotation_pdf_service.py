@@ -316,15 +316,17 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     band_center_y = total_band_y + band_h / 2
     
     # ラベル「合計金額」（12pt）
+    # ReportLab のベースライン補正：フォントサイズの約40%がベースライン下
     label_font_size = 12
-    label_baseline_y = band_center_y - label_font_size * 0.35
+    label_baseline_y = band_center_y - label_font_size * 0.40
     c.setFont(font_name, label_font_size)
     c.setFillColor(white)
     c.drawString(left_margin + 4*mm, label_baseline_y, "合計金額")
     
     # 金額「￥582,000」（30pt）
+    # ReportLab のベースライン補正：フォントサイズの約38%がベースライン下
     amount_font_size = 30
-    amount_baseline_y = band_center_y - amount_font_size * 0.35
+    amount_baseline_y = band_center_y - amount_font_size * 0.38
     c.setFont(font_name, amount_font_size)
     c.setFillColor(white)
     c.drawRightString(width - right_margin - 40*mm, amount_baseline_y, f"¥{int(total_amount):,}")
@@ -334,8 +336,10 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     note_x = width - right_margin - 37*mm
     note_line_gap = 3.5 * mm
     note_group_center_y = band_center_y
-    note_y1 = note_group_center_y + note_line_gap / 2 - note_font_size * 0.35
-    note_y2 = note_group_center_y - note_line_gap / 2 - note_font_size * 0.35
+    # ReportLab のベースライン補正：フォントサイズの約42%がベースライン下
+    note_baseline_offset = note_font_size * 0.42
+    note_y1 = note_group_center_y + note_line_gap / 2 - note_baseline_offset
+    note_y2 = note_group_center_y - note_line_gap / 2 - note_baseline_offset
     
     c.setFont(font_name, note_font_size)
     c.setFillColor(white)

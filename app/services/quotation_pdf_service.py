@@ -41,7 +41,7 @@ def _draw_musashi_logo(c, x, y, width=48*mm, height=None):
         height: ロゴ高さ（Noneの場合はアスペクト比を保つ）
     """
     # ロゴ画像パス
-    logo_path = os.path.join(current_app.root_path, 'static', 'img', 'musashi-logo.png')
+    logo_path = os.path.join(current_app.root_path, 'static', 'img', 'logo.png')
     
     if not os.path.exists(logo_path):
         # 画像がない場合はログのみ

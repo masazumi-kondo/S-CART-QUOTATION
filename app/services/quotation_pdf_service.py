@@ -302,14 +302,16 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
         c.setFillColor(navy)
     
     # ========================================
-    # 4. 合計金額帯（濃紺背景）- 安全な固定Y座標配置
+    # 4. 合計金額帯（濃紺背景）- 固定セル配置
     # ========================================
 
     subtotal = sum((getattr(d, 'subtotal', 0) or 0) for d in (quotation.details or []))
     discount_amount = quotation.discount_amount or 0
     total_amount = max(0, subtotal - discount_amount)
 
-    # A4上からのmm座標をReportLab座標に変換
+    amount_text = f"¥{int(total_amount):,}"
+
+    # A4上からの座標をReportLab座標へ変換
     total_band_y = _rect_y_from_top(total_band_top_mm, total_band_height_mm, height)
     total_band_h = total_band_height_mm * mm
 
@@ -317,29 +319,36 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.setFillColor(navy)
     c.rect(left_margin, total_band_y, page_width, total_band_h, fill=1, stroke=0)
 
-    # 表示テキスト
-    amount_text = f"¥{int(total_amount):,}"
+    # セル幅定義
+    label_w = 45 * mm
+    amount_w = 95 * mm
+    note_w = page_width - label_w - amount_w
 
-    # 列位置
-    label_x = left_margin + 7 * mm
-    amount_center_x = left_margin + page_width * 0.55
-    note_x = left_margin + page_width - 47 * mm
+    # セルの左端位置
+    label_x = left_margin
+    amount_x = left_margin + label_w
+    note_x = left_margin + label_w + amount_w
 
-    # 左ラベル「合計金額」
+    # 文字位置は帯下端からの固定距離（ベースライン）
+    label_baseline_y = total_band_y + 7.0 * mm
+    amount_baseline_y = total_band_y + 6.0 * mm
+    note_y1 = total_band_y + 10.0 * mm
+    note_y2 = total_band_y + 6.2 * mm
+
+    # 左ラベルセル：「合計金額」
+    c.setFillColor(white)
     c.setFont(font_name, 10)
-    c.setFillColor(white)
-    c.drawString(label_x, total_band_y + 6.5 * mm, "合計金額")
+    c.drawString(label_x + 7 * mm, label_baseline_y, "合計金額")
 
-    # 中央金額「¥582,000」
-    c.setFont(font_name, 25)
-    c.setFillColor(white)
-    c.drawCentredString(amount_center_x, total_band_y + 5.5 * mm, amount_text)
+    # 中央金額セル：「¥582,000」
+    # drawCentredString は横中央、Y座標は固定値
+    c.setFont(font_name, 24)
+    c.drawCentredString(amount_x + amount_w / 2, amount_baseline_y, amount_text)
 
-    # 右側注記（2行）
+    # 右注記セル：2行
     c.setFont(font_name, 6.5)
-    c.setFillColor(white)
-    c.drawString(note_x, total_band_y + 9.5 * mm, "※本見積金額に")
-    c.drawString(note_x, total_band_y + 5.5 * mm, "消費税は含まれておりません")
+    c.drawString(note_x + 4 * mm, note_y1, "※本見積金額に")
+    c.drawString(note_x + 4 * mm, note_y2, "消費税は含まれておりません")
     
     # ========================================
     # 5. 明細表 - ReportLab座標で固定

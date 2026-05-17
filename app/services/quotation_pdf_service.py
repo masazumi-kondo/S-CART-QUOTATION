@@ -311,21 +311,36 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.setFillColor(navy)
     c.rect(left_margin, total_band_y, page_width, total_band_height_mm * mm, fill=1, stroke=0)
     
-    # 合計金額テキスト
-    c.setFont(font_name, 12)
-    c.setFillColor(white)
-    c.drawString(left_margin + 4*mm, _y_from_top(total_band_top_mm + 5, height), "合計金額")
+    # 帯の中央Y座標を計算（フォントサイズを考慮したベースライン補正）
+    band_h = total_band_height_mm * mm
+    band_center_y = total_band_y + band_h / 2
     
-    c.setFont(font_name, 30)
+    # ラベル「合計金額」（12pt）
+    label_font_size = 12
+    label_baseline_y = band_center_y - label_font_size * 0.35
+    c.setFont(font_name, label_font_size)
     c.setFillColor(white)
-    c.drawRightString(width - right_margin - 40*mm, _y_from_top(total_band_top_mm + 5, height), f"¥{int(total_amount):,}")
+    c.drawString(left_margin + 4*mm, label_baseline_y, "合計金額")
     
-    # 注記：2行化・読みやすく
-    c.setFont(font_name, 6)
+    # 金額「￥582,000」（30pt）
+    amount_font_size = 30
+    amount_baseline_y = band_center_y - amount_font_size * 0.35
+    c.setFont(font_name, amount_font_size)
     c.setFillColor(white)
+    c.drawRightString(width - right_margin - 40*mm, amount_baseline_y, f"¥{int(total_amount):,}")
+    
+    # 注記：2行化・上下中央に配置
+    note_font_size = 6
     note_x = width - right_margin - 37*mm
-    c.drawString(note_x, _y_from_top(total_band_top_mm + 5.5, height), "※本見積金額に")
-    c.drawString(note_x, _y_from_top(total_band_top_mm + 8.5, height), "消費税は含まれておりません")
+    note_line_gap = 3.5 * mm
+    note_group_center_y = band_center_y
+    note_y1 = note_group_center_y + note_line_gap / 2 - note_font_size * 0.35
+    note_y2 = note_group_center_y - note_line_gap / 2 - note_font_size * 0.35
+    
+    c.setFont(font_name, note_font_size)
+    c.setFillColor(white)
+    c.drawString(note_x, note_y1, "※本見積金額に")
+    c.drawString(note_x, note_y2, "消費税は含まれておりません")
     
     # ========================================
     # 5. 明細表 - ReportLab座標で固定

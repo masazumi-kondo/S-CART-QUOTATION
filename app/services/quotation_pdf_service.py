@@ -387,25 +387,25 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     y_pos -= 5*mm
     
     # ========================================
-    # 7. 備考欄
+    # 7. 備考欄 - 完全固定座標
     # ========================================
     
-    y_pos -= 1.5*mm
+    # 備考欄を絶対座標で完全固定
+    remarks_label_top = 228*mm          # ラベル「備考」の Y座標
+    remarks_box_top = 234*mm             # 枠の上端 Y座標
+    remarks_box_height = 24*mm           # 枠の高さ（固定）
+    remarks_box_bottom = remarks_box_top - remarks_box_height  # 枠の下端 Y座標 = 210mm
     
-    remarks_label_y = y_pos
+    # ラベル「備考」
     c.setFont(font_name, 8)
     c.setFillColor(navy)
-    c.drawString(left_margin + 2*mm, remarks_label_y, "●")
-    c.drawString(left_margin + 6*mm, remarks_label_y, "備考")
+    c.drawString(left_margin + 2*mm, remarks_label_top, "●")
+    c.drawString(left_margin + 6*mm, remarks_label_top, "備考")
     
-    y_pos -= 3.5*mm
-    
-    # 備考欄の高さを24mm固定
-    remarks_box_height = 24*mm
-    
+    # 備考欄の枠（固定高さ24mm）
     c.setLineWidth(0.5)
     c.setStrokeColor(border)
-    c.rect(left_margin, y_pos - remarks_box_height, page_width, remarks_box_height, fill=0, stroke=1)
+    c.rect(left_margin, remarks_box_bottom, page_width, remarks_box_height, fill=0, stroke=1)
     
     # 備考内容
     if quotation.remarks:
@@ -415,9 +415,9 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
         
         # 複数行対応
         lines = remarks_text.split('\n')
-        remarks_y = y_pos - 4*mm
+        remarks_y = remarks_box_top - 4*mm
         for line in lines[:8]:  # 最大8行
-            if remarks_y < y_pos - remarks_box_height + 2*mm:
+            if remarks_y < remarks_box_bottom + 2*mm:
                 break
             c.drawString(left_margin + 3*mm, remarks_y, line[:60])
             remarks_y -= 3.5*mm

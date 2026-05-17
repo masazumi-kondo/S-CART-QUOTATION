@@ -165,9 +165,9 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     summary_row_height_mm = 3.2
     summary_total_height_mm = 3.8
     
-    remarks_label_top_mm = 228
-    remarks_box_top_mm = 234
-    remarks_box_height_mm = 24
+    remarks_label_top_mm = 218
+    remarks_box_top_mm = 224
+    remarks_box_height_mm = 50
     
     # ========================================
     # 1. ヘッダー（見積書タイトル + 右上情報）

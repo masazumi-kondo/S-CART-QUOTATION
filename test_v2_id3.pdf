@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>S-CART Quotation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top mb-4">
+        <div class="container">
+            <a class="navbar-brand" id="nav-brand" href="/">S-CART Quotation</a>
+            <!-- DEBUG: layout.html loaded -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">ログイン</a>
+                        </li>
+                    </ul>
+                
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <!-- Flash messages -->
+        
+            
+        
+        
+        
+<div class="container" style="max-width: 420px; margin-top: 56px;">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h3 class="mb-4 text-center">ログイン</h3>
+
+      
+        
+      
+
+
+      <form method="post" action="/login">
+        
+          <input type="hidden" name="next" value="/quotation/3/pdf?">
+        
+        <div class="mb-3">
+          <label for="user_id" class="form-label">ユーザーID</label>
+          <input type="text" class="form-control" id="login_id" name="login_id" required autofocus>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">パスワード</label>
+          <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">ログイン</button>
+      </form>
+
+      <div class="text-muted mt-2" style="font-size: 0.9em;">
+        管理者のユーザー登録は、管理者でログイン後、画面上部メニューの「ユーザー登録」から行ってください。
+      </div>
+    </div>
+  </div>
+</div>
+
+    </div>
+    <footer class="text-center text-muted mt-5 mb-3" style="font-size: 0.9em;">
+        &copy; 2025 S-CART Quotation
+    </footer>
+    <!-- Bootstrap 5 JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+                document.addEventListener("submit", function(e){
+                    if (!e.target || e.target.tagName !== "FORM") return;
+                    // フォーム単位で二重送信ロック
+                    if (e.target.dataset.submitting === "1") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+
+                    // ブラウザ標準のバリデーションを先に走らせる（required等）
+                    if (typeof e.target.checkValidity === "function" && !e.target.checkValidity()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (typeof e.target.reportValidity === "function") {
+                            e.target.reportValidity();
+                        }
+                        return;
+                    }
+
+                    // confirm（フォームの種類を見分け）
+                    const action = (e.target.getAttribute("action") || "");
+                    let msg = null;
+                    const custom = e.target.getAttribute("data-confirm");
+                    if (custom) msg = custom;
+                    if (!msg && action.endsWith("/approve")) msg = "承認します。よろしいですか？";
+                    if (!msg && action.endsWith("/reject"))  msg = "却下します。よろしいですか？";
+                    if (msg && !confirm(msg)) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+
+                    // 二重送信抑止（全ボタン）
+                    e.target.dataset.submitting = "1";
+                    const btns = e.target.querySelectorAll("[data-disable-on-submit='1']");
+                    btns.forEach(btn => {
+                        btn.disabled = true;
+                        btn.dataset.originalText = btn.innerText;
+                        btn.innerText = "処理中...";
+                    });
+
+                    // 送信が失敗して同一ページに残った場合の保険（数秒後に解除）
+                    window.setTimeout(() => {
+                        if (e.target && e.target.dataset.submitting === "1") {
+                            e.target.dataset.submitting = "0";
+                            const btns2 = e.target.querySelectorAll("[data-disable-on-submit='1']");
+                            btns2.forEach(b => {
+                                b.disabled = false;
+                                if (b.dataset.originalText) b.innerText = b.dataset.originalText;
+                            });
+                        }
+                    }, 8000);
+                }, true);
+        </script>
+</body>
+</html>

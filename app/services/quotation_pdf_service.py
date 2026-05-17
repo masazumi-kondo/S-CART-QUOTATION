@@ -400,15 +400,8 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     
     y_pos -= 3.5*mm
     
-    # 備考欄の高さ計算：下部に最低8mm余白を確保
-    remarks_min_y = bottom_margin + 3*mm
-    remarks_available_height = y_pos - remarks_min_y
-    remarks_box_height = max(26*mm, remarks_available_height - 1.5*mm)
-    
-    # 枠の下端がページ内に収まるように調整
-    remarks_bottom_y = y_pos - remarks_box_height
-    if remarks_bottom_y < remarks_min_y:
-        remarks_box_height = y_pos - remarks_min_y
+    # 備考欄の高さを24mm固定
+    remarks_box_height = 24*mm
     
     c.setLineWidth(0.5)
     c.setStrokeColor(border)

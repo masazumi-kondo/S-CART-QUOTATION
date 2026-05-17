@@ -694,6 +694,12 @@ def quotation_pdf(quotation_id):
     
     response = Response(pdf_bytes, mimetype='application/pdf')
     response.headers['Content-Disposition'] = f'inline; filename="{filename_ascii}"'
+    
+    # キャッシュ無効化ヘッダー（古いPDFを表示させない）
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
     return response
 
 

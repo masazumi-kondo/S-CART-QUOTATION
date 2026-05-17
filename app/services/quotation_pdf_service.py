@@ -1,355 +1,423 @@
-"""
-見積書PDF生成サービス
-
-ReportLabを使用してサーバーサイドでA4縦1ページのPDFを直接生成します。
-"""
+﻿"""見積書PDF生成サービス - 正式日本語見積書レイアウト"""
 
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
-from reportlab.lib.colors import HexColor, white
+from reportlab.lib.colors import HexColor, white, black
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.lib.utils import ImageReader
 from datetime import datetime
-import os
+from flask import current_app
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
-
-def _register_japanese_font():
-    """日本語フォントを登録する"""
+# 日本語フォント登録
+def _register_japanese_fonts():
+    """日本語フォント登録"""
     try:
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-        
-        try:
-            pdfmetrics.registerFont(UnicodeCIDFont("HeiseiKakuGo-W5"))
-            return "HeiseiKakuGo-W5"
-        except Exception:
-            logger.warning("HeiseiKakuGo-W5 font not available")
-            try:
-                pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))
-                return "HeiseiMin-W3"
-            except Exception:
-                logger.warning("Japanese fonts not available, using Helvetica")
-                return "Helvetica"
+        pdfmetrics.registerFont(UnicodeCIDFont("HeiseiKakuGo-W5"))
+        pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))
+        return "HeiseiKakuGo-W5"
     except Exception as e:
-        logger.warning(f"Font registration error: {e}")
+        logger.error(f"[PDF] Error registering Japanese fonts: {e}")
         return "Helvetica"
 
-
-def generate_quotation_pdf(quotation, customer_display_name=None):
+def _draw_musashi_logo(c, x, y, width=48*mm, height=None):
     """
-    見積書PDFを生成して返す
+    MUSASHIロゴを画像ファイルから埋め込む
+    
+    正式ロゴ画像をそのまま使用。
+    アスペクト比を維持し、自然に配置する。
     
     Args:
-        quotation: Quotationオブジェクト
-        customer_display_name: 顧客表示名
-    
-    Returns:
-        bytes: PDFデータ
+        c: reportlab Canvas オブジェクト
+        x: ロゴの左端 X座標
+        y: ロゴの上端 Y座標
+        width: ロゴ幅（デフォルト 48mm）
+        height: ロゴ高さ（Noneの場合はアスペクト比を保つ）
     """
+    # ロゴ画像パス
+    logo_path = os.path.join(current_app.root_path, 'static', 'img', 'musashi-logo.png')
+    
+    if not os.path.exists(logo_path):
+        # 画像がない場合はログのみ
+        logger.warning(f"[PDF] Logo image not found: {logo_path}")
+        return
+    
+    try:
+        # 画像をImageReaderで読み込む
+        img_reader = ImageReader(logo_path)
+        img_width, img_height = img_reader.getSize()
+        
+        if img_width <= 0 or img_height <= 0:
+            logger.warning(f"[PDF] Invalid image size: {img_width}x{img_height}")
+            return
+        
+        # アスペクト比を計算
+        aspect_ratio = img_height / img_width
+        
+        # 指定幅に合わせて高さを計算
+        if height is None:
+            height = width * aspect_ratio
+        
+        # 画像を配置（x, y は左上座標）
+        c.drawImage(
+            logo_path,
+            x,
+            y - height,  # 上端から高さ分下がった位置が底辺
+            width=width,
+            height=height,
+            preserveAspectRatio=True,
+            mask='auto'
+        )
+    except Exception as e:
+        logger.error(f"[PDF] Error drawing logo image: {e}", exc_info=True)
+
+def generate_quotation_pdf(quotation, customer_display_name=None):
+    """正式日本語見積書PDF生成"""
+    
     buffer = BytesIO()
-    
-    # A4サイズ (210 x 297 mm)
-    width, height = A4
-    
-    # キャンバス作成
+    width, height = A4  # 210mm x 297mm
     c = canvas.Canvas(buffer, pagesize=A4)
     
-    # フォント登録
-    font_name = _register_japanese_font()
+    # 日本語フォント登録
+    font_name = _register_japanese_fonts()
     
     # 色定義
-    navy_color = HexColor("#163a70")
+    navy = HexColor("#163a70")
+    navy_light = HexColor("#4a7ba7")
+    border = HexColor("#cfd7e5")
     text_color = HexColor("#222222")
-    border_color = HexColor("#cfd7e5")
+    red = HexColor("#E31A24")
     
     # 余白
     left_margin = 8 * mm
     right_margin = 8 * mm
     top_margin = 8 * mm
+    bottom_margin = 8 * mm
     
-    # 実際の描画エリア
-    content_width = width - left_margin - right_margin
+    page_width = width - left_margin - right_margin
     
-    # y座標は上からの距離に変換（ReportLabは下が原点）
-    def y_from_top(distance_from_top):
-        return height - top_margin - distance_from_top
+    # ========================================
+    # 1. ヘッダー（見積書タイトル + 右上情報）
+    # ========================================
+    y_pos = height - top_margin
+    header_end_y = y_pos - 20*mm
     
-    # =============== ヘッダー ===============
-    header_y = y_from_top(0)
+    # 左側：濃紺バー + 「見積書」タイトル
+    c.setFillColor(navy)
+    c.rect(left_margin, header_end_y, 3*mm, y_pos - header_end_y, fill=1, stroke=0)
     
-    # 左側の濃紺バー
-    bar_width = 3 * mm
-    c.setFillColor(navy_color)
-    c.rect(left_margin, header_y - 18 * mm, bar_width, 18 * mm, fill=1)
+    c.setFont(font_name, 40)
+    c.setFillColor(navy)
+    c.drawString(left_margin + 6*mm, y_pos - 12*mm, "見積書")
     
-    # タイトル「見積書」
-    title_x = left_margin + bar_width + 4 * mm
-    c.setFont(font_name, 44)
-    c.setFillColor(navy_color)
-    c.drawString(title_x, header_y - 12 * mm, "見積書")
-    
-    # サブタイトル
-    c.setFont(font_name, 9)
+    c.setFont(font_name, 8.5)
     c.setFillColor(text_color)
-    c.drawString(title_x, header_y - 16 * mm, "下記の通りお見積り申し上げます。")
+    c.drawString(left_margin + 6*mm, y_pos - 18*mm, "下記の通りお見積り申し上げます。")
     
-    # 右上：発行日、見積No、改定No
-    right_x = left_margin + content_width - 50 * mm
-    
+    # 右側：発行日、見積No、改定No
     c.setFont(font_name, 8)
     c.setFillColor(text_color)
     
-    date_str = quotation.created_at.strftime("%Y年%m月%d日") if quotation.created_at else "-"
-    quotation_no = quotation.quotation_no or "-"
-    revision_no = str(quotation.revision_no or 0)
+    issued_date = quotation.created_at.strftime("%Y年%m月%d日") if quotation.created_at else "日付なし"
+    c.drawRightString(width - right_margin, y_pos - 5*mm, f"発行日：{issued_date}")
+    c.drawRightString(width - right_margin, y_pos - 10*mm, f"見積No：{quotation.quotation_no or '-'}")
+    c.drawRightString(width - right_margin, y_pos - 15*mm, f"改定No：{quotation.revision_no or 0}")
     
-    c.drawString(right_x, header_y - 10 * mm, "発行日：")
-    c.drawString(right_x + 25 * mm, header_y - 10 * mm, date_str)
+    # ヘッダー下の水平線
+    y_pos -= 20*mm
+    c.setLineWidth(0.5)
+    c.setStrokeColor(navy)
+    c.line(left_margin, y_pos, width - right_margin, y_pos)
     
-    c.drawString(right_x, header_y - 13 * mm, "見積No.：")
-    c.drawString(right_x + 25 * mm, header_y - 13 * mm, quotation_no)
+    y_pos -= 4*mm
     
-    c.drawString(right_x, header_y - 16 * mm, "改定No.：")
-    c.drawString(right_x + 25 * mm, header_y - 16 * mm, revision_no)
+    # ========================================
+    # 2. 顧客情報 & 自社情報
+    # ========================================
     
-    # ヘッダー下の線
-    header_line_y = header_y - 18 * mm - 1 * mm
-    c.setStrokeColor(navy_color)
-    c.setLineWidth(2)
-    c.line(left_margin, header_line_y, left_margin + content_width, header_line_y)
-    
-    # =============== 顧客情報＆自社情報 ===============
-    content_start_y = header_line_y - 3 * mm
-    
-    # 左側：顧客情報
-    customer_area_x = left_margin
-    customer_area_width = 90 * mm
-    
-    # お客様ラベル
-    c.setFillColor(navy_color)
-    c.rect(customer_area_x, content_start_y - 4 * mm, customer_area_width, 4 * mm, fill=1)
-    c.setFont(font_name, 9)
-    c.setFillColor(white)
-    c.drawString(customer_area_x + 2 * mm, content_start_y - 3.2 * mm, "お客様")
-    
-    # 顧客ボックス
-    customer_box_y = content_start_y - 4 * mm - 1 * mm
-    customer_box_height = 12 * mm
-    c.setStrokeColor(navy_color)
-    c.setLineWidth(1)
-    c.rect(customer_area_x, customer_box_y - customer_box_height, customer_area_width, customer_box_height)
-    
-    c.setFont(font_name, 11)
-    c.setFillColor(navy_color)
-    c.drawString(customer_area_x + 2 * mm, customer_box_y - 3 * mm, customer_display_name or "-")
-    
-    c.setFont(font_name, 7)
-    c.setFillColor(text_color)
-    c.drawString(customer_area_x + 2 * mm, customer_box_y - 5.5 * mm, "ご担当")
-    
+    # 左側：顧客情報（会社名 & 担当者名を分けて表示）
     c.setFont(font_name, 8)
-    contact_name = quotation.contact_name or "ご担当者様"
-    c.drawString(customer_area_x + 2 * mm, customer_box_y - 7.5 * mm, contact_name)
+    c.setFillColor(navy)
+    c.drawString(left_margin, y_pos, "お客様")
     
-    # 条件情報（2列）
-    conditions_start_y = customer_box_y - customer_box_height - 1 * mm
+    y_pos -= 4.5*mm
+    c.setFont(font_name, 10)
+    c.setFillColor(text_color)
+    customer_name = customer_display_name or quotation.company_name or "-"
+    c.drawString(left_margin, y_pos, f"{customer_name} 御中")
+    
+    y_pos -= 5.5*mm
+    contact_name = quotation.contact_name
+    if contact_name and str(contact_name).strip() and str(contact_name).strip() != "-":
+        c.setFont(font_name, 9)
+        c.setFillColor(text_color)
+        c.drawString(left_margin, y_pos, f"{contact_name} 様")
+        y_pos -= 5*mm
+    else:
+        y_pos -= 2*mm
+    
+    # 右側：自社情報ブロック（MUSASHIロゴを含む）
+    # 右上に会社情報ブロックを配置
+    company_block_x = width - right_margin - 68*mm
+    company_block_y = y_pos + 16*mm  # ヘッダーの下側から
+    
+    # MUSASHIロゴ描画（会社情報ブロックの最上段）
+    # 正式ロゴ画像を埋め込む、幅48mm、高さはアスペクト比に合わせる
+    logo_y = company_block_y
+    _draw_musashi_logo(c, company_block_x, logo_y, width=48*mm, height=None)
+    
+    # ロゴ下の会社情報（ロゴ高さが動的なため、位置を少し下げる）
+    y_company = company_block_y - 15*mm
+    c.setFont(font_name, 9)
+    c.setFillColor(text_color)
+    c.drawString(company_block_x, y_company, "武蔵精密工業株式会社")
+    
+    # グループ名
+    y_company -= 3.5*mm
+    c.setFont(font_name, 7.5)
+    c.drawString(company_block_x, y_company, "Smart Industry営業グループ")
+    
+    # 郵便番号
+    y_company -= 3.5*mm
+    c.drawString(company_block_x, y_company, "〒441-8560")
+    
+    # 住所
+    y_company -= 3.5*mm
+    c.drawString(company_block_x, y_company, "愛知県豊橋市植田町字大膳39-5")
+    
+    # 電話番号
+    y_company -= 3.5*mm
+    c.drawString(company_block_x, y_company, "TEL：0532-25-8111")
+    
+    # 見積作成担当
+    if quotation.estimator_name:
+        y_company -= 3.5*mm
+        c.setFont(font_name, 7.5)
+        c.setFillColor(navy)
+        c.drawString(company_block_x, y_company, f"見積作成：{quotation.estimator_name}")
+    
+    y_pos -= 11*mm
+    
+    # ========================================
+    # 3. 条件情報（2列レイアウト）
+    # ========================================
+    
     conditions = [
         ("件名", quotation.project_name or "-"),
         ("支払条件", quotation.payment_terms or "-"),
         ("納期", quotation.delivery_date or "-"),
-        ("引渡場所", quotation.delivery_terms or "-"),
-        ("有効期限", quotation.valid_until or "-"),
+        ("引渡条件", quotation.delivery_terms or "-"),
+        ("見積有効期限", quotation.valid_until or "-"),
     ]
     
-    col1_x = customer_area_x
-    col2_x = customer_area_x + customer_area_width / 2
+    c.setFont(font_name, 7.5)
+    c.setFillColor(navy)
     
-    for i in range(0, len(conditions), 2):
-        y = conditions_start_y - (i // 2) * 3.5 * mm
+    col1_x = left_margin
+    col2_x = left_margin + page_width / 2
+    
+    for idx, (label, value) in enumerate(conditions):
+        if idx % 2 == 0:
+            x = col1_x
+        else:
+            x = col2_x
+            y_pos -= 4*mm
         
-        # 左側
-        label1, value1 = conditions[i]
-        c.setFont(font_name, 6)
-        c.setFillColor(HexColor("#666666"))
-        c.drawString(col1_x, y, label1)
+        c.drawString(x, y_pos, f"{label}：")
         c.setFont(font_name, 8)
         c.setFillColor(text_color)
-        c.drawString(col1_x, y - 2 * mm, value1)
-        
-        # 右側
-        if i + 1 < len(conditions):
-            label2, value2 = conditions[i + 1]
-            c.setFont(font_name, 6)
-            c.setFillColor(HexColor("#666666"))
-            c.drawString(col2_x, y, label2)
-            c.setFont(font_name, 8)
-            c.setFillColor(text_color)
-            c.drawString(col2_x, y - 2 * mm, value2)
+        c.drawString(x + 18*mm, y_pos, str(value)[:35])
+        c.setFont(font_name, 7.5)
+        c.setFillColor(navy)
     
-    # 右側：自社情報
-    company_area_x = customer_area_x + customer_area_width + 8 * mm
-    company_area_width = content_width - customer_area_width - 8 * mm
-    company_text_y = content_start_y
+    y_pos -= 6*mm
     
-    # ロゴ試行
-    logo_path = os.path.join(os.path.dirname(__file__), "../../static/img/musashi-logo.png")
-    if os.path.exists(logo_path):
-        try:
-            from PIL import Image
-            img = Image.open(logo_path)
-            img_width = 20 * mm
-            img_height = img_width * img.height / img.width
-            c.drawImage(logo_path, company_area_x, company_text_y - img_height, width=img_width, height=img_height)
-            company_text_y = company_text_y - img_height - 2 * mm
-        except Exception as e:
-            logger.warning(f"Failed to draw logo: {e}")
+    # ========================================
+    # 4. 合計金額帯（濃紺背景）
+    # ========================================
     
-    # 会社情報
-    c.setFont(font_name, 9)
-    c.setFillColor(navy_color)
-    c.drawString(company_area_x, company_text_y, "武蔵精密工業株式会社")
+    subtotal = sum((getattr(d, 'subtotal', 0) or 0) for d in (quotation.details or []))
+    discount_amount = quotation.discount_amount or 0
+    total_amount = max(0, subtotal - discount_amount)
     
-    c.setFont(font_name, 8)
-    c.setFillColor(text_color)
-    company_lines = [
-        "Smart Industry営業グループ",
-        "〒441-8560",
-        "愛知県豊橋市植田町字大膳39-5",
-        "TEL：0532-25-8111",
-    ]
+    total_band_height = 10*mm
+    c.setFillColor(navy)
+    c.rect(left_margin, y_pos - total_band_height, page_width, total_band_height, fill=1, stroke=0)
     
-    for i, line in enumerate(company_lines):
-        y = company_text_y - (i + 1) * 2.5 * mm
-        c.drawString(company_area_x, y, line)
-    
-    # =============== 合計金額帯 ===============
-    total_area_y = conditions_start_y - 35 * mm
-    total_area_height = 8 * mm
-    
-    c.setFillColor(navy_color)
-    c.rect(left_margin, total_area_y - total_area_height, content_width, total_area_height, fill=1)
-    
-    c.setFont(font_name, 11)
+    # 合計金額テキスト
+    c.setFont(font_name, 10)
     c.setFillColor(white)
-    c.drawString(left_margin + 3 * mm, total_area_y - 5.5 * mm, "合計金額")
+    c.drawString(left_margin + 4*mm, y_pos - 6.5*mm, "合計金額")
     
-    total_amount = quotation.total_amount or 0
-    amount_str = f"¥{total_amount:,}"
-    c.setFont(font_name, 24)
-    c.drawString(left_margin + 60 * mm, total_area_y - 6 * mm, amount_str)
+    c.setFont(font_name, 22)
+    c.setFillColor(white)
+    c.drawRightString(width - right_margin - 35*mm, y_pos - 7*mm, f"¥{int(total_amount):,}")
     
-    c.setFont(font_name, 7)
-    c.drawString(left_margin + content_width - 60 * mm, total_area_y - 5.5 * mm, "※本見積金額に消費税は含まれておりません")
+    # 注記：右端から十分離す
+    c.setFont(font_name, 5.5)
+    c.setFillColor(white)
+    note_x = width - right_margin - 31*mm
+    c.drawString(note_x, y_pos - 6*mm, "※本見積金額に")
+    c.drawString(note_x, y_pos - 8*mm, "消費税は含まれ")
+    c.drawString(note_x, y_pos - 10*mm, "ておりません")
     
-    # =============== 明細テーブル ===============
-    details_start_y = total_area_y - 5 * mm
-    table_y = details_start_y
+    y_pos -= total_band_height + 2*mm
+    
+    # ========================================
+    # 5. 明細表
+    # ========================================
     
     # ヘッダー
+    header_height = 4.5*mm
+    c.setFillColor(navy)
+    c.rect(left_margin, y_pos - header_height, page_width, header_height, fill=1, stroke=0)
+    
     c.setFont(font_name, 8)
-    c.setFillColor(navy_color)
-    c.rect(left_margin, table_y - 4 * mm, content_width, 4 * mm, fill=1)
-    
     c.setFillColor(white)
-    headers = ["No.", "品名・仕様", "数量", "単位", "単価", "金額"]
-    col_widths = [10 * mm, 70 * mm, 12 * mm, 12 * mm, 30 * mm, 30 * mm]
-    x_pos = left_margin
-    for header, col_width in zip(headers, col_widths):
-        c.drawString(x_pos + 1 * mm, table_y - 3 * mm, header)
-        x_pos += col_width
     
-    # テーブル本体
-    table_y -= 4 * mm
-    c.setLineWidth(0.5)
-    c.setStrokeColor(border_color)
+    col_no = left_margin + 2*mm
+    col_name = left_margin + 9*mm
+    col_qty = left_margin + 95*mm
+    col_unit = left_margin + 109*mm
+    col_price = left_margin + 129*mm
+    col_amount = width - right_margin - 14*mm
     
-    detail_count = 0
-    if quotation.quotation_details:
-        for detail in quotation.quotation_details[:15]:
-            detail_count += 1
-            table_y -= 3 * mm
-            c.setFont(font_name, 7)
+    c.drawString(col_no, y_pos - 3.5*mm, "No.")
+    c.drawString(col_name, y_pos - 3.5*mm, "品名・仕様")
+    c.drawString(col_qty, y_pos - 3.5*mm, "数量")
+    c.drawString(col_unit, y_pos - 3.5*mm, "単位")
+    c.drawString(col_price, y_pos - 3.5*mm, "単価")
+    c.drawRightString(col_amount, y_pos - 3.5*mm, "金額")
+    
+    y_pos -= header_height + 0.5*mm
+    
+    # 明細行（15行、高さを削減）
+    line_height = 3.5*mm
+    detail_lines = list(quotation.details or [])
+    
+    for row_idx in range(15):
+        # 行背景の交互色
+        if row_idx % 2 == 1:
+            c.setFillColor(HexColor("#f9f9f9"))
+            c.rect(left_margin, y_pos - line_height, page_width, line_height, fill=1, stroke=0)
+        
+        # 罫線
+        c.setLineWidth(0.3)
+        c.setStrokeColor(border)
+        c.line(left_margin, y_pos, width - right_margin, y_pos)
+        
+        # 明細データを表示
+        if row_idx < len(detail_lines):
+            detail = detail_lines[row_idx]
+            
+            c.setFont(font_name, 7.5)
             c.setFillColor(text_color)
             
-            c.rect(left_margin, table_y - 2.5 * mm, content_width, 3 * mm)
+            # No.
+            c.drawString(col_no, y_pos - 2.5*mm, str(row_idx + 1))
             
-            x_pos = left_margin
-            col_data = [
-                str(detail_count),
-                (detail.product_name or "-")[:40],
-                str(int(detail.quantity or 0)),
-                detail.unit or "式",
-                f"¥{int(detail.unit_price or 0):,}",
-                f"¥{int(detail.total_price or 0):,}"
-            ]
+            # 品名・仕様
+            label = getattr(detail, 'label', '') or getattr(detail, 'description', '') or ''
+            c.drawString(col_name, y_pos - 2.5*mm, str(label)[:28])
             
-            for idx, (data, col_width) in enumerate(zip(col_data, col_widths)):
-                if idx >= 4:  # 単価・金額は右寄せ
-                    c.drawRightString(x_pos + col_width - 1 * mm, table_y - 1.5 * mm, data)
-                elif idx == 0 or idx >= 2:  # No.・数量・単位は中央
-                    c.drawCentredString(x_pos + col_width / 2, table_y - 1.5 * mm, data)
-                else:  # 品名は左寄せ
-                    c.drawString(x_pos + 1 * mm, table_y - 1.5 * mm, data)
-                x_pos += col_width
+            # 数量
+            qty = int(getattr(detail, 'quantity', 0) or 0)
+            c.drawRightString(col_qty + 10*mm, y_pos - 2.5*mm, str(qty))
+            
+            # 単位
+            unit = getattr(detail, 'unit', '') or '式'
+            c.drawString(col_unit, y_pos - 2.5*mm, str(unit))
+            
+            # 単価
+            price = int(getattr(detail, 'price', 0) or 0)
+            c.drawRightString(col_price + 15*mm, y_pos - 2.5*mm, f"¥{price:,}")
+            
+            # 金額
+            subtotal_val = int(getattr(detail, 'subtotal', 0) or 0)
+            c.drawRightString(col_amount, y_pos - 2.5*mm, f"¥{subtotal_val:,}")
+        
+        y_pos -= line_height
     
-    # 空行で15行まで
-    while detail_count < 15:
-        detail_count += 1
-        table_y -= 3 * mm
-        c.rect(left_margin, table_y - 2.5 * mm, content_width, 3 * mm)
+    # ========================================
+    # 6. 小計・値引き・合計（右側に集約）
+    # ========================================
     
-    # =============== 小計・合計 ===============
-    summary_y = table_y - 4 * mm
+    y_pos -= 1*mm
+    
+    summary_x = width - right_margin - 38*mm
     
     c.setFont(font_name, 8)
     c.setFillColor(text_color)
     
-    subtotal = quotation.subtotal or quotation.total_amount or 0
-    c.drawString(left_margin + content_width - 50 * mm, summary_y, "小計")
-    c.drawRightString(left_margin + content_width, summary_y, f"¥{int(subtotal):,}")
+    # 小計
+    c.drawString(summary_x, y_pos, "小計")
+    c.drawRightString(width - right_margin, y_pos, f"¥{int(subtotal):,}")
+    y_pos -= 3.5*mm
     
-    if quotation.discount_amount:
-        summary_y -= 3 * mm
-        c.drawString(left_margin + content_width - 50 * mm, summary_y, "値引き額")
-        c.drawRightString(left_margin + content_width, summary_y, f"-¥{int(quotation.discount_amount):,}")
+    # 値引き（ある場合のみ）
+    if discount_amount > 0:
+        c.drawString(summary_x, y_pos, "値引き")
+        c.drawRightString(width - right_margin, y_pos, f"-¥{int(discount_amount):,}")
+        y_pos -= 3.5*mm
     
-    summary_y -= 4 * mm
-    total_box_height = 6 * mm
-    c.setFillColor(navy_color)
-    c.rect(left_margin + content_width - 50 * mm, summary_y - total_box_height, 50 * mm, total_box_height, fill=1)
+    # 合計金額（濃紺背景）
+    c.setFillColor(navy)
+    c.rect(summary_x - 3*mm, y_pos - 4*mm, width - right_margin - summary_x + 3*mm, 4*mm, fill=1, stroke=0)
     
-    c.setFont(font_name, 9)
+    c.setFont(font_name, 8.5)
     c.setFillColor(white)
-    c.drawString(left_margin + content_width - 48 * mm, summary_y - 4 * mm, "合計金額")
-    c.drawRightString(left_margin + content_width - 2 * mm, summary_y - 4 * mm, f"¥{int(quotation.total_amount or 0):,}")
+    c.drawString(summary_x, y_pos - 3*mm, "合計")
+    c.drawRightString(width - right_margin, y_pos - 3*mm, f"¥{int(total_amount):,}")
     
-    # =============== 備考欄 ===============
-    remarks_y = summary_y - 8 * mm
-    remarks_height = 35 * mm
+    y_pos -= 6*mm
     
-    c.setStrokeColor(navy_color)
-    c.setLineWidth(1)
-    c.rect(left_margin, remarks_y - remarks_height, content_width, remarks_height)
+    # ========================================
+    # 7. 備考欄
+    # ========================================
     
-    c.setFont(font_name, 9)
-    c.setFillColor(navy_color)
-    c.drawString(left_margin + 3 * mm, remarks_y - 3 * mm, "備考")
-    
-    c.setFillColor(navy_color)
-    c.circle(left_margin + 1.5 * mm, remarks_y - 2 * mm, 1.5, fill=1)
-    
-    remarks_text = quotation.remarks or "-"
+    remarks_label_y = y_pos
     c.setFont(font_name, 8)
-    c.setFillColor(text_color)
+    c.setFillColor(navy)
+    c.drawString(left_margin + 2*mm, remarks_label_y, "●")
+    c.drawString(left_margin + 6*mm, remarks_label_y, "備考")
     
-    remarks_lines = remarks_text.split("\n")
-    remarks_text_y = remarks_y - 6 * mm
-    for line in remarks_lines[:4]:
-        c.drawString(left_margin + 3 * mm, remarks_text_y, line[:60])
-        remarks_text_y -= 2.5 * mm
+    y_pos -= 3*mm
+    
+    # 備考欄の高さ計算：下部に最低8mm余白を確保
+    # A4高さ = 297mm、下余白 = 8mm + 3mm（安全値）
+    remarks_min_y = bottom_margin + 3*mm
+    remarks_available_height = y_pos - remarks_min_y
+    remarks_box_height = max(28*mm, remarks_available_height - 2*mm)  # 最小28mm、最大は計算値
+    
+    # 枠の下端がページ内に収まるように調整
+    remarks_bottom_y = y_pos - remarks_box_height
+    if remarks_bottom_y < remarks_min_y:
+        remarks_box_height = y_pos - remarks_min_y
+    
+    c.setLineWidth(0.5)
+    c.setStrokeColor(border)
+    c.rect(left_margin, y_pos - remarks_box_height, page_width, remarks_box_height, fill=0, stroke=1)
+    
+    # 備考内容
+    if quotation.remarks:
+        c.setFont(font_name, 7.5)
+        c.setFillColor(text_color)
+        remarks_text = str(quotation.remarks)[:300]
+        
+        # 複数行対応
+        lines = remarks_text.split('\n')
+        remarks_y = y_pos - 4*mm
+        for line in lines[:8]:  # 最大8行
+            if remarks_y < y_pos - remarks_box_height + 2*mm:
+                break
+            c.drawString(left_margin + 3*mm, remarks_y, line[:60])
+            remarks_y -= 3.5*mm
     
     c.save()
     buffer.seek(0)

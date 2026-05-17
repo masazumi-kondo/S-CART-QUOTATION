@@ -7,6 +7,7 @@ from reportlab.lib.colors import HexColor, white, black
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Table, TableStyle, Paragraph
 from reportlab.lib.styles import ParagraphStyle
@@ -29,6 +30,45 @@ def _register_japanese_fonts():
     except Exception as e:
         logger.error(f"[PDF] Error registering Japanese fonts: {e}")
         return "Helvetica"
+
+# Windows TrueTypeフォント登録
+def _register_windows_fonts():
+    """Windows TrueTypeフォント登録"""
+    regular_candidates = [
+        r"C:\Windows\Fonts\meiryo.ttc",
+        r"C:\Windows\Fonts\YuGothR.ttc",
+        r"C:\Windows\Fonts\msgothic.ttc",
+    ]
+    bold_candidates = [
+        r"C:\Windows\Fonts\meiryob.ttc",
+        r"C:\Windows\Fonts\YuGothB.ttc",
+        r"C:\Windows\Fonts\msgothicb.ttc",
+    ]
+
+    regular_font = None
+    bold_font = None
+
+    try:
+        for path in regular_candidates:
+            if os.path.exists(path):
+                pdfmetrics.registerFont(TTFont("JPRegularTTF", path))
+                regular_font = "JPRegularTTF"
+                logger.info(f"[PDF] Registered regular font: {path}")
+                break
+    except Exception as e:
+        logger.warning(f"[PDF] Failed to register regular TrueType font: {e}")
+
+    try:
+        for path in bold_candidates:
+            if os.path.exists(path):
+                pdfmetrics.registerFont(TTFont("JPBoldTTF", path))
+                bold_font = "JPBoldTTF"
+                logger.info(f"[PDF] Registered bold font: {path}")
+                break
+    except Exception as e:
+        logger.warning(f"[PDF] Failed to register bold TrueType font: {e}")
+
+    return regular_font, bold_font
 
 def _y_from_top(mm_from_top, page_height):
     """
@@ -125,6 +165,9 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     
     # 日本語フォント登録
     font_name = _register_japanese_fonts()
+    
+    # Windows TrueTypeフォント登録（合計金額帯用）
+    total_regular_font, total_bold_font = _register_windows_fonts()
     
     # 色定義
     navy = HexColor("#163a70")
@@ -325,30 +368,39 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     note_w = page_width - label_w - amount_w
 
     # セルの左端位置
-    label_x = left_margin
-    amount_x = left_margin + label_w
-    note_x = left_margin + label_w + amount_w
+    label_x = left_margin + 7 * mm
+    amount_center_x = left_margin + label_w + amount_w / 2
+    note_x = left_margin + label_w + amount_w + 4 * mm
 
     # 文字位置は帯下端からの固定距離（ベースライン）
-    label_baseline_y = total_band_y + 7.0 * mm
-    amount_baseline_y = total_band_y + 6.0 * mm
+    label_font_size = 10
+    amount_font_size = 24
+    note_font_size = 6.5
+
+    label_y = total_band_y + 7.0 * mm
+    amount_y = total_band_y + 6.0 * mm
     note_y1 = total_band_y + 10.0 * mm
     note_y2 = total_band_y + 6.2 * mm
 
+    # フォント選択（TrueTypeフォント優先、フォールバックはCIDフォント）
+    label_font = total_regular_font or font_name
+    amount_font = total_bold_font or font_name
+    note_font = total_regular_font or font_name
+
     # 左ラベルセル：「合計金額」
     c.setFillColor(white)
-    c.setFont(font_name, 10)
-    c.drawString(label_x + 7 * mm, label_baseline_y, "合計金額")
+    c.setFont(label_font, label_font_size)
+    c.drawString(label_x, label_y, "合計金額")
 
     # 中央金額セル：「¥582,000」
     # drawCentredString は横中央、Y座標は固定値
-    c.setFont(font_name, 24)
-    c.drawCentredString(amount_x + amount_w / 2, amount_baseline_y, amount_text)
+    c.setFont(amount_font, amount_font_size)
+    c.drawCentredString(amount_center_x, amount_y, amount_text)
 
     # 右注記セル：2行
-    c.setFont(font_name, 6.5)
-    c.drawString(note_x + 4 * mm, note_y1, "※本見積金額に")
-    c.drawString(note_x + 4 * mm, note_y2, "消費税は含まれておりません")
+    c.setFont(note_font, note_font_size)
+    c.drawString(note_x, note_y1, "※本見積金額に")
+    c.drawString(note_x, note_y2, "消費税は含まれておりません")
     
     # ========================================
     # 5. 明細表 - ReportLab座標で固定

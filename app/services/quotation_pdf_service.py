@@ -154,16 +154,16 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     company_tel_top_mm = 86
     
     total_band_top_mm = 108
-    total_band_height_mm = 14
+    total_band_height_mm = 15
     
     table_top_mm = 127
-    table_header_height_mm = 5
-    detail_row_height_mm = 4.2
+    table_header_height_mm = 5.5
+    detail_row_height_mm = 4.5
     detail_rows_count = 15
     
     summary_top_mm = 198
-    summary_row_height_mm = 3.2
-    summary_total_height_mm = 3.8
+    summary_row_height_mm = 5
+    summary_total_height_mm = 6
     
     remarks_label_top_mm = 218
     remarks_box_top_mm = 224
@@ -182,11 +182,11 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.setFillColor(navy)
     c.rect(left_margin, header_line_y, 3*mm, title_y - header_line_y, fill=1, stroke=0)
     
-    c.setFont(font_name, 40)
+    c.setFont(font_name, 42)
     c.setFillColor(navy)
     c.drawString(left_margin + 6*mm, title_y - 8*mm, "見積書")
     
-    c.setFont(font_name, 8.5)
+    c.setFont(font_name, 9.5)
     c.setFillColor(text_color)
     c.drawString(left_margin + 6*mm, subtitle_y, "下記の通りお見積り申し上げます。")
     
@@ -213,12 +213,12 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     info_y = _y_from_top(customer_label_top_mm, height)
     
     # 左側：顧客情報
-    c.setFont(font_name, 8)
+    c.setFont(font_name, 8.5)
     c.setFillColor(navy)
     c.drawString(left_margin, info_y, "お客様")
     
     customer_y = _y_from_top(customer_name_top_mm, height)
-    c.setFont(font_name, 10)
+    c.setFont(font_name, 11)
     c.setFillColor(text_color)
     customer_name = customer_display_name or quotation.company_name or "-"
     c.drawString(left_margin, customer_y, f"{customer_name} 御中")
@@ -227,7 +227,7 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     contact_name = quotation.contact_name
     if contact_name and str(contact_name).strip() and str(contact_name).strip() != "-":
         contact_y = _y_from_top(customer_name_top_mm + 4.5, height)
-        c.setFont(font_name, 9)
+        c.setFont(font_name, 9.5)
         c.setFillColor(text_color)
         c.drawString(left_margin, contact_y, f"{contact_name} 様")
     
@@ -240,12 +240,12 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     _draw_musashi_logo(c, company_block_x, company_block_y, width=logo_width, height=None)
     
     # 会社情報（A4上からの固定座標で描画）
-    c.setFont(font_name, 8.5)
+    c.setFont(font_name, 9)
     c.setFillColor(text_color)
     c.drawString(company_block_x, _y_from_top(company_name_top_mm, height), "武蔵精密工業株式会社")
     
     # グループ名
-    c.setFont(font_name, 7)
+    c.setFont(font_name, 7.5)
     c.drawString(company_block_x, _y_from_top(company_name_top_mm + 4, height), "Smart Industry営業グループ")
     
     # 郵便番号
@@ -259,7 +259,7 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     
     # 見積作成担当
     if quotation.estimator_name:
-        c.setFont(font_name, 7)
+        c.setFont(font_name, 7.5)
         c.setFillColor(navy)
         c.drawString(company_block_x, _y_from_top(company_tel_top_mm + 3.5, height), f"見積作成：{quotation.estimator_name}")
     
@@ -276,7 +276,7 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
         ("見積有効期限", quotation.valid_until or "-"),
     ]
     
-    c.setFont(font_name, 7.5)
+    c.setFont(font_name, 8)
     c.setFillColor(navy)
     
     col1_x = left_margin
@@ -291,10 +291,10 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
             y = conditions_y - (idx // 2) * 3.5*mm
         
         c.drawString(x, y, f"{label}：")
-        c.setFont(font_name, 8)
+        c.setFont(font_name, 8.5)
         c.setFillColor(text_color)
         c.drawString(x + 18*mm, y, str(value)[:35])
-        c.setFont(font_name, 7.5)
+        c.setFont(font_name, 8)
         c.setFillColor(navy)
     
     # ========================================
@@ -312,11 +312,11 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.rect(left_margin, total_band_y, page_width, total_band_height_mm * mm, fill=1, stroke=0)
     
     # 合計金額テキスト
-    c.setFont(font_name, 10)
+    c.setFont(font_name, 11)
     c.setFillColor(white)
-    c.drawString(left_margin + 4*mm, _y_from_top(total_band_top_mm + 4, height), "合計金額")
+    c.drawString(left_margin + 4*mm, _y_from_top(total_band_top_mm + 4.5, height), "合計金額")
     
-    c.setFont(font_name, 24)
+    c.setFont(font_name, 27)
     c.setFillColor(white)
     c.drawRightString(width - right_margin - 40*mm, _y_from_top(total_band_top_mm + 4, height), f"¥{int(total_amount):,}")
     
@@ -324,8 +324,8 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.setFont(font_name, 6)
     c.setFillColor(white)
     note_x = width - right_margin - 37*mm
-    c.drawString(note_x, _y_from_top(total_band_top_mm + 4.5, height), "※本見積金額に")
-    c.drawString(note_x, _y_from_top(total_band_top_mm + 7.5, height), "消費税は含まれておりません")
+    c.drawString(note_x, _y_from_top(total_band_top_mm + 5, height), "※本見積金額に")
+    c.drawString(note_x, _y_from_top(total_band_top_mm + 8, height), "消費税は含まれておりません")
     
     # ========================================
     # 5. 明細表 - ReportLab座標で固定
@@ -337,7 +337,7 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.setFillColor(navy)
     c.rect(left_margin, table_header_y - table_header_height_mm * mm, page_width, table_header_height_mm * mm, fill=1, stroke=0)
     
-    c.setFont(font_name, 8)
+    c.setFont(font_name, 8.5)
     c.setFillColor(white)
     
     col_no = left_margin + 2*mm
@@ -347,12 +347,12 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     col_price = left_margin + 129*mm
     col_amount = width - right_margin - 14*mm
     
-    c.drawString(col_no, table_header_y - 3.5*mm, "No.")
-    c.drawString(col_name, table_header_y - 3.5*mm, "品名・仕様")
-    c.drawString(col_qty, table_header_y - 3.5*mm, "数量")
-    c.drawString(col_unit, table_header_y - 3.5*mm, "単位")
-    c.drawString(col_price, table_header_y - 3.5*mm, "単価")
-    c.drawRightString(col_amount, table_header_y - 3.5*mm, "金額")
+    c.drawString(col_no, table_header_y - 2.8*mm, "No.")
+    c.drawString(col_name, table_header_y - 2.8*mm, "品名・仕様")
+    c.drawString(col_qty, table_header_y - 2.8*mm, "数量")
+    c.drawString(col_unit, table_header_y - 2.8*mm, "単位")
+    c.drawString(col_price, table_header_y - 2.8*mm, "単価")
+    c.drawRightString(col_amount, table_header_y - 2.8*mm, "金額")
     
     # 明細行（15行）
     detail_lines = list(quotation.details or [])
@@ -377,31 +377,31 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
         if row_idx < len(detail_lines):
             detail = detail_lines[row_idx]
             
-            c.setFont(font_name, 7.5)
+            c.setFont(font_name, 8)
             c.setFillColor(text_color)
             
             # No.
-            c.drawString(col_no, row_y - 2.3*mm, str(row_idx + 1))
+            c.drawString(col_no, row_y - 2.5*mm, str(row_idx + 1))
             
             # 品名・仕様
             label = getattr(detail, 'label', '') or getattr(detail, 'description', '') or ''
-            c.drawString(col_name, row_y - 2.3*mm, str(label)[:28])
+            c.drawString(col_name, row_y - 2.5*mm, str(label)[:28])
             
             # 数量
             qty = int(getattr(detail, 'quantity', 0) or 0)
-            c.drawRightString(col_qty + 10*mm, row_y - 2.3*mm, str(qty))
+            c.drawRightString(col_qty + 10*mm, row_y - 2.5*mm, str(qty))
             
             # 単位
             unit = getattr(detail, 'unit', '') or '式'
-            c.drawString(col_unit, row_y - 2.3*mm, str(unit))
+            c.drawString(col_unit, row_y - 2.5*mm, str(unit))
             
             # 単価
             price = int(getattr(detail, 'price', 0) or 0)
-            c.drawRightString(col_price + 15*mm, row_y - 2.3*mm, f"¥{price:,}")
+            c.drawRightString(col_price + 15*mm, row_y - 2.5*mm, f"¥{price:,}")
             
             # 金額
             subtotal_val = int(getattr(detail, 'subtotal', 0) or 0)
-            c.drawRightString(col_amount, row_y - 2.3*mm, f"¥{subtotal_val:,}")
+            c.drawRightString(col_amount, row_y - 2.5*mm, f"¥{subtotal_val:,}")
     
     # ========================================
     # 6. 小計・値引き・合計（右側に集約） - ReportLab座標で固定
@@ -410,30 +410,30 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     summary_x = width - right_margin - 38*mm
     summary_y_start = _y_from_top(summary_top_mm, height)
     
-    c.setFont(font_name, 8)
+    c.setFont(font_name, 8.5)
     c.setFillColor(text_color)
     
     # 小計
-    c.drawString(summary_x, summary_y_start, "小計")
-    c.drawRightString(width - right_margin, summary_y_start, f"¥{int(subtotal):,}")
+    c.drawString(summary_x, summary_y_start - 2*mm, "小計")
+    c.drawRightString(width - right_margin, summary_y_start - 2*mm, f"¥{int(subtotal):,}")
     
     # 値引き（ある場合のみ）
-    discount_y = summary_y_start - 3.2*mm
+    discount_y = summary_y_start - 5*mm
     if discount_amount > 0:
-        c.drawString(summary_x, discount_y, "値引き")
-        c.drawRightString(width - right_margin, discount_y, f"-¥{int(discount_amount):,}")
-        total_y = discount_y - 3.8*mm
+        c.drawString(summary_x, discount_y - 2*mm, "値引き")
+        c.drawRightString(width - right_margin, discount_y - 2*mm, f"-¥{int(discount_amount):,}")
+        total_y = discount_y - 6*mm
     else:
         total_y = discount_y
     
     # 合計金額（濃紺背景）
     c.setFillColor(navy)
-    c.rect(summary_x - 3*mm, total_y - 3.8*mm, width - right_margin - summary_x + 3*mm, 3.8*mm, fill=1, stroke=0)
+    c.rect(summary_x - 3*mm, total_y - 6*mm, width - right_margin - summary_x + 3*mm, 6*mm, fill=1, stroke=0)
     
-    c.setFont(font_name, 8)
+    c.setFont(font_name, 9)
     c.setFillColor(white)
-    c.drawString(summary_x, total_y - 2.8*mm, "合計")
-    c.drawRightString(width - right_margin, total_y - 2.8*mm, f"¥{int(total_amount):,}")
+    c.drawString(summary_x, total_y - 3.8*mm, "合計")
+    c.drawRightString(width - right_margin, total_y - 3.8*mm, f"¥{int(total_amount):,}")
     
     # ========================================
     # 7. 備考欄 - ReportLab座標で完全固定

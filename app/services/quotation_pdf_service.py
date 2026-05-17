@@ -311,35 +311,32 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.setFillColor(navy)
     c.rect(left_margin, total_band_y, page_width, total_band_height_mm * mm, fill=1, stroke=0)
     
-    # 帯の中央Y座標を計算（フォントサイズを考慮したベースライン補正）
+    # 帯の上部基準Y座標を計算（理想レイアウトに合わせて上寄りに配置）
     band_h = total_band_height_mm * mm
-    band_center_y = total_band_y + band_h / 2
+    band_top_y = total_band_y + band_h  # 帯の上辺
     
-    # ラベル「合計金額」（12pt）
-    # ReportLab のベースライン補正：フォントサイズの約40%がベースライン下
+    # ラベル「合計金額」（12pt）- 帯の上から 2.5mm 下に配置
     label_font_size = 12
-    label_baseline_y = band_center_y - label_font_size * 0.40
+    label_baseline_y = band_top_y - 2.5*mm
     c.setFont(font_name, label_font_size)
     c.setFillColor(white)
     c.drawString(left_margin + 4*mm, label_baseline_y, "合計金額")
     
-    # 金額「￥582,000」（30pt）
-    # ReportLab のベースライン補正：フォントサイズの約38%がベースライン下
+    # 金額「￥582,000」（30pt）- 帯の上から 3mm 下に配置
     amount_font_size = 30
-    amount_baseline_y = band_center_y - amount_font_size * 0.38
+    amount_baseline_y = band_top_y - 3*mm
     c.setFont(font_name, amount_font_size)
     c.setFillColor(white)
     c.drawRightString(width - right_margin - 40*mm, amount_baseline_y, f"¥{int(total_amount):,}")
     
-    # 注記：2行化・上下中央に配置
+    # 注記：2行化・右上に配置
     note_font_size = 6
     note_x = width - right_margin - 37*mm
-    note_line_gap = 3.5 * mm
-    note_group_center_y = band_center_y
+    note_line_gap = 2.5 * mm
     # ReportLab のベースライン補正：フォントサイズの約42%がベースライン下
     note_baseline_offset = note_font_size * 0.42
-    note_y1 = note_group_center_y + note_line_gap / 2 - note_baseline_offset
-    note_y2 = note_group_center_y - note_line_gap / 2 - note_baseline_offset
+    note_y1 = band_top_y - 2.5*mm - note_baseline_offset
+    note_y2 = note_y1 - note_line_gap
     
     c.setFont(font_name, note_font_size)
     c.setFillColor(white)

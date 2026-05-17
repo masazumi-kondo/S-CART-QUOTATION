@@ -325,8 +325,8 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     amount_style = ParagraphStyle(
         "TotalAmount",
         fontName=font_name,
-        fontSize=30,
-        leading=30,
+        fontSize=27,
+        leading=27,
         textColor=white,
         alignment=TA_CENTER,
     )
@@ -372,6 +372,8 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
         ("RIGHTPADDING", (0, 0), (-1, -1), 0),
         ("TOPPADDING", (0, 0), (-1, -1), 0),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (1, 0), (1, 0), 2),
+        ("BOTTOMPADDING", (1, 0), (1, 0), 0),
     ]))
     
     # Tableを描画

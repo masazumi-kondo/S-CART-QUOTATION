@@ -302,83 +302,71 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
         c.setFillColor(navy)
     
     # ========================================
-    # 4. 合計金額帯（濃紺背景）- Table で安定配置
+    # 4. 合計金額帯（濃紺背景）- フォントメトリクスで上下中央揃え
     # ========================================
-    
+
     subtotal = sum((getattr(d, 'subtotal', 0) or 0) for d in (quotation.details or []))
     discount_amount = quotation.discount_amount or 0
     total_amount = max(0, subtotal - discount_amount)
-    
+
     # A4上からのmm座標をReportLab座標に変換
     total_band_y = _rect_y_from_top(total_band_top_mm, total_band_height_mm, height)
-    
-    # Table用のParagraphStyle定義
-    label_style = ParagraphStyle(
-        "TotalLabel",
-        fontName=font_name,
-        fontSize=12,
-        leading=12,
-        textColor=white,
-        alignment=TA_CENTER,
-    )
-    
-    amount_style = ParagraphStyle(
-        "TotalAmount",
-        fontName=font_name,
-        fontSize=27,
-        leading=27,
-        textColor=white,
-        alignment=TA_CENTER,
-    )
-    
-    note_style = ParagraphStyle(
-        "TotalNote",
-        fontName=font_name,
-        fontSize=6,
-        leading=8,
-        textColor=white,
-        alignment=TA_LEFT,
-    )
-    
-    # 金額フォーマット
+    total_band_h = total_band_height_mm * mm
+    total_band_center_y = total_band_y + total_band_h / 2
+
+    # 背景帯
+    c.setFillColor(navy)
+    c.rect(left_margin, total_band_y, page_width, total_band_h, fill=1, stroke=0)
+
+    # フォントの見た目中央を合わせるためのベースライン計算
+    def _baseline_for_visual_center(font_name, font_size, center_y):
+        """
+        ReportLabのdrawString系はY座標がベースライン。
+        フォントのascent/descentから、文字の見た目中心がcenter_yに来るよう補正する。
+        """
+        ascent = pdfmetrics.getAscent(font_name, font_size)
+        descent = pdfmetrics.getDescent(font_name, font_size)  # 通常はマイナス値
+        visual_center_from_baseline = (ascent + descent) / 2
+        return center_y - visual_center_from_baseline
+
+    # 表示テキスト
     amount_text = f"¥{int(total_amount):,}"
-    note_text = "※本見積金額に<br/>消費税は含まれておりません"
-    
-    # Table列幅の計算
-    label_col_width = 45 * mm
-    amount_col_width = 95 * mm
-    note_col_width = page_width - label_col_width - amount_col_width
-    
-    # Tableデータと設定
-    total_table = Table(
-        [[
-            Paragraph("合計金額", label_style),
-            Paragraph(amount_text, amount_style),
-            Paragraph(note_text, note_style),
-        ]],
-        colWidths=[label_col_width, amount_col_width, note_col_width],
-        rowHeights=[total_band_height_mm * mm],
-    )
-    
-    # TableStyle：背景色、パディング、垂直配置
-    total_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), navy),
-        ("TEXTCOLOR", (0, 0), (-1, -1), white),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (0, 0), (0, 0), "CENTER"),
-        ("ALIGN", (1, 0), (1, 0), "CENTER"),
-        ("ALIGN", (2, 0), (2, 0), "LEFT"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 0),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (1, 0), (1, 0), 2),
-        ("BOTTOMPADDING", (1, 0), (1, 0), 0),
-    ]))
-    
-    # Tableを描画
-    total_table.wrapOn(c, page_width, total_band_height_mm * mm)
-    total_table.drawOn(c, left_margin, total_band_y)
+
+    # 列位置
+    label_x = left_margin + 7 * mm
+    amount_center_x = left_margin + page_width * 0.55
+    note_x = left_margin + page_width - 47 * mm
+
+    # フォントサイズ
+    label_font_size = 11
+    amount_font_size = 28
+    note_font_size = 6.8
+
+    # ラベル：合計金額
+    c.setFont(font_name, label_font_size)
+    c.setFillColor(white)
+    label_y = _baseline_for_visual_center(font_name, label_font_size, total_band_center_y)
+    c.drawString(label_x, label_y, "合計金額")
+
+    # 中央金額
+    c.setFont(font_name, amount_font_size)
+    c.setFillColor(white)
+    amount_y = _baseline_for_visual_center(font_name, amount_font_size, total_band_center_y)
+    c.drawCentredString(amount_center_x, amount_y, amount_text)
+
+    # 右側注記：2行全体を帯の上下中央に配置
+    c.setFont(font_name, note_font_size)
+    c.setFillColor(white)
+
+    note_line_gap = 3.6 * mm
+    note_line_1_center_y = total_band_center_y + note_line_gap / 2
+    note_line_2_center_y = total_band_center_y - note_line_gap / 2
+
+    note_y1 = _baseline_for_visual_center(font_name, note_font_size, note_line_1_center_y)
+    note_y2 = _baseline_for_visual_center(font_name, note_font_size, note_line_2_center_y)
+
+    c.drawString(note_x, note_y1, "※本見積金額に")
+    c.drawString(note_x, note_y2, "消費税は含まれておりません")
     
     # ========================================
     # 5. 明細表 - ReportLab座標で固定

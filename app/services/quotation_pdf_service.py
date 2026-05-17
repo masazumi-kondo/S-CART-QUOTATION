@@ -135,79 +135,88 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.setStrokeColor(navy)
     c.line(left_margin, y_pos, width - right_margin, y_pos)
     
-    y_pos -= 4*mm
+    y_pos -= 2.5*mm
     
     # ========================================
-    # 2. 顧客情報 & 自社情報
+    # 2. 顧客情報 & 自社情報（同じ高さで並ぶ）
     # ========================================
     
-    # 左側：顧客情報（会社名 & 担当者名を分けて表示）
+    # 基準行：両側のセクションを同じy座標から開始
+    section_start_y = y_pos
+    
+    # 左側：顧客情報
     c.setFont(font_name, 8)
     c.setFillColor(navy)
-    c.drawString(left_margin, y_pos, "お客様")
+    c.drawString(left_margin, section_start_y, "お客様")
     
-    y_pos -= 4.5*mm
+    customer_y = section_start_y - 4*mm
     c.setFont(font_name, 10)
     c.setFillColor(text_color)
     customer_name = customer_display_name or quotation.company_name or "-"
-    c.drawString(left_margin, y_pos, f"{customer_name} 御中")
+    c.drawString(left_margin, customer_y, f"{customer_name} 御中")
     
-    y_pos -= 5.5*mm
+    # 担当者名（条件付き：空文字列・"-"を除外）
     contact_name = quotation.contact_name
     if contact_name and str(contact_name).strip() and str(contact_name).strip() != "-":
+        contact_y = customer_y - 4.5*mm
         c.setFont(font_name, 9)
         c.setFillColor(text_color)
-        c.drawString(left_margin, y_pos, f"{contact_name} 様")
-        y_pos -= 5*mm
+        c.drawString(left_margin, contact_y, f"{contact_name} 様")
+        customer_section_height = section_start_y - contact_y + 3*mm
     else:
-        y_pos -= 2*mm
+        customer_section_height = section_start_y - customer_y + 3*mm
     
     # 右側：自社情報ブロック（MUSASHIロゴを含む）
-    # 右上に会社情報ブロックを配置
-    company_block_x = width - right_margin - 68*mm
-    company_block_y = y_pos + 16*mm  # ヘッダーの下側から
+    # ロゴ・会社情報を同じ基準線から開始
+    company_block_x = width - right_margin - 63*mm
+    company_block_y = section_start_y
     
-    # MUSASHIロゴ描画（会社情報ブロックの最上段）
-    # 正式ロゴ画像を埋め込む、幅48mm、高さはアスペクト比に合わせる
+    # MUSASHIロゴ描画（幅55mm、アスペクト比維持、右端と重ならない）
+    logo_width = 55*mm
     logo_y = company_block_y
-    _draw_musashi_logo(c, company_block_x, logo_y, width=48*mm, height=None)
+    _draw_musashi_logo(c, company_block_x, logo_y, width=logo_width, height=None)
     
-    # ロゴ下の会社情報（ロゴ高さが動的なため、位置を少し下げる）
-    y_company = company_block_y - 15*mm
-    c.setFont(font_name, 9)
+    # ロゴ下に2mm余白、会社情報開始
+    # ロゴの高さ（幅の約31.5%）を考慮
+    y_company = company_block_y - logo_width * 0.315 - 2*mm
+    c.setFont(font_name, 8.5)
     c.setFillColor(text_color)
     c.drawString(company_block_x, y_company, "武蔵精密工業株式会社")
     
     # グループ名
-    y_company -= 3.5*mm
-    c.setFont(font_name, 7.5)
+    y_company -= 4*mm
+    c.setFont(font_name, 7)
     c.drawString(company_block_x, y_company, "Smart Industry営業グループ")
     
     # 郵便番号
-    y_company -= 3.5*mm
+    y_company -= 4*mm
     c.drawString(company_block_x, y_company, "〒441-8560")
     
     # 住所
-    y_company -= 3.5*mm
+    y_company -= 4*mm
     c.drawString(company_block_x, y_company, "愛知県豊橋市植田町字大膳39-5")
     
     # 電話番号
-    y_company -= 3.5*mm
+    y_company -= 4*mm
     c.drawString(company_block_x, y_company, "TEL：0532-25-8111")
     
     # 見積作成担当
     if quotation.estimator_name:
         y_company -= 3.5*mm
-        c.setFont(font_name, 7.5)
+        c.setFont(font_name, 7)
         c.setFillColor(navy)
         c.drawString(company_block_x, y_company, f"見積作成：{quotation.estimator_name}")
     
-    y_pos -= 11*mm
+    # 両側セクションが終了した位置を y_pos に反映（より低い方を採用）
+    y_pos = section_start_y - customer_section_height
+    
+    y_pos -= 4*mm
     
     # ========================================
     # 3. 条件情報（2列レイアウト）
     # ========================================
     
+    y_pos -= 2*mm
     conditions = [
         ("件名", quotation.project_name or "-"),
         ("支払条件", quotation.payment_terms or "-"),
@@ -227,7 +236,7 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
             x = col1_x
         else:
             x = col2_x
-            y_pos -= 4*mm
+            y_pos -= 3.5*mm
         
         c.drawString(x, y_pos, f"{label}：")
         c.setFont(font_name, 8)
@@ -236,38 +245,38 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
         c.setFont(font_name, 7.5)
         c.setFillColor(navy)
     
-    y_pos -= 6*mm
+    y_pos -= 4*mm
     
     # ========================================
     # 4. 合計金額帯（濃紺背景）
     # ========================================
     
+    y_pos -= 1.5*mm
     subtotal = sum((getattr(d, 'subtotal', 0) or 0) for d in (quotation.details or []))
     discount_amount = quotation.discount_amount or 0
     total_amount = max(0, subtotal - discount_amount)
     
-    total_band_height = 10*mm
+    total_band_height = 11*mm
     c.setFillColor(navy)
     c.rect(left_margin, y_pos - total_band_height, page_width, total_band_height, fill=1, stroke=0)
     
     # 合計金額テキスト
     c.setFont(font_name, 10)
     c.setFillColor(white)
-    c.drawString(left_margin + 4*mm, y_pos - 6.5*mm, "合計金額")
+    c.drawString(left_margin + 4*mm, y_pos - 7*mm, "合計金額")
     
-    c.setFont(font_name, 22)
+    c.setFont(font_name, 24)
     c.setFillColor(white)
-    c.drawRightString(width - right_margin - 35*mm, y_pos - 7*mm, f"¥{int(total_amount):,}")
+    c.drawRightString(width - right_margin - 40*mm, y_pos - 7*mm, f"¥{int(total_amount):,}")
     
-    # 注記：右端から十分離す
-    c.setFont(font_name, 5.5)
+    # 注記：2行化・読みやすく
+    c.setFont(font_name, 6)
     c.setFillColor(white)
-    note_x = width - right_margin - 31*mm
-    c.drawString(note_x, y_pos - 6*mm, "※本見積金額に")
-    c.drawString(note_x, y_pos - 8*mm, "消費税は含まれ")
-    c.drawString(note_x, y_pos - 10*mm, "ておりません")
-    
-    y_pos -= total_band_height + 2*mm
+    note_x = width - right_margin - 37*mm
+    c.drawString(note_x, y_pos - 6.5*mm, "※本見積金額に")
+    c.drawString(note_x, y_pos - 9.5*mm, "消費税は含まれておりません")
+
+    y_pos -= total_band_height + 1.5*mm
     
     # ========================================
     # 5. 明細表
@@ -295,10 +304,10 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.drawString(col_price, y_pos - 3.5*mm, "単価")
     c.drawRightString(col_amount, y_pos - 3.5*mm, "金額")
     
-    y_pos -= header_height + 0.5*mm
+    y_pos -= header_height + 0.3*mm
     
-    # 明細行（15行、高さを削減）
-    line_height = 3.5*mm
+    # 明細行（15行、行高を最適化）
+    line_height = 3.2*mm
     detail_lines = list(quotation.details or [])
     
     for row_idx in range(15):
@@ -320,27 +329,27 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
             c.setFillColor(text_color)
             
             # No.
-            c.drawString(col_no, y_pos - 2.5*mm, str(row_idx + 1))
+            c.drawString(col_no, y_pos - 2.3*mm, str(row_idx + 1))
             
             # 品名・仕様
             label = getattr(detail, 'label', '') or getattr(detail, 'description', '') or ''
-            c.drawString(col_name, y_pos - 2.5*mm, str(label)[:28])
+            c.drawString(col_name, y_pos - 2.3*mm, str(label)[:28])
             
             # 数量
             qty = int(getattr(detail, 'quantity', 0) or 0)
-            c.drawRightString(col_qty + 10*mm, y_pos - 2.5*mm, str(qty))
+            c.drawRightString(col_qty + 10*mm, y_pos - 2.3*mm, str(qty))
             
             # 単位
             unit = getattr(detail, 'unit', '') or '式'
-            c.drawString(col_unit, y_pos - 2.5*mm, str(unit))
+            c.drawString(col_unit, y_pos - 2.3*mm, str(unit))
             
             # 単価
             price = int(getattr(detail, 'price', 0) or 0)
-            c.drawRightString(col_price + 15*mm, y_pos - 2.5*mm, f"¥{price:,}")
+            c.drawRightString(col_price + 15*mm, y_pos - 2.3*mm, f"¥{price:,}")
             
             # 金額
             subtotal_val = int(getattr(detail, 'subtotal', 0) or 0)
-            c.drawRightString(col_amount, y_pos - 2.5*mm, f"¥{subtotal_val:,}")
+            c.drawRightString(col_amount, y_pos - 2.3*mm, f"¥{subtotal_val:,}")
         
         y_pos -= line_height
     
@@ -348,7 +357,7 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     # 6. 小計・値引き・合計（右側に集約）
     # ========================================
     
-    y_pos -= 1*mm
+    y_pos -= 0.5*mm
     
     summary_x = width - right_margin - 38*mm
     
@@ -358,28 +367,30 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     # 小計
     c.drawString(summary_x, y_pos, "小計")
     c.drawRightString(width - right_margin, y_pos, f"¥{int(subtotal):,}")
-    y_pos -= 3.5*mm
+    y_pos -= 3.2*mm
     
     # 値引き（ある場合のみ）
     if discount_amount > 0:
         c.drawString(summary_x, y_pos, "値引き")
         c.drawRightString(width - right_margin, y_pos, f"-¥{int(discount_amount):,}")
-        y_pos -= 3.5*mm
+        y_pos -= 3.2*mm
     
     # 合計金額（濃紺背景）
     c.setFillColor(navy)
-    c.rect(summary_x - 3*mm, y_pos - 4*mm, width - right_margin - summary_x + 3*mm, 4*mm, fill=1, stroke=0)
+    c.rect(summary_x - 3*mm, y_pos - 3.8*mm, width - right_margin - summary_x + 3*mm, 3.8*mm, fill=1, stroke=0)
     
-    c.setFont(font_name, 8.5)
+    c.setFont(font_name, 8)
     c.setFillColor(white)
-    c.drawString(summary_x, y_pos - 3*mm, "合計")
-    c.drawRightString(width - right_margin, y_pos - 3*mm, f"¥{int(total_amount):,}")
+    c.drawString(summary_x, y_pos - 2.8*mm, "合計")
+    c.drawRightString(width - right_margin, y_pos - 2.8*mm, f"¥{int(total_amount):,}")
     
-    y_pos -= 6*mm
+    y_pos -= 5*mm
     
     # ========================================
     # 7. 備考欄
     # ========================================
+    
+    y_pos -= 1.5*mm
     
     remarks_label_y = y_pos
     c.setFont(font_name, 8)
@@ -387,13 +398,12 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.drawString(left_margin + 2*mm, remarks_label_y, "●")
     c.drawString(left_margin + 6*mm, remarks_label_y, "備考")
     
-    y_pos -= 3*mm
+    y_pos -= 3.5*mm
     
     # 備考欄の高さ計算：下部に最低8mm余白を確保
-    # A4高さ = 297mm、下余白 = 8mm + 3mm（安全値）
     remarks_min_y = bottom_margin + 3*mm
     remarks_available_height = y_pos - remarks_min_y
-    remarks_box_height = max(28*mm, remarks_available_height - 2*mm)  # 最小28mm、最大は計算値
+    remarks_box_height = max(26*mm, remarks_available_height - 1.5*mm)
     
     # 枠の下端がページ内に収まるように調整
     remarks_bottom_y = y_pos - remarks_box_height

@@ -8,6 +8,10 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Table, TableStyle, Paragraph
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib import colors
 from datetime import datetime
 from flask import current_app
 import logging
@@ -298,7 +302,7 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
         c.setFillColor(navy)
     
     # ========================================
-    # 4. 合計金額帯（濃紺背景）- ReportLab座標で固定
+    # 4. 合計金額帯（濃紺背景）- Table で安定配置
     # ========================================
     
     subtotal = sum((getattr(d, 'subtotal', 0) or 0) for d in (quotation.details or []))
@@ -308,42 +312,71 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     # A4上からのmm座標をReportLab座標に変換
     total_band_y = _rect_y_from_top(total_band_top_mm, total_band_height_mm, height)
     
-    c.setFillColor(navy)
-    c.rect(left_margin, total_band_y, page_width, total_band_height_mm * mm, fill=1, stroke=0)
+    # Table用のParagraphStyle定義
+    label_style = ParagraphStyle(
+        "TotalLabel",
+        fontName=font_name,
+        fontSize=12,
+        leading=12,
+        textColor=white,
+        alignment=TA_CENTER,
+    )
     
-    # 帯の中央Y座標を計算（上下中央に配置）
-    band_h = total_band_height_mm * mm
-    band_center_y = total_band_y + band_h / 2
+    amount_style = ParagraphStyle(
+        "TotalAmount",
+        fontName=font_name,
+        fontSize=30,
+        leading=30,
+        textColor=white,
+        alignment=TA_CENTER,
+    )
     
-    # ラベル「合計金額」（12pt）- 視覚的に帯の上下中央に配置
-    label_font_size = 12
-    # フォントの視覚的中央がband_center_yに来るようにベースラインをオフセット
-    label_baseline_y = band_center_y - label_font_size * 0.25
-    c.setFont(font_name, label_font_size)
-    c.setFillColor(white)
-    c.drawString(left_margin + 4*mm, label_baseline_y, "合計金額")
+    note_style = ParagraphStyle(
+        "TotalNote",
+        fontName=font_name,
+        fontSize=6,
+        leading=8,
+        textColor=white,
+        alignment=TA_LEFT,
+    )
     
-    # 金額「￥582,000」（30pt）- 視覚的に帯の上下中央に配置
-    amount_font_size = 30
-    # フォントの視覚的中央がband_center_yに来るようにベースラインをオフセット
-    amount_baseline_y = band_center_y - amount_font_size * 0.25
-    c.setFont(font_name, amount_font_size)
-    c.setFillColor(white)
-    c.drawRightString(width - right_margin - 40*mm, amount_baseline_y, f"¥{int(total_amount):,}")
+    # 金額フォーマット
+    amount_text = f"¥{int(total_amount):,}"
+    note_text = "※本見積金額に<br/>消費税は含まれておりません"
     
-    # 注記：2行化・上下中央周辺に配置
-    note_font_size = 6
-    note_x = width - right_margin - 37*mm
-    note_line_gap = 3.5 * mm
-    # フォントの視覚的中央を基準に配置
-    note_baseline_offset = note_font_size * 0.25
-    note_y1 = band_center_y + note_line_gap / 2 - note_baseline_offset
-    note_y2 = band_center_y - note_line_gap / 2 - note_baseline_offset
+    # Table列幅の計算
+    label_col_width = 45 * mm
+    amount_col_width = 95 * mm
+    note_col_width = page_width - label_col_width - amount_col_width
     
-    c.setFont(font_name, note_font_size)
-    c.setFillColor(white)
-    c.drawString(note_x, note_y1, "※本見積金額に")
-    c.drawString(note_x, note_y2, "消費税は含まれておりません")
+    # Tableデータと設定
+    total_table = Table(
+        [[
+            Paragraph("合計金額", label_style),
+            Paragraph(amount_text, amount_style),
+            Paragraph(note_text, note_style),
+        ]],
+        colWidths=[label_col_width, amount_col_width, note_col_width],
+        rowHeights=[total_band_height_mm * mm],
+    )
+    
+    # TableStyle：背景色、パディング、垂直配置
+    total_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), navy),
+        ("TEXTCOLOR", (0, 0), (-1, -1), white),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN", (0, 0), (0, 0), "CENTER"),
+        ("ALIGN", (1, 0), (1, 0), "CENTER"),
+        ("ALIGN", (2, 0), (2, 0), "LEFT"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]))
+    
+    # Tableを描画
+    total_table.wrapOn(c, page_width, total_band_height_mm * mm)
+    total_table.drawOn(c, left_margin, total_band_y)
     
     # ========================================
     # 5. 明細表 - ReportLab座標で固定

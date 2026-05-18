@@ -355,13 +355,17 @@ body {
     height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
-    display: block !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     background: #fff !important;
   }
 
   .quotation-sheet {
     width: 210mm !important;
-    height: 297mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 297mm !important;
     margin: 0 !important;
     padding-left: 10mm !important;
     padding-right: 10mm !important;

@@ -333,8 +333,8 @@ body {
   html, body {
     width: 210mm;
     height: 297mm;
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     background: #fff !important;
   }
 
@@ -345,20 +345,26 @@ body {
   }
 
   .quotation-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
     padding: 0 !important;
-    margin: 0;
-    display: flex;
-    justify-content: center;
+    display: block !important;
+    background: #fff !important;
   }
 
   .quotation-sheet {
-    width: 210mm;
-    height: 297mm;
-    margin: 0;
-    padding: 8mm 9mm;
-    box-shadow: none;
-    overflow: hidden;
-    page-break-inside: avoid;
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 8mm 9mm !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    transform: none !important;
+    zoom: 1 !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
   }
 
   * {

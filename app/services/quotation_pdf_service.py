@@ -326,8 +326,11 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.setFont(font_name, 8)
     c.setFillColor(navy)
     
+    # 左列のX座標を元に戻す
     col1_x = left_margin
-    col2_x = left_margin + page_width / 2
+
+    # 右列のX座標を30mm左に移動
+    col2_x = left_margin + page_width / 2 - 30 * mm
     
     for idx, (label, value) in enumerate(conditions):
         if idx % 2 == 0:
@@ -544,6 +547,18 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
             c.drawString(left_margin + 3*mm, remarks_y, line[:60])
             remarks_y -= 3.5*mm
     
+    # 支払条件と引き渡し条件の配置を左方向に30mm移動
+    payment_terms_x = left_margin + 30 * mm
+    delivery_terms_x = left_margin + 30 * mm
+
+    # 支払条件
+    c.drawString(payment_terms_x, summary_y_start - 10 * mm, "支払条件")
+    c.drawRightString(payment_terms_x + 50 * mm, summary_y_start - 10 * mm, quotation.payment_terms or "-")
+
+    # 引き渡し条件
+    c.drawString(delivery_terms_x, summary_y_start - 15 * mm, "引き渡し条件")
+    c.drawRightString(delivery_terms_x + 50 * mm, summary_y_start - 15 * mm, quotation.delivery_terms or "-")
+
     c.save()
     buffer.seek(0)
     return buffer.getvalue()

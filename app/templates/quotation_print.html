@@ -2,20 +2,16 @@
 
 {% block content %}
 <style>
-:root {
-  --sheet-width: 210mm;
-  --sheet-height: 297mm;
-  --sheet-pad-y: 8mm;
-  --sheet-pad-x: 10mm;
-}
-
 body {
-  background: #e9e9e9;
+  background: #e9edf3;
 }
 
 .print-actions {
-  max-width: 210mm;
-  margin: 16px auto;
+  width: 100%;
+  max-width: 1080px;
+  margin: 16px auto 0;
+  padding: 0 16px;
+  box-sizing: border-box;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -25,7 +21,7 @@ body {
 .print-actions a {
   padding: 8px 16px;
   background-color: #163a70;
-  color: white;
+  color: #fff;
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -39,226 +35,186 @@ body {
   background-color: #0f2850;
 }
 
-.quotation-page {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 16px 0 32px;
+.quotation-print-page {
+  width: 100%;
+  padding: 16px;
+  box-sizing: border-box;
 }
 
-.quotation-sheet {
-  width: var(--sheet-width);
-  height: var(--sheet-height);
-  box-sizing: border-box;
-  padding: var(--sheet-pad-y) var(--sheet-pad-x);
+.quotation-document {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
   background: #fff;
+  padding: 32px 36px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
   color: #111;
   font-family: "Yu Gothic", "Meiryo", sans-serif;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
-/* Header */
-.quote-header {
+.doc-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  height: 31.5mm;
-  flex-shrink: 0;
+  gap: 24px;
 }
 
-.title-block {
+.doc-title-block {
   display: flex;
+  gap: 14px;
   align-items: flex-start;
-  gap: 4mm;
 }
 
-.title-bar {
-  width: 2mm;
-  height: 25mm;
+.doc-title-mark {
+  width: 8px;
+  height: 72px;
   background: #163a70;
-  flex-shrink: 0;
 }
 
-.quote-title {
-  font-size: 32pt;
-  line-height: 1;
-  font-weight: 700;
+.doc-title-block h1 {
+  margin: 0;
   color: #163a70;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1;
   letter-spacing: 0.08em;
-  margin: 0;
 }
 
-.quote-subtitle {
-  margin-top: 3mm;
-  font-size: 9pt;
-  margin: 0;
+.doc-title-block p {
+  margin: 10px 0 0;
+  font-size: 13px;
 }
 
-.quote-meta {
-  font-size: 8pt;
-  line-height: 1.8;
-  text-align: left;
-  padding-top: 2mm;
+.doc-meta {
+  font-size: 12px;
+  line-height: 1.7;
+  min-width: 170px;
 }
 
-.header-line {
-  height: 0;
-  border-top: 1.2px solid #163a70;
-  margin-bottom: 3mm;
-  margin-top: 0;
-  flex-shrink: 0;
+.doc-line {
+  border-top: 2px solid #163a70;
+  margin: 18px 0;
 }
 
-/* Info Area */
-.info-area {
+.doc-info-grid {
   display: grid;
-  grid-template-columns: 1fr 72mm;
-  gap: 10mm;
-  height: 55.5mm;
-  margin-top: -0.5mm;
-  flex-shrink: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 32px;
+  align-items: start;
 }
 
 .section-label {
   color: #163a70;
-  font-size: 8pt;
-  margin: 0 0 2mm 0;
+  font-size: 12px;
+  margin: 0 0 8px;
   font-weight: 700;
 }
 
 .customer-name {
-  font-size: 11pt;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.05em;
   margin: 0;
 }
 
 .contact-name {
-  font-size: 9pt;
-  margin-top: 1mm;
-  margin-bottom: 0;
+  font-size: 13px;
+  margin: 6px 0 0;
 }
 
-.conditions-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 8mm;
-  row-gap: 2mm;
-  margin-top: 3mm;
-  font-size: 8pt;
-}
-
-.condition-row {
-  display: flex;
-  gap: 2mm;
-}
-
-.condition-label {
-  color: #163a70;
-  font-weight: 700;
-  display: inline-block;
-  min-width: 24mm;
-  flex-shrink: 0;
-}
-
-.condition-value {
-  flex: 1;
-  word-break: break-word;
-}
-
-.company-area {
-  font-size: 7.5pt;
-  line-height: 1.5;
-  display: flex;
-  flex-direction: column;
+.company-block {
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .company-logo {
-  width: 48mm;
+  max-width: 180px;
   height: auto;
-  margin-bottom: 3mm;
+  margin-bottom: 10px;
 }
 
 .company-name {
-  font-size: 9pt;
+  font-size: 14px;
   font-weight: 700;
   margin: 0;
 }
 
-.company-area div {
-  margin: 0;
+.conditions-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 28px;
+  font-size: 13px;
 }
 
-/* Total Band */
+.condition-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.condition-label {
+  font-weight: 700;
+  color: #163a70;
+}
+
+.condition-value {
+  word-break: break-word;
+}
+
 .total-band {
   width: 100%;
-  height: 16mm;
+  margin-top: 22px;
   display: grid;
-  grid-template-columns: 45mm 1fr 46mm;
-  align-items: center;
+  grid-template-columns: minmax(120px, 22%) minmax(260px, 1fr) minmax(180px, 22%);
+  align-items: stretch;
   background: #163a70;
   color: #fff;
-  margin-left: 0;
-  margin-right: 0;
-  margin-top: 2mm;
-  margin-bottom: 4mm;
-  flex-shrink: 0;
+  min-height: 58px;
+}
+
+.total-label,
+.total-amount,
+.total-note {
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .total-label {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  padding-left: 7mm;
-  font-size: 10pt;
+  padding-left: 24px;
   font-weight: 700;
-  margin: 0;
+  font-size: 15px;
 }
 
 .total-amount {
-  height: 100%;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  font-size: 28pt;
+  font-size: clamp(28px, 4vw, 40px);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   line-height: 1;
-  margin: 0;
 }
 
 .total-note {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  font-size: 6.5pt;
+  font-size: 11px;
   line-height: 1.35;
-  padding-right: 4mm;
-  margin: 0;
+  padding: 8px 12px;
 }
 
-/* Detail Table */
 .detail-table {
   width: 100%;
-  border-collapse: collapse;
   table-layout: fixed;
-  font-size: 8pt;
-  margin: 0;
-  flex-shrink: 0;
+  border-collapse: collapse;
+  margin-top: 18px;
+  font-size: 12px;
 }
 
 .detail-table th {
   background: #163a70;
   color: #fff;
-  height: 5.7mm;
-  font-weight: 700;
-  border-right: 1px solid rgba(255,255,255,0.25);
-  padding: 0 2mm;
-  text-align: center;
+  height: 30px;
+  border-right: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 0 8px;
 }
 
 .detail-table th:last-child {
@@ -266,120 +222,128 @@ body {
 }
 
 .detail-table td {
-  height: 4.6mm;
+  height: 26px;
+  padding: 0 8px;
   border-bottom: 1px solid #d7deea;
   background: #fbfcfe;
-  padding: 0 2mm;
-  text-align: center;
 }
 
 .detail-table tbody tr:nth-child(even) td {
   background: #f5f7fb;
 }
 
-.col-no { width: 10mm; }
-.col-name { width: auto; text-align: left; }
-.col-qty { width: 17mm; text-align: right; }
-.col-unit { width: 16mm; }
-.col-price { width: 28mm; text-align: right; }
-.col-amount { width: 30mm; text-align: right; }
+.col-no { width: 8%; text-align: center; }
+.col-name { width: 44%; text-align: left; }
+.col-qty { width: 10%; text-align: right; }
+.col-unit { width: 10%; text-align: center; }
+.col-price { width: 14%; text-align: right; }
+.col-amount { width: 14%; text-align: right; }
 
-/* Summary Area */
 .summary-area {
   width: 100%;
-  margin-left: 0;
-  margin-right: 0;
-  margin-top: 2mm;
-  margin-bottom: 0;
-  font-size: 8pt;
-  flex-shrink: 0;
+  margin-top: 10px;
+  display: grid;
+  justify-items: end;
+}
+
+.summary-table {
+  width: min(360px, 45%);
+  font-size: 12px;
 }
 
 .summary-row {
   display: grid;
-  grid-template-columns: 1fr 24mm 34mm;
+  grid-template-columns: 1fr 1.3fr;
+  min-height: 28px;
   align-items: center;
-  height: 5mm;
   border-bottom: 1px solid #163a70;
-  padding: 0;
 }
 
-.summary-row span:first-child {
-  grid-column: 2;
-  text-align: left;
-  padding-left: 2mm;
+.summary-row span {
+  padding: 0 10px;
 }
 
 .summary-row span:last-child {
-  grid-column: 3;
   text-align: right;
-  padding-right: 2mm;
 }
 
-.grand-total {
-  background: transparent;
-  color: #111;
-  font-weight: 700;
-  height: 6mm;
-}
-
-.grand-total span:first-child,
-.grand-total span:last-child {
+.summary-row.grand-total {
   background: #163a70;
   color: #fff;
-  height: 100%;
-  display: flex;
-  align-items: center;
+  font-weight: 700;
 }
 
-.grand-total span:first-child {
-  justify-content: flex-start;
-}
-
-.grand-total span:last-child {
-  justify-content: flex-end;
-}
-
-/* Remarks Area */
 .remarks-area {
-  width: 100%;
-  margin-top: 2.5mm;
-  flex-grow: 0;
-  display: flex;
-  flex-direction: column;
+  margin-top: 22px;
 }
 
 .remarks-title {
   color: #163a70;
-  font-size: 8.5pt;
   font-weight: 700;
-  margin: 0 0 2mm 0;
+  margin-bottom: 8px;
+  font-size: 13px;
 }
 
 .remarks-box {
   width: 100%;
-  height: 36mm;
+  min-height: 120px;
   border: 1px solid #cfd7e5;
-  padding: 3mm;
-  font-size: 8pt;
+  padding: 12px;
   box-sizing: border-box;
-  overflow: hidden;
+  font-size: 12px;
+  white-space: pre-wrap;
   word-break: break-word;
+}
+
+@media screen and (max-width: 900px) {
+  .quotation-document {
+    padding: 24px 20px;
+  }
+
+  .doc-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .doc-meta {
+    min-width: 0;
+  }
+
+  .doc-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .conditions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .total-band {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .total-label,
+  .total-amount,
+  .total-note {
+    justify-content: center;
+    padding: 8px 12px;
+  }
+
+  .summary-table {
+    width: min(420px, 100%);
+  }
 }
 
 @page {
   size: A4 portrait;
-  margin: 0;
+  margin: 8mm;
 }
 
 @media print {
-  /* Print verification checklist:
-     1) Browser preview and print output have matching block alignment.
-     2) Major sections fill sheet width without overflow.
-     3) Output stays on a single A4 portrait page. */
-  html, body {
-    width: var(--sheet-width);
-    height: var(--sheet-height);
+  html,
+  body {
+    width: auto !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
@@ -391,47 +355,94 @@ body {
     display: none !important;
   }
 
-  .quotation-page {
-    width: var(--sheet-width) !important;
-    height: var(--sheet-height) !important;
+  .quotation-print-page {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+
+  .quotation-document {
+    width: 100% !important;
+    max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    background: #fff !important;
-    overflow: hidden !important;
-  }
-
-  .quotation-sheet {
-    width: var(--sheet-width) !important;
-    height: var(--sheet-height) !important;
-    margin: 0 auto !important;
-    padding: var(--sheet-pad-y) var(--sheet-pad-x) !important;
-    box-sizing: border-box !important;
     box-shadow: none !important;
-    overflow: hidden !important;
-    transform: none !important;
-    zoom: 1 !important;
-    page-break-inside: avoid !important;
-    page-break-after: avoid !important;
+    background: #fff !important;
+    box-sizing: border-box !important;
   }
 
-  .total-band,
-  .detail-table,
-  .remarks-area,
-  .remarks-box {
+  .doc-header {
+    gap: 16px;
+  }
+
+  .doc-title-block h1 {
+    font-size: 34px;
+  }
+
+  .doc-title-mark {
+    height: 58px;
+  }
+
+  .doc-line {
+    margin: 12px 0;
+  }
+
+  .doc-info-grid {
+    grid-template-columns: minmax(0, 1fr) 290px;
+    gap: 20px;
+  }
+
+  .conditions-grid {
+    margin-top: 12px;
+    gap: 6px 20px;
+    font-size: 11px;
+  }
+
+  .total-band {
     width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    max-width: 100% !important;
+    margin-top: 14px;
+    min-height: 48px;
+  }
+
+  .total-label {
+    font-size: 12px;
+  }
+
+  .total-amount {
+    font-size: 30px;
+  }
+
+  .detail-table {
+    width: 100% !important;
+    margin-top: 12px;
+    font-size: 10.5px;
+  }
+
+  .detail-table th {
+    height: 24px;
+  }
+
+  .detail-table td {
+    height: 22px;
   }
 
   .summary-area {
     width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    max-width: 100% !important;
+    margin-top: 8px;
+  }
+
+  .summary-table {
+    width: 330px;
+  }
+
+  .remarks-area {
+    margin-top: 12px;
+  }
+
+  .remarks-box {
+    width: 100% !important;
+    min-height: 95px;
   }
 
   * {
@@ -442,62 +453,40 @@ body {
 </style>
 
 <div class="print-actions no-print">
-  <button onclick="window.print()">印刷</button>
+  <button type="button" onclick="window.print()">印刷</button>
   <a href="{{ url_for('quotation.quotation_list') }}">戻る</a>
 </div>
 
-<div class="quotation-page">
-  <div class="quotation-sheet">
-
-    <div class="quote-header">
-      <div class="title-block">
-        <div class="title-bar"></div>
+<main class="quotation-print-page">
+  <section class="quotation-document">
+    <header class="doc-header">
+      <div class="doc-title-block">
+        <div class="doc-title-mark"></div>
         <div>
-          <div class="quote-title">見積書</div>
-          <div class="quote-subtitle">下記の通りお見積り申し上げます。</div>
+          <h1>見積書</h1>
+          <p>下記の通りお見積り申し上げます。</p>
         </div>
       </div>
-      <div class="quote-meta">
+
+      <div class="doc-meta">
         <div>発行日：{{ quotation.created_at.strftime('%Y年%m月%d日') if quotation.created_at else '' }}</div>
         <div>見積No：{{ quotation.original_id }}-R{{ quotation.revision_no }}</div>
+        <div>改定No：R{{ quotation.revision_no }}</div>
       </div>
-    </div>
+    </header>
 
-    <div class="header-line"></div>
+    <div class="doc-line"></div>
 
-    <div class="info-area">
-      <div>
+    <section class="doc-info-grid">
+      <div class="customer-block">
         <div class="section-label">お客様</div>
         <div class="customer-name">{{ quotation.company_name }} 御中</div>
         {% if quotation.contact_name %}
         <div class="contact-name">{{ quotation.contact_name }} 様</div>
         {% endif %}
-
-        <div class="conditions-grid">
-          <div class="condition-row">
-            <span class="condition-label">件名：</span>
-            <span class="condition-value">{{ quotation.project_name }}</span>
-          </div>
-          <div class="condition-row">
-            <span class="condition-label">納期：</span>
-            <span class="condition-value">{{ quotation.delivery_date }}</span>
-          </div>
-          <div class="condition-row">
-            <span class="condition-label">見積有効期限：</span>
-            <span class="condition-value">{{ quotation.valid_until }}</span>
-          </div>
-          <div class="condition-row">
-            <span class="condition-label">支払条件：</span>
-            <span class="condition-value">{{ quotation.payment_terms }}</span>
-          </div>
-          <div class="condition-row">
-            <span class="condition-label">引渡条件：</span>
-            <span class="condition-value">{{ quotation.delivery_terms }}</span>
-          </div>
-        </div>
       </div>
 
-      <div class="company-area">
+      <div class="company-block">
         {% if quotation.company_name != '武蔵精密工業株式会社' %}
         <img src="{{ url_for('static', filename='img/logo.png') }}" class="company-logo" alt="Company Logo">
         {% endif %}
@@ -507,16 +496,39 @@ body {
         <div>愛知県豊橋市植田町字大膳39-5</div>
         <div>TEL：0532-25-8111</div>
       </div>
-    </div>
+    </section>
 
-    <div class="total-band">
+    <section class="conditions-grid">
+      <div class="condition-row">
+        <span class="condition-label">件名：</span>
+        <span class="condition-value">{{ quotation.project_name or '-' }}</span>
+      </div>
+      <div class="condition-row">
+        <span class="condition-label">納期：</span>
+        <span class="condition-value">{{ quotation.delivery_date or '-' }}</span>
+      </div>
+      <div class="condition-row">
+        <span class="condition-label">見積有効期限：</span>
+        <span class="condition-value">{{ quotation.valid_until or '-' }}</span>
+      </div>
+      <div class="condition-row">
+        <span class="condition-label">支払条件：</span>
+        <span class="condition-value">{{ quotation.payment_terms or '-' }}</span>
+      </div>
+      <div class="condition-row">
+        <span class="condition-label">引渡条件：</span>
+        <span class="condition-value">{{ quotation.delivery_terms or '-' }}</span>
+      </div>
+    </section>
+
+    <section class="total-band">
       <div class="total-label">合計金額</div>
       <div class="total-amount">￥{{ '{:,.0f}'.format(total_amount) if total_amount else '0' }}</div>
       <div class="total-note">
         ※本見積金額に<br>
         消費税は含まれておりません
       </div>
-    </div>
+    </section>
 
     <table class="detail-table">
       <thead>
@@ -564,28 +576,29 @@ body {
       </tbody>
     </table>
 
-    <div class="summary-area">
-      <div class="summary-row">
-        <span>小計</span>
-        <span>￥{{ '{:,.0f}'.format(total_amount) if total_amount else '0' }}</span>
+    <section class="summary-area">
+      <div class="summary-table">
+        <div class="summary-row">
+          <span>小計</span>
+          <span>￥{{ '{:,.0f}'.format(total_amount) if total_amount else '0' }}</span>
+        </div>
+        {% if discount_amount and discount_amount > 0 %}
+        <div class="summary-row">
+          <span>値引き</span>
+          <span>-￥{{ '{:,.0f}'.format(discount_amount) }}</span>
+        </div>
+        {% endif %}
+        <div class="summary-row grand-total">
+          <span>合計</span>
+          <span>￥{{ '{:,.0f}'.format(total_after_discount) if total_after_discount else '0' }}</span>
+        </div>
       </div>
-      {% if discount_amount and discount_amount > 0 %}
-      <div class="summary-row">
-        <span>値引き</span>
-        <span>-￥{{ '{:,.0f}'.format(discount_amount) }}</span>
-      </div>
-      {% endif %}
-      <div class="summary-row grand-total">
-        <span>合計</span>
-        <span>￥{{ '{:,.0f}'.format(total_after_discount) if total_after_discount else '0' }}</span>
-      </div>
-    </div>
+    </section>
 
-    <div class="remarks-area">
+    <section class="remarks-area">
       <div class="remarks-title">● 備考</div>
       <div class="remarks-box">{{ quotation.remarks }}</div>
-    </div>
-
-  </div>
-</div>
+    </section>
+  </section>
+</main>
 {% endblock %}

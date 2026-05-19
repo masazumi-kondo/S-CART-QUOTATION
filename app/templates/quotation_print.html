@@ -2,6 +2,13 @@
 
 {% block content %}
 <style>
+:root {
+  --sheet-width: 210mm;
+  --sheet-height: 297mm;
+  --sheet-pad-y: 8mm;
+  --sheet-pad-x: 10mm;
+}
+
 body {
   background: #e9e9e9;
 }
@@ -35,14 +42,15 @@ body {
 .quotation-page {
   display: flex;
   justify-content: center;
+  align-items: flex-start;
   padding: 16px 0 32px;
 }
 
 .quotation-sheet {
-  width: 210mm;
-  height: 297mm;
+  width: var(--sheet-width);
+  height: var(--sheet-height);
   box-sizing: border-box;
-  padding: 8mm 10mm;
+  padding: var(--sheet-pad-y) var(--sheet-pad-x);
   background: #fff;
   color: #111;
   font-family: "Yu Gothic", "Meiryo", sans-serif;
@@ -336,9 +344,13 @@ body {
 }
 
 @media print {
+  /* Print verification checklist:
+     1) Browser preview and print output have matching block alignment.
+     2) Major sections fill sheet width without overflow.
+     3) Output stays on a single A4 portrait page. */
   html, body {
-    width: 210mm;
-    height: 297mm;
+    width: var(--sheet-width);
+    height: var(--sheet-height);
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
@@ -351,21 +363,22 @@ body {
   }
 
   .quotation-page {
-    width: 210mm !important;
-    height: 297mm !important;
+    width: var(--sheet-width) !important;
+    height: var(--sheet-height) !important;
     margin: 0 !important;
     padding: 0 !important;
     display: flex !important;
     justify-content: center !important;
-    align-items: flex-start !important;
+    align-items: center !important;
     background: #fff !important;
+    overflow: hidden !important;
   }
 
   .quotation-sheet {
-    width: 190mm !important;
-    height: 297mm !important;
+    width: var(--sheet-width) !important;
+    height: var(--sheet-height) !important;
     margin: 0 auto !important;
-    padding: 8mm 0 !important;
+    padding: var(--sheet-pad-y) var(--sheet-pad-x) !important;
     box-sizing: border-box !important;
     box-shadow: none !important;
     overflow: hidden !important;
@@ -377,10 +390,12 @@ body {
 
   .total-band,
   .detail-table,
+  .remarks-area,
   .remarks-box {
     width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    max-width: 100% !important;
   }
 
   .summary-area {

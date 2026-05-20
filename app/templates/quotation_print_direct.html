@@ -69,7 +69,7 @@
       width: 100%;
       table-layout: fixed;
       margin-bottom: 3mm;
-      height: 28mm;
+      height: 22mm;
     }
 
     .header-table tr {
@@ -85,7 +85,7 @@
     .title-bar {
       display: inline-block;
       width: 2.5mm;
-      height: 25mm;
+      height: 20mm;
       background: #163a70;
       margin-right: 2mm;
       vertical-align: middle;
@@ -104,7 +104,7 @@
 
     .quote-subtitle {
       font-size: 9pt;
-      margin-top: 2mm;
+      margin-top: 1mm;
       color: #333;
     }
 
@@ -122,14 +122,14 @@
 
     .main-line {
       border-top: 1.5px solid #163a70;
-      margin: 3mm 0 4mm;
+      margin: 1.5mm 0 3mm;
     }
 
     .info-table {
       width: 100%;
       table-layout: fixed;
       margin-bottom: 4mm;
-      height: 40mm;
+      height: 36mm;
     }
 
     .customer-cell {
@@ -197,7 +197,7 @@
     .conditions-table {
       width: 100%;
       table-layout: fixed;
-      margin-top: 3mm;
+      margin-top: 1.5mm;
       margin-bottom: 5mm;
       font-size: 8.2pt;
       border-collapse: collapse;
@@ -226,7 +226,7 @@
     .total-band-table {
       width: 100%;
       height: 17mm;
-      margin-top: 5mm;
+      margin-top: 4mm;
       margin-bottom: 5mm;
       table-layout: fixed;
       border-collapse: collapse;
@@ -462,8 +462,20 @@
       }
 
       /* 印刷時のサイズ調整（最小限） */
+      .title-bar {
+        height: 20mm !important;
+      }
+
       .quote-title {
         font-size: 32pt !important;
+      }
+
+      .quote-subtitle {
+        margin-top: 1mm !important;
+      }
+
+      .main-line {
+        margin: 1.5mm 0 3mm !important;
       }
 
       .meta-item {
@@ -520,16 +532,16 @@
 
       .header-table {
         margin-bottom: 2mm !important;
-        height: 26mm !important;
+        height: 22mm !important;
       }
 
       .info-table {
         margin-bottom: 3mm !important;
-        height: 38mm !important;
+        height: 36mm !important;
       }
 
       .conditions-table {
-        margin-top: 2.5mm !important;
+        margin-top: 1.5mm !important;
         margin-bottom: 4mm !important;
       }
 

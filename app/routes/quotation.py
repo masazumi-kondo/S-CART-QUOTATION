@@ -658,7 +658,7 @@ def print_view(quotation_id):
     can_approve = g.get('current_user') and getattr(g.get('current_user'), 'can_approve', False)
     
     return render_template(
-        "quotation_print.html",
+        "quotation_print_native.html",
         quotation=quotation,
         details=details,
         total_amount=total_amount,

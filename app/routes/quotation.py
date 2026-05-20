@@ -625,6 +625,7 @@ def quotation_view(quotation_id):
 
 
 @quotation_bp.route("/quotation/<int:quotation_id>/print")
+@login_required
 def print_view(quotation_id):
     quotation = Quotation.query.get_or_404(quotation_id)
     details = sort_details_for_display(quotation.details)
@@ -673,6 +674,42 @@ def print_view(quotation_id):
         v2_inputs=v2_inputs,
         can_approve=False
     )
+
+
+@quotation_bp.route("/quotation/<int:quotation_id>/excel")
+@login_required
+def excel_view(quotation_id):
+    """見積書Excel生成エンドポイント"""
+    from app.services.quotation_excel_service import QuotationExcelService
+    
+    quotation = Quotation.query.get_or_404(quotation_id)
+    details = sort_details_for_display(quotation.details)
+    
+    # 各明細に単位情報を追加
+    for detail in details:
+        detail.unit_display = get_unit_display(detail)
+    
+    # 金額計算
+    total_amount = sum((getattr(d, "subtotal", 0) or 0) for d in details)
+    discount_amount = getattr(quotation, "discount_amount", 0) or 0
+    
+    # Excel生成
+    service = QuotationExcelService()
+    excel_bytes = service.generate_excel(quotation, details, total_amount, discount_amount)
+    
+    # ファイル名を生成（ASCII互換）
+    quotation_no = quotation.quotation_no or f'Q{quotation.id}'
+    filename = f"quotation_{quotation_no}.xlsx"
+    
+    # Responseとして返す
+    from flask import Response
+    response = Response(
+        excel_bytes.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response.headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{filename}"
+    
+    return response
 
 
 @quotation_bp.route("/quotation/<int:quotation_id>/pdf")

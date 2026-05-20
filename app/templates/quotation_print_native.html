@@ -527,6 +527,7 @@ body {
 </style>
 
 <div class="print-actions">
+  <a href="{{ url_for('quotation.excel_view', quotation_id=quotation.id) }}" class="btn-primary">顧客提出用Excel出力</a>
   <button type="button" onclick="window.print()">印刷</button>
   <a href="{{ url_for('quotation.quotation_list') }}">戻る</a>
 </div>

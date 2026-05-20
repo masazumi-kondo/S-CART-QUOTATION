@@ -624,6 +624,15 @@ def quotation_view(quotation_id):
     )
 
 
+def format_date_ja(value):
+    """日付をフォーマットする（date/datetime/str型に対応）"""
+    if not value:
+        return "-"
+    if hasattr(value, "strftime"):
+        return value.strftime("%Y年%m月%d日")
+    return str(value)
+
+
 @quotation_bp.route("/quotation/<int:quotation_id>/print")
 @login_required
 def print_view(quotation_id):

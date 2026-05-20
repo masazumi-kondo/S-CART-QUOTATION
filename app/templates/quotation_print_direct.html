@@ -594,7 +594,7 @@
             </div>
           </td>
           <td class="header-meta">
-            <div class="meta-item">発行日：{{ quotation.created_at.strftime('%Y年%m月%d日') }}</div>
+            <div class="meta-item">発行日：{{ quotation.created_at or '-' }}</div>
             <div class="meta-item">見積No：{{ quotation.quotation_no or 'Q' ~ quotation.id }}</div>
             <div class="meta-item">改定No：{{ quotation.revision_no or 0 }}</div>
           </td>
@@ -636,11 +636,11 @@
           <th>件名：</th>
           <td>{{ quotation.project_name or '-' }}</td>
           <th>納期：</th>
-          <td>{% if quotation.delivery_date %}{{ quotation.delivery_date.strftime('%Y年%m月%d日') }}{% else %}-{% endif %}</td>
+          <td>{{ quotation.delivery_date or '-' }}</td>
         </tr>
         <tr>
           <th>見積有効期限：</th>
-          <td>{% if quotation.valid_until %}{{ quotation.valid_until.strftime('%Y年%m月%d日') }}{% else %}-{% endif %}</td>
+          <td>{{ quotation.valid_until or '-' }}</td>
           <th>支払条件：</th>
           <td>{{ quotation.payment_terms or '-' }}</td>
         </tr>

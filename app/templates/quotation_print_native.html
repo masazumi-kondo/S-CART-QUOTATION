@@ -347,7 +347,7 @@ body {
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 4mm 5mm !important;
+    padding: 3.5mm 4mm !important;
     box-shadow: none !important;
     box-sizing: border-box !important;
     background: #fff !important;
@@ -357,52 +357,60 @@ body {
 
   /* ヘッダー設定 */
   .header-table {
-    height: 26mm !important;
+    height: 30mm !important;
     page-break-inside: avoid !important;
   }
 
   .quote-title {
-    font-size: 30pt !important;
+    font-size: 36pt !important;
     line-height: 1 !important;
+    white-space: nowrap !important;
   }
 
   .title-bar {
-    height: 22mm !important;
+    height: 26mm !important;
   }
 
   .quote-subtitle {
-    font-size: 8.5pt !important;
-    margin-top: 2mm !important;
+    font-size: 9.5pt !important;
+    margin-top: 2.5mm !important;
   }
 
   .meta-cell {
-    font-size: 7.5pt !important;
-    line-height: 1.45 !important;
+    font-size: 8.3pt !important;
+    line-height: 1.55 !important;
+    white-space: nowrap !important;
   }
 
   .main-line {
-    margin: 3mm 0 !important;
+    margin: 4mm 0 !important;
     border-top: 1.5px solid var(--navy) !important;
   }
 
   /* 顧客・会社情報設定 */
   .info-table {
-    height: 38mm !important;
+    height: 42mm !important;
     page-break-inside: avoid !important;
   }
 
   .customer-name {
-    font-size: 10.5pt !important;
-    line-height: 1.3 !important;
-  }
-
-  .company-cell {
-    font-size: 7.5pt !important;
+    font-size: 11.5pt !important;
     line-height: 1.35 !important;
   }
 
+  .customer-cell {
+    font-size: 8.5pt !important;
+    line-height: 1.45 !important;
+  }
+
+  .company-cell {
+    font-size: 8.2pt !important;
+    line-height: 1.42 !important;
+  }
+
   .company-logo {
-    width: 42mm !important;
+    width: 46mm !important;
+    max-width: 46mm !important;
     margin-bottom: 1.5mm !important;
   }
 
@@ -412,15 +420,15 @@ body {
 
   /* 条件欄設定 */
   .conditions-table {
-    margin-top: 3mm !important;
-    font-size: 7.5pt !important;
+    margin-top: 4mm !important;
+    font-size: 8.2pt !important;
     page-break-inside: avoid !important;
   }
 
   .conditions-table th,
   .conditions-table td {
-    padding-top: 0.8mm !important;
-    padding-bottom: 0.8mm !important;
+    padding-top: 1mm !important;
+    padding-bottom: 1mm !important;
   }
 
   .conditions-table th {
@@ -433,51 +441,63 @@ body {
 
   /* 合計金額帯設定 */
   .total-band-table {
-    margin-top: 5mm !important;
-    height: 14mm !important;
+    margin-top: 6mm !important;
+    height: 17mm !important;
     page-break-inside: avoid !important;
   }
 
   .total-label {
-    font-size: 8.5pt !important;
+    font-size: 9.5pt !important;
+    padding-left: 5mm !important;
   }
 
   .total-amount {
-    font-size: 25pt !important;
+    font-size: 31pt !important;
+    line-height: 1 !important;
+    letter-spacing: 0.06em !important;
+    white-space: nowrap !important;
   }
 
   .total-note {
-    font-size: 6.2pt !important;
+    font-size: 7pt !important;
+    line-height: 1.3 !important;
   }
 
   /* 明細表設定 */
   .detail-table {
-    margin-top: 3mm !important;
-    font-size: 7.2pt !important;
+    margin-top: 4mm !important;
+    font-size: 8pt !important;
     page-break-inside: avoid !important;
   }
 
   .detail-table th {
-    height: 4.5mm !important;
-    padding: 0 1mm !important;
+    height: 5.4mm !important;
+    padding: 0 1.2mm !important;
+    font-size: 8pt !important;
   }
 
   .detail-table td {
-    height: 4.0mm !important;
-    padding: 0 1mm !important;
+    height: 4.8mm !important;
+    padding: 0 1.2mm !important;
+    font-size: 7.8pt !important;
   }
 
   /* 小計・合計欄設定 */
   .summary-table {
-    width: 55mm !important;
-    margin-top: 2mm !important;
-    font-size: 7.2pt !important;
+    width: 60mm !important;
+    margin-top: 3mm !important;
+    font-size: 8pt !important;
     page-break-inside: avoid !important;
   }
 
   .summary-table th,
   .summary-table td {
-    height: 4.2mm !important;
+    height: 5mm !important;
+  }
+
+  .summary-table .grand-total th,
+  .summary-table .grand-total td {
+    height: 5.8mm !important;
   }
 
   /* 備考欄設定 */
@@ -486,17 +506,18 @@ body {
   }
 
   .remarks-title {
-    margin-top: 3mm !important;
-    font-size: 7.5pt !important;
+    margin-top: 5mm !important;
+    font-size: 8.5pt !important;
   }
 
   .remarks-box {
-    margin-top: 1.5mm !important;
-    height: 24mm !important;
-    min-height: 24mm !important;
-    padding: 2mm !important;
-    font-size: 7pt !important;
+    margin-top: 2mm !important;
+    height: 34mm !important;
+    min-height: 34mm !important;
+    padding: 2.5mm !important;
+    font-size: 8pt !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
   * {

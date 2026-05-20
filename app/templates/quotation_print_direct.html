@@ -160,15 +160,17 @@
     .company-cell {
       width: 42%;
       vertical-align: top;
-      padding: 0 0 0 2mm;
+      padding: 2mm 0 0 2mm;
       font-size: 8pt;
       line-height: 1.4;
     }
 
     .company-logo {
+      display: block;
       width: 46mm;
+      max-width: 46mm;
       height: auto;
-      margin-bottom: 1.5mm;
+      margin-bottom: 2mm;
     }
 
     .company-name {
@@ -475,6 +477,14 @@
 
       .company-cell {
         font-size: 7.5pt !important;
+        padding-top: 1.5mm !important;
+      }
+
+      .company-logo {
+        width: 44mm !important;
+        max-width: 44mm !important;
+        height: auto !important;
+        margin-bottom: 1.5mm !important;
       }
 
       .detail-table {
@@ -587,6 +597,11 @@
             {% endif %}
           </td>
           <td class="company-cell">
+            <img
+              src="{{ url_for('static', filename='img/logo.png') }}"
+              alt="MUSASHI"
+              class="company-logo"
+            >
             <div class="company-name">武蔵精密工業株式会社</div>
             <div class="company-dept">Smart Industry営業グループ</div>
             <div class="company-address">

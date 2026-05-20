@@ -640,76 +640,17 @@ def print_view(quotation_id):
     
     # 見積書用の表示情報を準備
     customer_display_name = get_customer_display_name(quotation)
-    estimator_info = get_estimator_info(quotation, g.get('current_user'))
-    
-    # 金額サマリーと V2結果を復元
-    import json
-    summary = build_summary_from_details(quotation)
-    v2_result = build_v2_result_from_details(details)
-    
-    # V2入力パラメーターを復元
-    v2_inputs = {}
-    if quotation.v2_input_json:
-        try:
-            v2_inputs = json.loads(quotation.v2_input_json)
-        except Exception:
-            v2_inputs = {}
-    
-    # 承認権限判定（管理者または承認者）
-    can_approve = g.get('current_user') and getattr(g.get('current_user'), 'can_approve', False)
     
     return render_template(
-        "quotation_print_native.html",
+        "quotation_print_direct.html",
         quotation=quotation,
         details=details,
         total_amount=total_amount,
         discount_amount=discount_amount,
         total_after_discount=total_after_discount,
-        customer_display_name=customer_display_name,
-        estimator_info=estimator_info,
-        print_mode=True,
-        current_user=g.get('current_user'),
-        summary=summary,
-        v2_result=v2_result,
-        v2_inputs=v2_inputs,
-        can_approve=False
+        customer_display_name=customer_display_name
     )
 
-
-@quotation_bp.route("/quotation/<int:quotation_id>/excel")
-@login_required
-def excel_view(quotation_id):
-    """見積書Excel生成エンドポイント"""
-    from app.services.quotation_excel_service import QuotationExcelService
-    
-    quotation = Quotation.query.get_or_404(quotation_id)
-    details = sort_details_for_display(quotation.details)
-    
-    # 各明細に単位情報を追加
-    for detail in details:
-        detail.unit_display = get_unit_display(detail)
-    
-    # 金額計算
-    total_amount = sum((getattr(d, "subtotal", 0) or 0) for d in details)
-    discount_amount = getattr(quotation, "discount_amount", 0) or 0
-    
-    # Excel生成
-    service = QuotationExcelService()
-    excel_bytes = service.generate_excel(quotation, details, total_amount, discount_amount)
-    
-    # ファイル名を生成（ASCII互換）
-    quotation_no = quotation.quotation_no or f'Q{quotation.id}'
-    filename = f"quotation_{quotation_no}.xlsx"
-    
-    # Responseとして返す
-    from flask import Response
-    response = Response(
-        excel_bytes.getvalue(),
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    response.headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{filename}"
-    
-    return response
 
 
 @quotation_bp.route("/quotation/<int:quotation_id>/pdf")

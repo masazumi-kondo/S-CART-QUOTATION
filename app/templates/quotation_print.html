@@ -336,7 +336,7 @@ body {
 
 @page {
   size: A4 portrait;
-  margin: 2.5mm;
+  margin: 3mm;
 }
 
 @media print {
@@ -379,14 +379,14 @@ body {
     max-width: none !important;
     min-width: 0 !important;
     height: auto !important;
-    min-height: 0 !important;
+    min-height: 285mm !important;
     max-height: none !important;
     margin: 0 !important;
-    padding: 3mm 3.5mm !important;
+    padding: 5mm 5mm 4mm 5mm !important;
     box-sizing: border-box !important;
     background: #fff !important;
     box-shadow: none !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     font-family: "Yu Gothic", "Meiryo", sans-serif !important;
     position: static !important;
     left: auto !important;
@@ -401,7 +401,7 @@ body {
     justify-content: space-between !important;
     align-items: flex-start !important;
     width: 100% !important;
-    height: 23mm !important;
+    height: 34mm !important;
     margin: 0 !important;
     padding: 0 !important;
     gap: 8mm !important;
@@ -417,16 +417,16 @@ body {
   }
 
   .doc-title-mark {
-    width: 2mm !important;
-    height: 22mm !important;
+    width: 2.5mm !important;
+    height: 28mm !important;
     background: #163a70 !important;
-    flex: 0 0 2mm !important;
+    flex: 0 0 2.5mm !important;
   }
 
   .doc-title-block h1 {
     margin: 0 !important;
     padding: 0 !important;
-    font-size: 28pt !important;
+    font-size: 38pt !important;
     line-height: 1 !important;
     letter-spacing: 0.08em !important;
     color: #163a70 !important;
@@ -436,8 +436,8 @@ body {
   }
 
   .doc-title-block p {
-    margin: 3mm 0 0 !important;
-    font-size: 8.5pt !important;
+    margin: 4mm 0 0 !important;
+    font-size: 10pt !important;
     line-height: 1.2 !important;
     white-space: nowrap !important;
     word-break: keep-all !important;
@@ -447,8 +447,8 @@ body {
   .doc-meta {
     flex: 0 0 48mm !important;
     width: 48mm !important;
-    font-size: 7.5pt !important;
-    line-height: 1.6 !important;
+    font-size: 8.5pt !important;
+    line-height: 1.7 !important;
     white-space: nowrap !important;
     word-break: keep-all !important;
     overflow-wrap: normal !important;
@@ -458,7 +458,7 @@ body {
   .doc-line {
     width: 100% !important;
     border-top: 1.2px solid #163a70 !important;
-    margin: 2.5mm 0 !important;
+    margin: 5mm 0 4mm !important;
   }
 
   .doc-info-grid {
@@ -466,7 +466,8 @@ body {
     justify-content: space-between !important;
     align-items: flex-start !important;
     width: 100% !important;
-    gap: 8mm !important;
+    min-height: 48mm !important;
+    gap: 10mm !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -477,8 +478,8 @@ body {
   }
 
   .company-logo {
-    width: 42mm !important;
-    max-width: 42mm !important;
+    width: 50mm !important;
+    max-width: 50mm !important;
     height: auto !important;
     margin-bottom: 2mm !important;
   }
@@ -486,16 +487,16 @@ body {
   .company-block {
     flex: 0 0 68mm !important;
     width: 68mm !important;
-    font-size: 7.5pt !important;
-    line-height: 1.45 !important;
+    font-size: 8.5pt !important;
+    line-height: 1.55 !important;
     word-break: keep-all !important;
     overflow-wrap: normal !important;
   }
 
   .customer-name {
-    font-size: 10.5pt !important;
+    font-size: 12pt !important;
     font-weight: 700 !important;
-    line-height: 1.4 !important;
+    line-height: 1.5 !important;
     word-break: keep-all !important;
     overflow-wrap: normal !important;
   }
@@ -504,15 +505,15 @@ body {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     column-gap: 10mm !important;
-    row-gap: 1.5mm !important;
-    margin-top: 3mm !important;
-    font-size: 7.5pt !important;
-    line-height: 1.35 !important;
+    row-gap: 2mm !important;
+    margin-top: 7mm !important;
+    font-size: 8.5pt !important;
+    line-height: 1.5 !important;
   }
 
   .condition-row {
     display: grid !important;
-    grid-template-columns: 22mm 1fr !important;
+    grid-template-columns: 25mm 1fr !important;
     gap: 2mm !important;
     align-items: start !important;
   }
@@ -531,11 +532,11 @@ body {
 
   .total-band {
     width: 100% !important;
-    height: 14mm !important;
-    min-height: 14mm !important;
-    margin: 5mm 0 2mm !important;
+    height: 18mm !important;
+    min-height: 18mm !important;
+    margin: 10mm 0 5mm !important;
     display: grid !important;
-    grid-template-columns: 38mm 1fr 45mm !important;
+    grid-template-columns: 42mm 1fr 50mm !important;
     align-items: center !important;
     background: #163a70 !important;
     color: #fff !important;
@@ -546,8 +547,8 @@ body {
     display: flex !important;
     align-items: center !important;
     height: 100% !important;
-    padding-left: 6mm !important;
-    font-size: 9pt !important;
+    padding-left: 7mm !important;
+    font-size: 10.5pt !important;
     font-weight: 700 !important;
     white-space: nowrap !important;
   }
@@ -557,7 +558,7 @@ body {
     align-items: center !important;
     justify-content: center !important;
     height: 100% !important;
-    font-size: 24pt !important;
+    font-size: 32pt !important;
     line-height: 1 !important;
     font-weight: 700 !important;
     letter-spacing: 0.06em !important;
@@ -568,8 +569,8 @@ body {
     display: flex !important;
     align-items: center !important;
     height: 100% !important;
-    font-size: 6.5pt !important;
-    line-height: 1.25 !important;
+    font-size: 7.5pt !important;
+    line-height: 1.35 !important;
     white-space: normal !important;
   }
 
@@ -577,25 +578,27 @@ body {
     width: 100% !important;
     table-layout: fixed !important;
     border-collapse: collapse !important;
-    margin-top: 1mm !important;
-    font-size: 7.2pt !important;
+    margin-top: 0 !important;
+    font-size: 8.5pt !important;
   }
 
   .detail-table th {
-    height: 5mm !important;
+    height: 6mm !important;
     background: #163a70 !important;
     color: #fff !important;
     white-space: nowrap !important;
-    padding: 0 1mm !important;
+    padding: 0 1.5mm !important;
+    font-size: 8.5pt !important;
   }
 
   .detail-table td {
-    height: 4.2mm !important;
-    padding: 0 1mm !important;
+    height: 5.3mm !important;
+    padding: 0 1.5mm !important;
     border-bottom: 1px solid #d7deea !important;
     background: #fbfcfe !important;
     overflow: hidden !important;
     vertical-align: middle !important;
+    font-size: 8.2pt !important;
   }
 
   .detail-table td,
@@ -612,22 +615,26 @@ body {
 
   .summary-area {
     width: 100% !important;
-    margin-top: 0.5mm !important;
+    margin-top: 3mm !important;
     display: flex !important;
     justify-content: flex-end !important;
   }
 
   .summary-table {
-    width: 55mm !important;
-    font-size: 7.2pt !important;
+    width: 62mm !important;
+    font-size: 8.5pt !important;
   }
 
   .summary-row {
     display: grid !important;
     grid-template-columns: 1fr 1.4fr !important;
-    height: 4.5mm !important;
+    height: 5.5mm !important;
     align-items: center !important;
     border-bottom: 1px solid #163a70 !important;
+  }
+
+  .summary-row.grand-total {
+    height: 6.5mm !important;
   }
 
   .summary-row span {
@@ -646,24 +653,24 @@ body {
 
   .remarks-area {
     width: 100% !important;
-    margin-top: 2mm !important;
+    margin-top: 7mm !important;
   }
 
   .remarks-title {
-    font-size: 8pt !important;
+    font-size: 9pt !important;
     color: #163a70 !important;
     font-weight: 700 !important;
-    margin-bottom: 1.5mm !important;
+    margin-bottom: 2mm !important;
   }
 
   .remarks-box {
     width: 100% !important;
-    height: 18mm !important;
-    min-height: 18mm !important;
+    height: 42mm !important;
+    min-height: 42mm !important;
     border: 1px solid #cfd7e5 !important;
-    padding: 2mm !important;
+    padding: 3mm !important;
     box-sizing: border-box !important;
-    font-size: 7pt !important;
+    font-size: 8.5pt !important;
     overflow: hidden !important;
   }
 

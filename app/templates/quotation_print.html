@@ -336,14 +336,14 @@ body {
 
 @page {
   size: A4 portrait;
-  margin: 0;
+  margin: 4mm;
 }
 
 @media print {
   html,
   body {
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
@@ -352,40 +352,48 @@ body {
 
   .navbar,
   .print-actions,
-  .no-print {
+  .no-print,
+  footer {
     display: none !important;
   }
 
   .quotation-print-page {
-    width: 210mm !important;
-    height: 297mm !important;
-    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
     padding: 0 !important;
+    display: block !important;
+    justify-content: initial !important;
+    align-items: initial !important;
     background: #fff !important;
-    overflow: hidden !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: flex-start !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
   }
 
   .quotation-document {
-    width: 210mm !important;
-    height: 297mm !important;
-    max-width: 210mm !important;
-    max-height: 297mm !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     margin: 0 !important;
-    padding: 6mm 7mm !important;
-    box-shadow: none !important;
-    background: #fff !important;
+    padding: 4mm 4mm !important;
     box-sizing: border-box !important;
-    overflow: hidden !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    overflow: visible !important;
     font-family: "Yu Gothic", "Meiryo", sans-serif !important;
-    position: relative !important;
+    position: static !important;
     left: auto !important;
     right: auto !important;
     top: auto !important;
-    bottom: auto !important;
     transform: none !important;
+    translate: none !important;
   }
 
   .doc-header {
@@ -393,7 +401,7 @@ body {
     justify-content: space-between !important;
     align-items: flex-start !important;
     width: 100% !important;
-    height: 25mm !important;
+    height: 24mm !important;
     margin: 0 !important;
     padding: 0 !important;
     gap: 8mm !important;
@@ -450,7 +458,7 @@ body {
   .doc-line {
     width: 100% !important;
     border-top: 1.2px solid #163a70 !important;
-    margin: 4mm 0 3mm !important;
+    margin: 3mm 0 !important;
   }
 
   .doc-info-grid {
@@ -497,7 +505,7 @@ body {
     grid-template-columns: 1fr 1fr !important;
     column-gap: 10mm !important;
     row-gap: 1.5mm !important;
-    margin-top: 5mm !important;
+    margin-top: 4mm !important;
     font-size: 7.5pt !important;
     line-height: 1.35 !important;
   }
@@ -525,7 +533,7 @@ body {
     width: 100% !important;
     height: 14mm !important;
     min-height: 14mm !important;
-    margin: 8mm 0 3mm !important;
+    margin: 6mm 0 3mm !important;
     display: grid !important;
     grid-template-columns: 38mm 1fr 45mm !important;
     align-items: center !important;
@@ -569,7 +577,7 @@ body {
     width: 100% !important;
     table-layout: fixed !important;
     border-collapse: collapse !important;
-    margin-top: 0 !important;
+    margin-top: 2mm !important;
     font-size: 7.2pt !important;
   }
 
@@ -604,7 +612,7 @@ body {
 
   .summary-area {
     width: 100% !important;
-    margin-top: 2mm !important;
+    margin-top: 1mm !important;
     display: flex !important;
     justify-content: flex-end !important;
   }
@@ -638,7 +646,7 @@ body {
 
   .remarks-area {
     width: 100% !important;
-    margin-top: 4mm !important;
+    margin-top: 3mm !important;
   }
 
   .remarks-title {
@@ -650,17 +658,13 @@ body {
 
   .remarks-box {
     width: 100% !important;
-    height: 24mm !important;
-    min-height: 24mm !important;
+    height: 20mm !important;
+    min-height: 20mm !important;
     border: 1px solid #cfd7e5 !important;
     padding: 2mm !important;
     box-sizing: border-box !important;
     font-size: 7pt !important;
     overflow: hidden !important;
-  }
-
-  footer {
-    display: none !important;
   }
 
   .quotation-document,

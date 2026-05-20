@@ -318,7 +318,7 @@ body {
 /* 印刷時のCSS */
 @page {
   size: A4 portrait;
-  margin: 5mm;
+  margin: 4mm;
 }
 
 @media print {
@@ -351,123 +351,152 @@ body {
     box-shadow: none !important;
     box-sizing: border-box !important;
     background: #fff !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ヘッダー設定 */
+  .header-table {
+    height: 26mm !important;
+    page-break-inside: avoid !important;
   }
 
   .quote-title {
-    font-size: 34pt !important;
+    font-size: 30pt !important;
+    line-height: 1 !important;
   }
 
   .title-bar {
-    height: 24mm !important;
+    height: 22mm !important;
   }
 
   .quote-subtitle {
-    font-size: 9pt !important;
+    font-size: 8.5pt !important;
+    margin-top: 2mm !important;
   }
 
   .meta-cell {
-    font-size: 8pt !important;
+    font-size: 7.5pt !important;
+    line-height: 1.45 !important;
   }
 
   .main-line {
-    margin: 4mm 0 !important;
+    margin: 3mm 0 !important;
+    border-top: 1.5px solid var(--navy) !important;
   }
 
-  .info-table,
-  .customer-cell,
-  .company-cell,
-  .conditions-table,
-  .detail-table,
-  .summary-table {
-    font-size: 8pt !important;
-  }
-
-  .company-logo {
-    width: 45mm !important;
-    margin-bottom: 2mm !important;
+  /* 顧客・会社情報設定 */
+  .info-table {
+    height: 38mm !important;
+    page-break-inside: avoid !important;
   }
 
   .customer-name {
-    font-size: 11pt !important;
-    margin-bottom: 4mm !important;
+    font-size: 10.5pt !important;
+    line-height: 1.3 !important;
+  }
+
+  .company-cell {
+    font-size: 7.5pt !important;
+    line-height: 1.35 !important;
+  }
+
+  .company-logo {
+    width: 42mm !important;
+    margin-bottom: 1.5mm !important;
   }
 
   .label {
-    margin-bottom: 2mm !important;
+    margin-bottom: 1.5mm !important;
   }
 
+  /* 条件欄設定 */
   .conditions-table {
-    margin-top: 4mm !important;
+    margin-top: 3mm !important;
+    font-size: 7.5pt !important;
+    page-break-inside: avoid !important;
+  }
+
+  .conditions-table th,
+  .conditions-table td {
+    padding-top: 0.8mm !important;
+    padding-bottom: 0.8mm !important;
   }
 
   .conditions-table th {
-    width: 20%;
-    padding: 0.5mm 2mm 0.5mm 0 !important;
+    width: 18%;
   }
 
   .conditions-table td {
-    width: 30%;
-    padding: 0.5mm 4mm 0.5mm 0 !important;
+    width: 32%;
   }
 
+  /* 合計金額帯設定 */
   .total-band-table {
-    margin-top: 6mm !important;
+    margin-top: 5mm !important;
     height: 14mm !important;
+    page-break-inside: avoid !important;
   }
 
   .total-label {
-    font-size: 9pt !important;
-    padding-left: 4mm !important;
+    font-size: 8.5pt !important;
   }
 
   .total-amount {
-    font-size: 28pt !important;
+    font-size: 25pt !important;
   }
 
   .total-note {
-    font-size: 6.5pt !important;
-    padding-right: 3mm !important;
+    font-size: 6.2pt !important;
   }
 
+  /* 明細表設定 */
   .detail-table {
     margin-top: 3mm !important;
-    font-size: 7.5pt !important;
+    font-size: 7.2pt !important;
+    page-break-inside: avoid !important;
   }
 
   .detail-table th {
-    height: 5mm !important;
+    height: 4.5mm !important;
     padding: 0 1mm !important;
   }
 
   .detail-table td {
-    height: 4.2mm !important;
+    height: 4.0mm !important;
     padding: 0 1mm !important;
   }
 
+  /* 小計・合計欄設定 */
   .summary-table {
-    width: 56mm !important;
-    margin-top: 1.5mm !important;
-    font-size: 7.5pt !important;
+    width: 55mm !important;
+    margin-top: 2mm !important;
+    font-size: 7.2pt !important;
+    page-break-inside: avoid !important;
   }
 
   .summary-table th,
   .summary-table td {
-    height: 4.5mm !important;
-    padding: 0 2mm !important;
+    height: 4.2mm !important;
+  }
+
+  /* 備考欄設定 */
+  .remarks-area {
+    page-break-inside: auto !important;
   }
 
   .remarks-title {
-    margin-top: 4mm !important;
-    font-size: 8pt !important;
+    margin-top: 3mm !important;
+    font-size: 7.5pt !important;
   }
 
   .remarks-box {
-    margin-top: 1mm !important;
-    height: 28mm !important;
-    min-height: 28mm !important;
+    margin-top: 1.5mm !important;
+    height: 24mm !important;
+    min-height: 24mm !important;
     padding: 2mm !important;
-    font-size: 7.5pt !important;
+    font-size: 7pt !important;
+    box-sizing: border-box !important;
   }
 
   * {

@@ -512,15 +512,29 @@ window.upsertV2FixedRows = function upsertV2FixedRows({ designSellAmount, design
 		return tr;
 	}
 
-	const trDesign = ensureRow("v2_design", "設計費（V2自動算出）", sell1, cost1);
-	const trSetup = ensureRow("v2_setup", "現地セットアップ費（V2自動算出）", sell2, cost2);
+	// 0円の場合は行を追加しない（設計費/現地セットアップ費は完全にオプション）
+	const trDesign = sell1 > 0 ? ensureRow("v2_design", "設計費（V2自動算出）", sell1, cost1) : null;
+	const trSetup = sell2 > 0 ? ensureRow("v2_setup", "現地セットアップ費（V2自動算出）", sell2, cost2) : null;
+
+	// 0円に変わった場合は既存行を削除
+	if (sell1 === 0) {
+		const oldDesignRow = tbody.querySelector('tr[data-fixed-code="v2_design"]');
+		if (oldDesignRow) oldDesignRow.remove();
+	}
+	if (sell2 === 0) {
+		const oldSetupRow = tbody.querySelector('tr[data-fixed-code="v2_setup"]');
+		if (oldSetupRow) oldSetupRow.remove();
+	}
 
 	// 並び順：設計費 → 現地セットアップ費 → 通常明細
 	if (trDesign && tbody.firstChild !== trDesign) {
 		tbody.insertBefore(trDesign, tbody.firstChild);
 	}
-	if (trSetup && trDesign.nextSibling !== trSetup) {
+	if (trSetup && trDesign && trDesign.nextSibling !== trSetup) {
 		tbody.insertBefore(trSetup, trDesign.nextSibling);
+	} else if (trSetup && !trDesign) {
+		// 設計費がない場合、セットアップ費を最初に挿入
+		tbody.insertBefore(trSetup, tbody.firstChild);
 	}
 
 	if (typeof window.updateGrandTotal === "function") window.updateGrandTotal();

@@ -339,9 +339,6 @@ def quotation_edit(quotation_id):
         if cust:
             values["company_name"] = cust.name
 
-    # 顧客リスト
-    customers_query = Customer.query.options(joinedload(Customer.payment_term_ref)).filter(Customer.status == CustomerStatus.APPROVED.value).order_by(Customer.name).all()
-    
     # details: id, quotation_id, created_at, updated_at を除外
     detail_dicts = []
     for d in details:
@@ -1005,6 +1002,9 @@ def quotation_new():
             values["discount_amount"] = 0
 
         # --- デバッグログ追加 ---
+        current_app.logger.info("[quotation_new POST] save_action=%s edit_quotation_id=%s", 
+            request.form.get("save_action"), 
+            request.form.get("edit_quotation_id"))
         current_app.logger.info("quotation_new POST: product_id=%s", request.form.getlist("product_id[]"))
         current_app.logger.info("quotation_new POST: code=%s", request.form.getlist("code[]"))
         current_app.logger.info("quotation_new POST: description=%s", request.form.getlist("description[]"))
@@ -1211,10 +1211,12 @@ def quotation_new():
 
         if not error and not details:
             error = "明細行が1つ以上必要です。"
+            current_app.logger.warning("[quotation_new POST] error: no details")
 
         # 必須項目チェック（既存ロジック）
         if not values["company_name"] or not values["project_name"]:
             error = "「宛先企業名」と「案件名」は必須です。"
+            current_app.logger.warning("[quotation_new POST] error: missing required fields")
 
         # 承認状態リセット判定用フラグの初期化
         approval_status_was_reset = False
@@ -1230,8 +1232,9 @@ def quotation_new():
             cust_obj = Customer.query.get(cust_id_int) if cust_id_int else None
 
             if cust_obj:
-                # 顧客IDがある場合のみ承認チェック
-                if not getattr(cust_obj, "is_approved", False):
+                # 顧客IDがある場合のみ承認チェック（新規作成のみ。編集時は既存顧客なので check skip）
+                is_edit = bool(request.form.get("edit_quotation_id"))
+                if not is_edit and not getattr(cust_obj, "is_approved", False):
                     error = "未承認の顧客は見積作成できません。承認後に再度お試しください。"
                     current_app.logger.warning("[quotation_new] rejected unapproved customer_id=%s", cust_id_int)
                     # QuotationDetail オブジェクトは JSON化できないので dict に変換
@@ -1492,6 +1495,13 @@ def quotation_new():
             save_action = request.form.get("save_action", "list")
             is_edit = bool(request.form.get("edit_quotation_id"))
             is_new = not is_edit and not revise_source_id
+
+            current_app.logger.info(
+                "[quotation_new] save_action_value=%s is_edit=%s is_new=%s",
+                repr(save_action),
+                is_edit,
+                is_new
+            )
 
             if save_action == "stay":
                 # 保存後も編集画面に残る

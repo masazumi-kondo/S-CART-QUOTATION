@@ -569,13 +569,13 @@ def customer_reject(customer_id):
 def customer_select():
     """
     顧客マスタ検索・選択画面
-    - キーワード検索で承認済み顧客をフィルタリング
+    - キーワード検索で顧客をフィルタリング
     - 選択時に見積作成画面に戻り、customer_id・company_name・payment_terms を渡す
     """
     keyword = request.args.get('q', '').strip()
 
-    # ベースクエリ: 承認済み顧客のみ
-    query = Customer.query.filter(Customer.status == CustomerStatus.APPROVED.value)
+    # ベースクエリ: 全顧客（削除済みでない）
+    query = Customer.query
 
     # キーワード検索
     if keyword:
@@ -592,6 +592,13 @@ def customer_select():
     query = query.options(joinedload(Customer.payment_term_ref))
     
     customers = query.order_by(Customer.name.asc()).limit(50).all()
+
+    # DEBUG ロギング
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[DEBUG-CUSTOMER-SELECT] Keyword='{keyword}' Retrieved {len(customers)} customers")
+    for c in customers:
+        logger.info(f"  - Customer {c.id}: {c.name} (status={c.status})")
 
     # 見積作成画面から持ってきた値を保持（選択時に引き継ぐ）
     carry_params = dict(request.args)

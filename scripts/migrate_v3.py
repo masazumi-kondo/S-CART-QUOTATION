@@ -23,6 +23,23 @@ def connect_db(db_path):
     conn.row_factory = sqlite3.Row
     return conn
 
+def normalize_customer_status(value):
+    """顧客ステータスを正規化（小文字に統一）"""
+    if not value:
+        return "approved"
+    value = str(value).strip().lower()
+    # 承認済み判定
+    if value in ["approved", "approve", "承認済み", "ok"]:
+        return "approved"
+    # 申請中判定
+    if value in ["pending", "申請中", "承認待ち"]:
+        return "pending"
+    # 差戻し判定
+    if value in ["rejected", "差戻し", "否認"]:
+        return "rejected"
+    # デフォルト: 承認済み
+    return "approved"
+
 def migrate_products(old_conn, current_conn, execute=False):
     """商品マイグレーション"""
     print("\n=== Phase 1: Products (31件) ===")
@@ -77,11 +94,12 @@ def migrate_customers(old_conn, current_conn, execute=False):
     for idx, company_name in enumerate(companies, 1):
         try:
             current_cursor.execute("""
-                INSERT INTO customers (name, customer_code, created_at, updated_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO customers (name, customer_code, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
             """, (
                 company_name,
                 f"CUST{idx:04d}",
+                "approved",  # デフォルト: 承認済み（小文字）
                 datetime.now().isoformat(),
                 datetime.now().isoformat()
             ))

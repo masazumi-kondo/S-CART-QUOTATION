@@ -76,15 +76,18 @@ class Customer(db.Model):
 
     @property
     def is_pending(self):
-        return self.status == CustomerStatus.PENDING.value
+        # 防御的比較：大文字小文字を統一して比較
+        return str(self.status or "").lower() == "pending"
 
     @property
     def is_approved(self):
-        return self.status == CustomerStatus.APPROVED.value
+        # 防御的比較：大文字小文字を統一して比較
+        return str(self.status or "").lower() == "approved"
 
     @property
     def is_rejected(self):
-        return self.status == CustomerStatus.REJECTED.value
+        # 防御的比較：大文字小文字を統一して比較
+        return str(self.status or "").lower() == "rejected"
 
     def __repr__(self):
         return f'<Customer {self.name}>'

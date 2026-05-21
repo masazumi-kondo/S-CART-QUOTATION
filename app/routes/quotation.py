@@ -1194,36 +1194,34 @@ def quotation_new():
             pass
         else:
             design_fee, design_cost, design_hours, setup_fee, setup_cost, setup_hours = calc_design_and_setup_amounts(param_dict, calc_mode=calc_mode)
-            # 設計費
-            if design_fee > 0:
-                design_kwargs = dict(
-                    product_id=None,
-                    label="設計費（パラメータ）",
-                    quantity=1,
-                    price=design_fee,
-                    subtotal=design_fee
-                )
-                if hasattr(QuotationDetail, "code"):
-                    design_kwargs["code"] = ""
-                if hasattr(QuotationDetail, "description"):
-                    design_kwargs["description"] = "設計費（走行条件/動作パターン）"
-                details.append(QuotationDetail(**design_kwargs))
-                total += design_fee
-            # 現地セットアップ費
-            if setup_fee > 0:
-                setup_kwargs = dict(
-                    product_id=None,
-                    label="現地セットアップ（パラメータ）",
-                    quantity=1,
-                    price=setup_fee,
-                    subtotal=setup_fee
-                )
-                if hasattr(QuotationDetail, "code"):
-                    setup_kwargs["code"] = ""
-                if hasattr(QuotationDetail, "description"):
-                    setup_kwargs["description"] = "現地セットアップ費（走行条件/動作パターン）"
-                details.append(QuotationDetail(**setup_kwargs))
-                total += setup_fee
+            # 設計費 (0円でも追加を許可する)
+            design_kwargs = dict(
+                product_id=None,
+                label="設計費（パラメータ）",
+                quantity=1,
+                price=design_fee,
+                subtotal=design_fee
+            )
+            if hasattr(QuotationDetail, "code"):
+                design_kwargs["code"] = ""
+            if hasattr(QuotationDetail, "description"):
+                design_kwargs["description"] = "設計費（走行条件/動作パターン）"
+            details.append(QuotationDetail(**design_kwargs))
+            total += design_fee
+            # 現地セットアップ費 (0円でも追加を許可する)
+            setup_kwargs = dict(
+                product_id=None,
+                label="現地セットアップ（パラメータ）",
+                quantity=1,
+                price=setup_fee,
+                subtotal=setup_fee
+            )
+            if hasattr(QuotationDetail, "code"):
+                setup_kwargs["code"] = ""
+            if hasattr(QuotationDetail, "description"):
+                setup_kwargs["description"] = "現地セットアップ費（走行条件/動作パターン）"
+            details.append(QuotationDetail(**setup_kwargs))
+            total += setup_fee
 
         if not error and not details:
             error = "明細行が1つ以上必要です。"

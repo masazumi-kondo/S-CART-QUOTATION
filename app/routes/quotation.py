@@ -1234,6 +1234,14 @@ def quotation_new():
                 if not getattr(cust_obj, "is_approved", False):
                     error = "未承認の顧客は見積作成できません。承認後に再度お試しください。"
                     current_app.logger.warning("[quotation_new] rejected unapproved customer_id=%s", cust_id_int)
+                    # QuotationDetail オブジェクトは JSON化できないので dict に変換
+                    detail_dicts_error = []
+                    for d in details:
+                        if isinstance(d, QuotationDetail):
+                            dct = {c.name: getattr(d, c.name) for c in QuotationDetail.__table__.columns if c.name not in ("id", "quotation_id", "created_at", "updated_at")}
+                            detail_dicts_error.append(dct)
+                        else:
+                            detail_dicts_error.append(d)
                     return render_template(
                         "quotation_form.html",
                         error=error,
@@ -1243,7 +1251,7 @@ def quotation_new():
                         v2_settings=v2_settings,
                         v2_result={},
                         summary={},
-                        details=details,
+                        details=detail_dicts_error,
                         revise_source_id=request.form.get("revise_source_id"),
                         edit_quotation_id=request.form.get("edit_quotation_id")
                     )
@@ -1256,6 +1264,14 @@ def quotation_new():
                 if not values.get("company_name"):
                     error = "顧客名（宛先）を入力してください。"
                     current_app.logger.warning("[quotation_new] company_name missing")
+                    # QuotationDetail オブジェクトは JSON化できないので dict に変換
+                    detail_dicts_error = []
+                    for d in details:
+                        if isinstance(d, QuotationDetail):
+                            dct = {c.name: getattr(d, c.name) for c in QuotationDetail.__table__.columns if c.name not in ("id", "quotation_id", "created_at", "updated_at")}
+                            detail_dicts_error.append(dct)
+                        else:
+                            detail_dicts_error.append(d)
                     return render_template(
                         "quotation_form.html",
                         error=error,
@@ -1265,7 +1281,7 @@ def quotation_new():
                         v2_settings=v2_settings,
                         v2_result={},
                         summary={},
-                        details=details,
+                        details=detail_dicts_error,
                         revise_source_id=request.form.get("revise_source_id"),
                         edit_quotation_id=request.form.get("edit_quotation_id")
                     )
@@ -1500,6 +1516,16 @@ def quotation_new():
                 return redirect(url_for("quotation.quotation_list"))
 
         # エラー時：ヘッダ入力値をテンプレートに渡す
+        # QuotationDetail オブジェクトは JSON化できないので dict に変換
+        detail_dicts_error = []
+        for d in details:
+            if isinstance(d, QuotationDetail):
+                dct = {c.name: getattr(d, c.name) for c in QuotationDetail.__table__.columns if c.name not in ("id", "quotation_id", "created_at", "updated_at")}
+                detail_dicts_error.append(dct)
+            else:
+                # 既に dict の場合はそのまま
+                detail_dicts_error.append(d)
+        
         return render_template(
             "quotation_form.html",
             error=error,
@@ -1509,7 +1535,7 @@ def quotation_new():
             v2_settings=v2_settings,
             v2_result={},  # 新規作成時は空
             summary={},  # 新規作成時は空
-            details=details,  # エラー時にも明細を渡す（入力値を保持するため）
+            details=detail_dicts_error,  # エラー時にも明細を渡す（入力値を保持するため）
             revise_source_id=request.form.get("revise_source_id"),  # 改定ソースを渡す
             edit_quotation_id=request.form.get("edit_quotation_id")  # 編集対象を渡す
         )
@@ -1523,7 +1549,8 @@ def quotation_new():
         rates=rates,
         v2_settings=v2_settings,
         v2_result={},  # 新規作成時は空
-        summary={}  # 新規作成時は空
+        summary={},  # 新規作成時は空
+        details=[]  # 新規作成時は空配列
     )
 
 # 見積削除（例: /quotation/<int:quotation_id>/delete）

@@ -145,8 +145,8 @@
                             </tr>
                         </thead>
                         <tbody id="detail-body">
-                            <!-- 既存明細を復元（改定または編集時） -->
-                            {% if (revise_source_id or edit_quotation_id) and details %}
+                            <!-- 既存明細を復元（改定または編集時、またはエラー時） -->
+                            {% if details %}
                                 {% for detail in details %}
                                 <tr class="detail-row">
                                     <td>
@@ -176,7 +176,7 @@
                                     </td>
                                 </tr>
                                 {% endfor %}
-                            {% endif %}
+                            {% else %}
                             
                             <!-- 初期1行（新規作成時） -->
                             <tr class="detail-row">
@@ -210,6 +210,7 @@
                     </table>
                 </div>
             </div>
+                            {% endif %}
 
 
 <div class="q-section" id="v2-estimate-wizard">

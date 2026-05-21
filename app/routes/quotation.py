@@ -1242,7 +1242,10 @@ def quotation_new():
                         rates=rates,
                         v2_settings=v2_settings,
                         v2_result={},
-                        summary={}
+                        summary={},
+                        details=details,
+                        revise_source_id=request.form.get("revise_source_id"),
+                        edit_quotation_id=request.form.get("edit_quotation_id")
                     )
 
                 # 顧客IDがある場合のみマスタ名で上書き
@@ -1261,7 +1264,10 @@ def quotation_new():
                         rates=rates,
                         v2_settings=v2_settings,
                         v2_result={},
-                        summary={}
+                        summary={},
+                        details=details,
+                        revise_source_id=request.form.get("revise_source_id"),
+                        edit_quotation_id=request.form.get("edit_quotation_id")
                     )
 
             if revise_source_id:
@@ -1502,7 +1508,10 @@ def quotation_new():
             rates=rates,
             v2_settings=v2_settings,
             v2_result={},  # 新規作成時は空
-            summary={}  # 新規作成時は空
+            summary={},  # 新規作成時は空
+            details=details,  # エラー時にも明細を渡す（入力値を保持するため）
+            revise_source_id=request.form.get("revise_source_id"),  # 改定ソースを渡す
+            edit_quotation_id=request.form.get("edit_quotation_id")  # 編集対象を渡す
         )
 
     # GET 時：ヘッダ初期値と products, customers を渡す

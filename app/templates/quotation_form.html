@@ -129,8 +129,7 @@
             <div class="q-section">
                 <h5 class="mb-2">明細（製品）</h5>
                 <div class="q-muted mb-2">
-                  V2ウィザードで設計費または現地セットアップ費が計算された場合のみ、自動で2行追加されます。<br>
-                  0円の場合は追加されません。内容を確認後、「保存」を押してください。
+                  製品の詳細を入力してください。設計費・現地セットアップ費はV2ウィザードで自動計算されます。
                 </div>
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle" id="details-table">
@@ -148,33 +147,36 @@
                             <!-- 既存明細を復元（改定または編集時、またはエラー時） -->
                             {% if details %}
                                 {% for detail in details %}
-                                <tr class="detail-row">
-                                    <td>
-                                        <select class="form-select product-select-custom" name="product_id[]">
-                                            <option value="">-- 選択 --</option>
-                                            {% for p in products %}
-                                                <option value="{{ p.id }}" {% if p.id == detail.product_id %}selected{% endif %}>{{ p.name }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="text" class="form-control description-input" name="description[]" value="{{ detail.description|default('') }}">
-                                    </td>
-                                    <td>
-                                        <input type="number" class="form-control text-end unit-price-input" name="unit_price[]" value="{{ detail.price|default('') }}" min="0" step="1">
-                                    </td>
-                                    <td>
-                                        <input type="number" class="form-control text-end quantity-input" name="quantity[]" value="{{ (detail.quantity or 1)|int }}" min="0" step="1">
-                                    </td>
-                                    <td>
-                                        <input type="text" class="form-control text-end subtotal-input" name="subtotal[]" value="{{ detail.subtotal|default('') }}" readonly>
-                                        <input type="hidden" class="cost-input" name="cost[]" value="{{ detail.cost|default('') }}">
-                                    </td>
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm add-row">＋</button>
-                                        <button type="button" class="btn btn-outline-danger btn-sm remove-row">－</button>
-                                    </td>
-                                </tr>
+                                    {% set is_v2_fee = ('設計費' in detail.description|string) or ('セットアップ' in detail.description|string) %}
+                                    {% if not is_v2_fee %}
+                                    <tr class="detail-row">
+                                        <td>
+                                            <select class="form-select product-select-custom" name="product_id[]">
+                                                <option value="">-- 選択 --</option>
+                                                {% for p in products %}
+                                                    <option value="{{ p.id }}" {% if p.id == detail.product_id %}selected{% endif %}>{{ p.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control description-input" name="description[]" value="{{ detail.description|default('') }}">
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control text-end unit-price-input" name="unit_price[]" value="{{ detail.price|default('') }}" min="0" step="1">
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control text-end quantity-input" name="quantity[]" value="{{ (detail.quantity or 1)|int }}" min="0" step="1">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control text-end subtotal-input" name="subtotal[]" value="{{ detail.subtotal|default('') }}" readonly>
+                                            <input type="hidden" class="cost-input" name="cost[]" value="{{ detail.cost|default('') }}">
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm add-row">＋</button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm remove-row">－</button>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
                                 {% endfor %}
                             {% else %}
                             
@@ -207,6 +209,61 @@
                                 </td>
                             </tr>
 {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- V2設計費・現地セットアップ費用明細 -->
+            <div class="q-section" style="margin-top: 2rem;">
+                <h5 class="mb-2">設計費・現地セットアップ費（V2自動算出）</h5>
+                <div class="q-muted mb-2">
+                  V2ウィザードで計算された設計費・現地セットアップ費がここに表示されます。<br>
+                  0円の場合は表示されません。
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle" id="v2-details-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>項目</th>
+                                <th>内容</th>
+                                <th style="min-width:120px;" class="text-end">単価</th>
+                                <th style="min-width:90px;" class="text-end">数量</th>
+                                <th style="min-width:140px;" class="text-end">小計</th>
+                                <th style="min-width:90px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="v2-detail-body">
+                            <!-- V2費用行を表示（既存見積編集時） -->
+                            {% if details %}
+                                {% for detail in details %}
+                                    {% set is_v2_fee = ('設計費' in detail.description|string) or ('セットアップ' in detail.description|string) %}
+                                    {% if is_v2_fee %}
+                                    <tr class="js-fixed-row" data-fixed-code="{% if '設計費' in detail.description|string %}v2_design{% else %}v2_setup{% endif %}">
+                                        <td>
+                                            <span class="badge bg-info">V2</span>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control description-input" name="description[]" value="{{ detail.description|default('') }}" readonly>
+                                            <input type="hidden" name="product_id[]" value="">
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control text-end unit-price-input" name="unit_price[]" value="{{ detail.price|default('') }}" readonly>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control text-end quantity-input" name="quantity[]" value="{{ (detail.quantity or 1)|int }}" readonly>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control text-end subtotal-input" name="subtotal[]" value="{{ detail.subtotal|default('') }}" readonly>
+                                            <input type="hidden" class="cost-input" name="cost[]" value="{{ detail.cost|default('') }}">
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="text-muted small">自動</span>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>

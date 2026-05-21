@@ -433,7 +433,12 @@ window.upsertV2FixedRows = function upsertV2FixedRows({ designSellAmount, design
 	const sell2 = setupSellAmount || setupSell || 0;
 	const cost2 = setupCostAmount || setupCost || 0;
 
-	const tbody = document.getElementById("detail-body");
+	// V2費用用の別テーブル tbody を使用
+	// フォールバック: v2-detail-body がなければ detail-body を使用（後方互換性）
+	let tbody = document.getElementById("v2-detail-body");
+	if (!tbody) {
+		tbody = document.getElementById("detail-body");
+	}
 	if (!tbody) return;
 
 	function fmt(n) {
@@ -459,11 +464,11 @@ window.upsertV2FixedRows = function upsertV2FixedRows({ designSellAmount, design
 
 			tr.innerHTML = `
 				<td>
-					<input type="hidden" name="product_id[]" value="">
-					<span class="badge bg-info">${label}</span>
+					<span class="badge bg-info">V2</span>
 				</td>
 				<td>
 					<input type="text" class="form-control description-input" name="description[]" value="${label}" readonly>
+					<input type="hidden" name="product_id[]" value="">
 					<input type="hidden" name="code[]" value="${code}">
 				</td>
 				<td>
@@ -477,7 +482,7 @@ window.upsertV2FixedRows = function upsertV2FixedRows({ designSellAmount, design
 					<input type="hidden" name="cost[]" value="${costStr}">
 				</td>
 				<td class="text-center">
-					<span class="text-muted small">固定</span>
+					<span class="text-muted small">自動</span>
 				</td>
 			`;
 
@@ -526,7 +531,7 @@ window.upsertV2FixedRows = function upsertV2FixedRows({ designSellAmount, design
 		if (oldSetupRow) oldSetupRow.remove();
 	}
 
-	// 並び順：設計費 → 現地セットアップ費 → 通常明細
+	// 並び順：設計費 → 現地セットアップ費
 	if (trDesign && tbody.firstChild !== trDesign) {
 		tbody.insertBefore(trDesign, tbody.firstChild);
 	}

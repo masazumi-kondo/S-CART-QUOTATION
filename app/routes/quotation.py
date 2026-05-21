@@ -110,10 +110,26 @@ def quotation_revise(quotation_id):
 
     # 顧客リスト（approvedのみ、未承認顧客は選択不可）
     customers_query = Customer.query.options(joinedload(Customer.payment_term_ref)).filter(Customer.status == CustomerStatus.APPROVED.value).order_by(Customer.name).all()
-    # details: id, quotation_id, created_at, updated_at を除外
+    customers_json = [
+        {"id": c.id, "name": c.name, "name_kana": c.name_kana} for c in customers_query
+    ]
+    customers_meta = {
+        str(c.id): {
+            "name": c.name or "",
+            "payment_term_name": (c.payment_term_ref.name if c.payment_term_ref else "") or "",
+            "payment_terms_legacy": c.payment_terms or ""
+        }
+        for c in customers_query
+    }
+    # details: id, quotation_id, created_at, updated_at を除外 + 単価復元
     detail_dicts = []
     for d in details:
         dct = {c.name: getattr(d, c.name) for c in QuotationDetail.__table__.columns if c.name not in ("id", "quotation_id", "created_at", "updated_at")}
+        
+        # 単価復元：price=0 かつ subtotal/quantity > 0 なら復元
+        if not dct.get('price') and dct.get('quantity', 0) > 0 and dct.get('subtotal', 0) > 0:
+            dct['price'] = round(dct['subtotal'] / dct['quantity'])
+        
         detail_dicts.append(dct)
     # product_list: 新規作成と同じ形式
     products_query = Product.query.order_by(Product.name).all()
@@ -152,7 +168,7 @@ def quotation_revise(quotation_id):
         products=product_list,
         values=values,
         details=detail_dicts,
-        revise_source_id=orig.id,
+        revise_source_id=orig.id,  # 改定版作成用のソースID
         rates=rates,
         v2_settings=v2_settings,
         v2_result=v2_result,  # V2結果復元
@@ -1222,7 +1238,8 @@ def quotation_new():
         approval_status_was_reset = False
 
         if not error:
-            revise_source_id = request.form.get("revise_source_id")
+            revise_source_id = request.form.get("revise_source_id", "").strip()
+            edit_quotation_id = request.form.get("edit_quotation_id", "").strip()
             # customer_idの整合性処理
             cust_id = values["customer_id"]
             try:

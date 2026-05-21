@@ -730,10 +730,12 @@
           <th>小計</th>
           <td>￥{{ "{:,}".format(total_amount) }}</td>
         </tr>
+        {% if show_discount_row %}
         <tr>
           <th>値引き</th>
           <td>-￥{{ "{:,}".format(discount_amount) }}</td>
         </tr>
+        {% endif %}
         <tr class="grand-total">
           <th>合計</th>
           <td>￥{{ "{:,}".format(total_after_discount) }}</td>

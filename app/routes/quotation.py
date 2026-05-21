@@ -647,6 +647,9 @@ def print_view(quotation_id):
     discount_amount = getattr(quotation, "discount_amount", 0) or 0
     total_after_discount = max(0, total_amount - discount_amount)
     
+    # 値引き行を表示するかどうかを判定
+    show_discount_row = discount_amount > 0
+    
     # 見積書用の表示情報を準備
     customer_display_name = get_customer_display_name(quotation)
     
@@ -657,6 +660,7 @@ def print_view(quotation_id):
         total_amount=total_amount,
         discount_amount=discount_amount,
         total_after_discount=total_after_discount,
+        show_discount_row=show_discount_row,
         customer_display_name=customer_display_name
     )
 

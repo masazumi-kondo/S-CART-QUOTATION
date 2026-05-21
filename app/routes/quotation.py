@@ -1249,9 +1249,10 @@ def quotation_new():
             cust_obj = Customer.query.get(cust_id_int) if cust_id_int else None
 
             if cust_obj:
-                # 顧客IDがある場合のみ承認チェック（新規作成のみ。編集時は既存顧客なので check skip）
+                # 顧客IDがある場合のみ承認チェック（新規作成のみ。編集時・改定時は既存顧客なので check skip）
                 is_edit = bool(request.form.get("edit_quotation_id"))
-                if not is_edit and not getattr(cust_obj, "is_approved", False):
+                is_revise = bool(request.form.get("revise_source_id"))
+                if not is_edit and not is_revise and not getattr(cust_obj, "is_approved", False):
                     error = "未承認の顧客は見積作成できません。承認後に再度お試しください。"
                     current_app.logger.warning("[quotation_new] rejected unapproved customer_id=%s", cust_id_int)
                     # QuotationDetail オブジェクトは JSON化できないので dict に変換

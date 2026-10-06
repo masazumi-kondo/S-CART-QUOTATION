@@ -163,8 +163,8 @@
     const hoursCeil = (hoursObj && typeof hoursObj === "object") ? (hoursObj.hoursCeil | 0) : Math.ceil(_num(hoursObj, 0));
 
     // 既定
-    let costRate = 17760;
-    let sellRate = 29600;
+    let costRate = 6820;
+    let sellRate = 12000;
 
     // rates-json 連携があれば採用
     if (window.rates && typeof window.rates === "object") {

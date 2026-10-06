@@ -650,7 +650,9 @@ def format_date_ja(value):
 @login_required
 def print_view(quotation_id):
     quotation = Quotation.query.get_or_404(quotation_id)
-    details = sort_details_for_display(quotation.details)
+    from app import sim_import as _sim
+    # お客様向け書面: 項目別の工数行は「設計費」「現地セットアップ費」にまとめる
+    details = _sim.aggregate_effort_details(sort_details_for_display(quotation.details))
     
     # 各明細に単位情報を追加
     for detail in details:
@@ -888,6 +890,32 @@ def quotation_export_csv():
         rows.append(row)
     
     return create_csv_response('quotations', headers, rows)
+
+
+@quotation_bp.route("/quotation/sim-import/preview", methods=["POST"])
+@login_required
+def sim_import_preview():
+    """シミュレーター結果JSON → 見積明細行（工数×賃率）のプレビューをJSONで返す。DBは更新しない。"""
+    from flask import jsonify
+    from app import sim_import
+    from app.models.v2_calculation_setting import V2CalculationSetting
+
+    text = request.get_data(as_text=True)
+    try:
+        result, warnings = sim_import.parse_sim_result(text)
+    except sim_import.SimImportError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+    setting = V2CalculationSetting.query.get(1)
+    cost_rate = float(setting.cost_hourly_rate) if setting else 6820.0
+    sell_rate = float(setting.sell_hourly_rate) if setting else 12000.0
+    lines = sim_import.build_effort_lines(result, cost_rate, sell_rate)
+
+    return jsonify({
+        "ok": True, "warnings": warnings, "result": result, "lines": lines,
+        "totals": sim_import.totals(lines),
+        "rates": {"cost": cost_rate, "sell": sell_rate},
+    })
 
 
 @quotation_bp.route("/quotation/new", methods=["GET", "POST"])
@@ -1225,6 +1253,12 @@ def quotation_new():
                 details.append(QuotationDetail(**setup_kwargs))
                 total += setup_fee
 
+        # --- 工数明細（シミュレーター取り込み／手入力／理由付き調整）の検証 ---
+        from app import sim_import as _sim
+        effort_data, effort_err = _sim.validate_effort_lines(request.form.get("effort_lines_json"))
+        if effort_err and not error:
+            error = effort_err
+
         if not error and not details:
             error = "明細行が1つ以上必要です。"
             current_app.logger.warning("[quotation_new POST] error: no details")
@@ -1500,6 +1534,21 @@ def quotation_new():
                 "plc_scale": request.form.get("v2_plc_scale", ""),
                 "host_system_scale": request.form.get("v2_host_system", ""),
             }
+            sim_json_raw = (request.form.get("sim_result_json") or "").strip()
+            sim_result = None
+            if sim_json_raw:
+                # シミュレーター取り込み案件: 検証済みJSONを保存（トレーサビリティ）
+                try:
+                    sim_result, _w = _sim.parse_sim_result(sim_json_raw)
+                except _sim.SimImportError:
+                    current_app.logger.warning("[quotation_new] invalid sim_result_json ignored")
+            if sim_result or effort_data:
+                v2_inputs = {
+                    "source": "simulator" if sim_result else "manual",
+                    "sim": sim_result,
+                    "rates": (effort_data or {}).get("rates"),
+                    "lines": (effort_data or {}).get("lines", []),
+                }
             quotation.v2_input_json = json.dumps(v2_inputs, ensure_ascii=False)
 
             db.session.commit()

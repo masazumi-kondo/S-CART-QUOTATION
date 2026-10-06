@@ -6,9 +6,9 @@ from typing import Any, Dict, Tuple
 # -----------------------------
 # Common rates (current policy)
 # -----------------------------
-LABOR_RATE = 7920
-DESIGN_SELL_RATE = 15000
-SETUP_SELL_RATE = 15000
+LABOR_RATE = 6820
+DESIGN_SELL_RATE = 12000
+SETUP_SELL_RATE = 12000
 
 
 # -----------------------------

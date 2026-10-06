@@ -8,8 +8,8 @@ class V2CalculationSetting(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     # 賃率
-    cost_hourly_rate = db.Column(db.Float, nullable=False, default=17760)
-    sell_hourly_rate = db.Column(db.Float, nullable=False, default=29600)
+    cost_hourly_rate = db.Column(db.Float, nullable=False, default=6820)
+    sell_hourly_rate = db.Column(db.Float, nullable=False, default=12000)
 
     # 基本工数
     design_base_hours = db.Column(db.Float, nullable=False, default=8)
@@ -103,8 +103,8 @@ class V2CalculationSetting(db.Model):
 
     # Default values for all parameters
     DEFAULTS = {
-        "cost_hourly_rate": 17760,
-        "sell_hourly_rate": 29600,
+        "cost_hourly_rate": 6820,
+        "sell_hourly_rate": 12000,
         "design_base_hours": 8,
         "setup_base_hours": 8,
         "design_vehicle_hours": 2,

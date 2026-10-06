@@ -41,6 +41,8 @@ def create_app():
                 is_active INTEGER NOT NULL DEFAULT 1
             )
         """)
+        if "description" not in [r[1] for r in conn.execute("PRAGMA table_info(payment_terms)").fetchall()]:
+            conn.execute("ALTER TABLE payment_terms ADD COLUMN description TEXT")
         conn.execute("CREATE INDEX IF NOT EXISTS ix_payment_terms_is_active ON payment_terms(is_active)")
         # seed (idempotent) - always
         conn.execute("""
@@ -64,6 +66,8 @@ def create_app():
                 is_active INTEGER NOT NULL DEFAULT 1
             )
         """)
+        if "description" not in [r[1] for r in conn.execute("PRAGMA table_info(transaction_types)").fetchall()]:
+            conn.execute("ALTER TABLE transaction_types ADD COLUMN description TEXT")
         conn.execute("CREATE INDEX IF NOT EXISTS ix_transaction_types_is_active ON transaction_types(is_active)")
         # seed (idempotent) - always
         conn.execute("""
@@ -227,8 +231,8 @@ def create_app():
         cur = conn.execute("SELECT id FROM users WHERE login_id = ?", ("admin",))
         if not cur.fetchone():
             password_hash = generate_password_hash("admin1234")
-            conn.execute("INSERT INTO users (login_id, display_name, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)",
-                         ("admin", "管理者", password_hash, "admin", 1))
+            conn.execute("INSERT INTO users (login_id, display_name, email, password_hash, role, is_active, receive_notifications, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                         ("admin", "管理者", "admin@example.com", password_hash, "admin", 1, 1))
             conn.commit()
 
     # DB path
@@ -239,6 +243,9 @@ def create_app():
 
     env_db = os.environ.get("SCART_DB_PATH")
     db_path = env_db if env_db else os.path.join(base_dir, "estimates.db")
+    journal_mode = os.environ.get("SCART_JOURNAL_MODE", "DELETE").upper()
+    if journal_mode not in ("DELETE", "TRUNCATE", "WAL"):
+        journal_mode = "DELETE"
 
     # templates/static
     template_dir = resource_path("templates")
@@ -276,7 +283,22 @@ def create_app():
 
     app.config.from_object(Config)
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev_secret_key")
+    secret_key = os.environ.get("SECRET_KEY")
+    if not secret_key:
+        if debug_mode:
+            secret_key = "dev_secret_key"
+        else:
+            # 本番: DBと同じフォルダに生成した鍵を保存して使い回す（EXE再起動でも不変）
+            key_path = os.path.join(os.path.dirname(os.path.abspath(db_path)), ".secret_key")
+            if os.path.exists(key_path):
+                with open(key_path, encoding="utf-8") as f:
+                    secret_key = f.read().strip()
+            if not secret_key:
+                import secrets
+                secret_key = secrets.token_hex(32)
+                with open(key_path, "w", encoding="utf-8") as f:
+                    f.write(secret_key)
+    app.config["SECRET_KEY"] = secret_key
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     if debug_mode:
@@ -288,6 +310,51 @@ def create_app():
         app.config["TEMPLATES_AUTO_RELOAD"] = False
 
     db.init_app(app)
+
+    def sim_json_from_v2_input(raw):
+        """保存済み v2_input_json がシミュレーター取り込みなら、そのJSON文字列を返す（フォーム再保存で失わないため）"""
+        import json as _json
+        if not raw:
+            return ""
+        try:
+            d = _json.loads(raw)
+        except Exception:
+            return ""
+        if isinstance(d, dict) and d.get("source") == "simulator" and isinstance(d.get("sim"), dict):
+            return _json.dumps(d["sim"], ensure_ascii=False)
+        return ""
+
+    app.jinja_env.globals["sim_json_from_v2_input"] = sim_json_from_v2_input
+    def effort_lines_json_from_v2_input(raw):
+        """保存済みの工数明細（賃率つき）をフォームhiddenへ戻すためのJSON文字列"""
+        import json as _json
+        from app import sim_import as _s
+        d = _s.load_v2_input(raw)
+        if not isinstance(d.get("lines"), list) or not d["lines"]:
+            return ""
+        return _json.dumps({"rates": d.get("rates") or {}, "lines": d["lines"]}, ensure_ascii=False)
+
+    def sim_premise_lines(quotation):
+        from app import sim_import as _s
+        return _s.premise_lines(getattr(quotation, "v2_input_json", None))
+
+    app.jinja_env.globals["effort_lines_json_from_v2_input"] = effort_lines_json_from_v2_input
+    app.jinja_env.globals["sim_premise_lines"] = sim_premise_lines
+
+
+    # 共有フォルダ(SMB)上のDBを複数人で使うため、WALを避け排他待ちを長めにする
+    from sqlalchemy import event
+    from sqlalchemy.engine import Engine
+
+    @event.listens_for(Engine, "connect")
+    def _sqlite_pragmas(dbapi_conn, _rec):
+        if not isinstance(dbapi_conn, sqlite3.Connection):
+            return
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA busy_timeout=30000")
+        cur.execute(f"PRAGMA journal_mode={journal_mode}")
+        cur.execute("PRAGMA foreign_keys=ON")
+        cur.close()
 
     from app.models.customer import Customer, CustomerStatus
 
@@ -749,7 +816,7 @@ def create_app():
 
         conn = sqlite3.connect(db_path, timeout=30)
         safe_set_pragma(conn, "PRAGMA foreign_keys=ON")
-        safe_set_pragma(conn, "PRAGMA journal_mode=WAL")
+        safe_set_pragma(conn, f"PRAGMA journal_mode={journal_mode}")
         try:
             apply_migrations(conn)
         finally:
@@ -771,7 +838,7 @@ def create_app():
     else:
         conn = sqlite3.connect(db_path, timeout=30)
         safe_set_pragma(conn, "PRAGMA foreign_keys=ON")
-        safe_set_pragma(conn, "PRAGMA journal_mode=WAL")
+        safe_set_pragma(conn, f"PRAGMA journal_mode={journal_mode}")
         try:
             apply_migrations(conn)
         finally:

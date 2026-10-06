@@ -104,7 +104,10 @@
 	window.updateGrandTotal = window.updateGrandTotal || function updateGrandTotal() {
 		try {
 			const tbody = document.getElementById("detail-body");
-			const rows = tbody ? Array.from(tbody.querySelectorAll("tr")) : [];
+			// 製品明細に加え、設計費・現地セットアップ費（別テーブル）も合計に含める
+				const v2tbody = document.getElementById("v2-detail-body");
+				const rows = (tbody ? Array.from(tbody.querySelectorAll("tr")) : [])
+					.concat(v2tbody ? Array.from(v2tbody.querySelectorAll("tr")) : []);
 
 
 			 let totalSell = 0;

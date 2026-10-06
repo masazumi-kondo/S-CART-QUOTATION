@@ -16,8 +16,8 @@
 
 const V2_DEFAULT_SETTINGS = {
   // 時間単価（万円/時間）
-  costHourlyRate: 17760,      // ¥17,760/h
-  sellHourlyRate: 29600,      // ¥29,600/h
+  costHourlyRate: 6820,      // ¥6,820/h
+  sellHourlyRate: 12000,      // ¥12,000/h
 
   // 基本工数（時間）
   designBaseHours: 8,

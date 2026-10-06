@@ -100,8 +100,8 @@ def v2_parameters():
     if request.method == "POST":
         # Normal save action only - reset is handled by dedicated route
         # 賃率
-        setting.cost_hourly_rate = _to_float(request.form.get("cost_hourly_rate"), 17760)
-        setting.sell_hourly_rate = _to_float(request.form.get("sell_hourly_rate"), 29600)
+        setting.cost_hourly_rate = _to_float(request.form.get("cost_hourly_rate"), 6820)
+        setting.sell_hourly_rate = _to_float(request.form.get("sell_hourly_rate"), 12000)
 
         # 基本工数
         setting.design_base_hours = _to_float(request.form.get("design_base_hours"), 8)

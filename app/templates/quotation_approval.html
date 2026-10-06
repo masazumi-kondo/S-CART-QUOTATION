@@ -148,6 +148,13 @@
         </div>
     </div>
 
+    {% set _premise = sim_premise_lines(quotation) %}
+    {% if _premise %}
+    <div class="mb-4">
+        <span class="text-muted">シミュレーション前提:</span>
+        <div class="border-top pt-2">{% for l in _premise %}<div>{{ l }}</div>{% endfor %}</div>
+    </div>
+    {% endif %}
     {% if quotation.remarks %}
     <div class="mb-4">
         <span class="text-muted">摘要:</span>

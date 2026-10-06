@@ -305,6 +305,14 @@
 
     <div class="note">※消費税は別途申し受けます。</div>
 
+    {% set _premise = sim_premise_lines(quotation) %}
+    {% if _premise %}
+    <div style="margin-top:20px; page-break-inside: avoid;">
+        <div style="font-weight: bold; margin-bottom: 6px;">【シミュレーション前提】</div>
+        <div style="font-size: 0.95em; line-height: 1.6;">{% for l in _premise[1:] %}<div>{{ l }}</div>{% endfor %}</div>
+        <div style="font-size: 0.85em; color:#666;">{{ _premise[0] }}</div>
+    </div>
+    {% endif %}
     {% if quotation.remarks %}
     <div style="margin-top:28px; page-break-inside: avoid;">
         <div style="font-weight: bold; margin-bottom: 6px;">【備考】</div>

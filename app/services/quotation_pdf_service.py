@@ -433,7 +433,8 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.drawRightString(col_amount, table_header_y - 2.8*mm, "金額")
     
     # 明細行（15行）
-    detail_lines = list(quotation.details or [])
+    from app.sim_import import aggregate_effort_details
+    detail_lines = aggregate_effort_details(list(quotation.details or []))
     
     for row_idx in range(detail_rows_count):
         # A4上からの高さを計算
@@ -532,16 +533,23 @@ def generate_quotation_pdf(quotation, customer_display_name=None):
     c.setStrokeColor(border)
     c.rect(left_margin, remarks_box_y, page_width, remarks_box_height_mm * mm, fill=0, stroke=1)
     
-    # 備考内容
-    if quotation.remarks:
+    # 備考内容 + シミュレーション前提（取り込み案件のみ）
+    from app import sim_import
+    premise = sim_import.premise_lines(getattr(quotation, "v2_input_json", None))
+    remark_lines = str(quotation.remarks)[:300].split(chr(10))[:8] if quotation.remarks else []
+    # 前提は1行60文字で折り返す（備考欄の枠は固定高さのため、はみ出す分は描画しない）
+    premise_wrapped = []
+    for ln in premise:
+        while len(ln) > 58:
+            premise_wrapped.append(ln[:58])
+            ln = ln[58:]
+        premise_wrapped.append(ln)
+    all_lines = remark_lines + premise_wrapped
+    if all_lines:
         c.setFont(font_name, 7.5)
         c.setFillColor(text_color)
-        remarks_text = str(quotation.remarks)[:300]
-        
-        # 複数行対応
-        lines = remarks_text.split('\n')
         remarks_y = remarks_label_y - 4*mm
-        for line in lines[:8]:  # 最大8行
+        for line in all_lines:
             if remarks_y < remarks_box_y + 2*mm:
                 break
             c.drawString(left_margin + 3*mm, remarks_y, line[:60])

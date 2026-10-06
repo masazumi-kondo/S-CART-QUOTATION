@@ -17,3 +17,4 @@ migration_log.txt
 check_db.py
 __init__disabled.py
 tatus
+backups/
